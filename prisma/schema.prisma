@@ -1,0 +1,110 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(EJECUTOR)
+  password      String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  requests      Request[] // Solicitudes hechas por el usuario
+  historyLogs   History[] // Historial de acciones
+  auditLogs     AuditLog[] // Registros de auditoría
+}
+
+enum Role {
+  ADMINISTRADOR
+  ENCARGADO
+  EJECUTOR
+}
+
+model Plan {
+  id                  String      @id @default(cuid())
+  radicado            String      @unique
+  mutacion            String      // Tipo de trámite
+  fechaIngreso        DateTime    @default(now())
+  formato             String      // FISICO, DIGITAL, PDF, DWG, IMAGEN, OTRO
+  propietario         String
+  predial             String
+  veredaBarrio        String?
+  profesionalResponsable String?
+  observaciones       String?
+  estado              PlanState   @default(DISPONIBLE)
+  inconsistencias     String?     // Novedades o errores
+  qrCode              String?     // Opcional para escanear
+  
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  requests            Request[]
+  history             History[]
+}
+
+enum PlanState {
+  DISPONIBLE
+  PRESTADO
+  ARCHIVADO
+  PENDIENTE_REVISION
+}
+
+model Request {
+  id              String       @id @default(cuid())
+  planId          String
+  userId          String       // Quién solicita
+  adminEntregaId  String?      // Admin que autorizó y entregó
+  estado          RequestState @default(PENDIENTE)
+  observaciones    String?
+  firma           String?      // Imagen en base64 de la firma
+  fechaSolicitud  DateTime   @default(now())
+  fechaEntrega    DateTime?
+  fechaDevolucion DateTime?
+
+  plan         Plan         @relation(fields: [planId], references: [id])
+  user         User         @relation(fields: [userId], references: [id])
+}
+
+enum RequestState {
+  PENDIENTE
+  LISTO_PARA_ENTREGA
+  ENTREGADO
+  DEVOLUCION_SOLICITADA
+  DEVUELTO
+  RECHAZADO
+}
+
+model History {
+  id          String   @id @default(cuid())
+  planId      String
+  userId      String   // Quién realizó la acción
+  accion      String   // ej. REGISTRO, SOLICITUD, ENTREGA, DEVOLUCION, EDICION
+  detalles    String?  // Detalles de la acción o cambios de estado
+  createdAt   DateTime @default(now())
+
+  plan        Plan     @relation(fields: [planId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String
+  action      String   // EDIT, DELETE
+  entityId    String   // ID of the plan
+  entityType  String   // "Plan"
+  oldData     String?  // JSON string
+  newData     String?  // JSON string
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+}
