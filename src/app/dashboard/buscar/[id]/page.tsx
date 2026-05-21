@@ -18,6 +18,7 @@ export default async function DetallePlanoPage({ params }: { params: { id: strin
   const plano = await prisma.plan.findUnique({
     where: { id },
     include: {
+      receivedBy: true,
       history: {
         include: { user: true },
         orderBy: { createdAt: 'asc' } // Punto 15: Orden cronológico correcto
@@ -109,6 +110,14 @@ export default async function DetallePlanoPage({ params }: { params: { id: strin
                     <User className="mr-2 h-4 w-4" /> Profesional Responsable
                   </dt>
                   <dd className="mt-1 text-base text-slate-900 dark:text-slate-100">{plano.profesionalResponsable || "No especificado"}</dd>
+                </div>
+                <div>
+                  <dt className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center">
+                    <User className="mr-2 h-4 w-4" /> Recibido por
+                  </dt>
+                  <dd className="mt-1 text-base text-slate-900 dark:text-slate-100">
+                    {plano.receivedBy?.name || "No especificado"}
+                  </dd>
                 </div>
                 <div>
                   <dt className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center">

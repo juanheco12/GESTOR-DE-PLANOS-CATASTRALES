@@ -53,7 +53,6 @@ export default function DashboardLayout({
           <div className="h-16 flex items-center justify-between px-6 border-b border-slate-100 dark:border-slate-800">
             <span className="text-sm font-bold tracking-widest text-slate-700 dark:text-slate-300 truncate mr-2 uppercase">Catastro Montería</span>
             <div className="flex items-center gap-2">
-              <ThemeToggle />
               <button
                 className="lg:hidden text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
                 onClick={() => setSidebarOpen(false)}
@@ -117,7 +116,11 @@ export default function DashboardLayout({
             <Menu size={24} />
           </button>
           <span className="text-sm font-bold tracking-widest text-slate-700 dark:text-slate-300 truncate max-w-[200px] uppercase">Catastro Montería</span>
-          <div className="w-6" /> {/* Spacer */}
+          <ThemeToggle />
+        </header>
+
+        <header className="hidden lg:flex h-16 items-center justify-end px-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+          <ThemeToggle />
         </header>
 
         <main className="flex-1 overflow-y-auto">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, ArrowLeft } from "lucide-react";
 import Link from "next/link";
@@ -10,6 +10,9 @@ export default function RegistroPlanoPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [receiverError, setReceiverError] = useState("");
+  const [receivers, setReceivers] = useState<any[]>([]);
+  const [loadingReceivers, setLoadingReceivers] = useState(true);
 
   const [formData, setFormData] = useState({
     radicado: "",
@@ -20,17 +23,47 @@ export default function RegistroPlanoPage() {
     veredaBarrio: "",
     profesionalResponsable: "",
     observaciones: "",
+    receivedById: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  useEffect(() => {
+    async function loadReceivers() {
+      try {
+        const res = await fetch("/api/receivers");
+        const data = await res.json();
+        if (res.ok) {
+          setReceivers(data || []);
+          if (Array.isArray(data) && data.length > 0) {
+            setFormData((prev) => ({ ...prev, receivedById: data[0].id }));
+          }
+        } else {
+          setReceiverError(data.error || "Error al cargar receptores");
+        }
+      } catch (err: any) {
+        setReceiverError(err.message || "Error al cargar receptores");
+      } finally {
+        setLoadingReceivers(false);
+      }
+    }
+
+    loadReceivers();
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setSuccess(false);
+
+    if (!formData.receivedById) {
+      setError("Selecciona quién recibe el plano antes de registrar.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch("/api/planos", {
@@ -209,6 +242,33 @@ export default function RegistroPlanoPage() {
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 placeholder="Nombre del profesional encargado del levantamiento"
               />
+            </div>
+
+            {/* Recibido por */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                Recibido por *
+              </label>
+              <select
+                name="receivedById"
+                required
+                value={formData.receivedById}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              >
+                {loadingReceivers ? (
+                  <option value="">Cargando receptores...</option>
+                ) : receivers.length > 0 ? (
+                  receivers.map((receiver) => (
+                    <option key={receiver.id} value={receiver.id}>{receiver.name}</option>
+                  ))
+                ) : (
+                  <option value="">No hay receptores disponibles</option>
+                )}
+              </select>
+              {receiverError && (
+                <p className="text-sm text-red-600 dark:text-red-400 mt-2">{receiverError}</p>
+              )}
             </div>
 
             {/* Observaciones */}

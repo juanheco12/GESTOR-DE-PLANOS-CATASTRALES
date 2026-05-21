@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save } from "lucide-react";
 
@@ -8,6 +8,9 @@ export default function EditForm({ plan }: { plan: any }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [receivers, setReceivers] = useState<any[]>([]);
+  const [loadingReceivers, setLoadingReceivers] = useState(true);
+
   const [formData, setFormData] = useState({
     radicado: plan.radicado || "",
     mutacion: plan.mutacion || "",
@@ -17,8 +20,26 @@ export default function EditForm({ plan }: { plan: any }) {
     veredaBarrio: plan.veredaBarrio || "",
     profesionalResponsable: plan.profesionalResponsable || "",
     observaciones: plan.observaciones || "",
-    estado: plan.estado || "DISPONIBLE"
+    estado: plan.estado || "DISPONIBLE",
+    receivedById: plan.receivedById || ""
   });
+
+  useEffect(() => {
+    async function loadReceivers() {
+      try {
+        const res = await fetch("/api/receivers");
+        const data = await res.json();
+        if (res.ok) {
+          setReceivers(data || []);
+        }
+      } catch (error) {
+        // ignore silently; receiver list optional for edit form
+      } finally {
+        setLoadingReceivers(false);
+      }
+    }
+    loadReceivers();
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -90,6 +111,18 @@ export default function EditForm({ plan }: { plan: any }) {
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Profesional Responsable</label>
           <input type="text" name="profesionalResponsable" value={formData.profesionalResponsable} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Recibido por</label>
+          <select name="receivedById" value={formData.receivedById} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+            <option value="">Sin selección</option>
+            {receivers.map((receiver) => (
+              <option key={receiver.id} value={receiver.id}>{receiver.name}</option>
+            ))}
+          </select>
+          {loadingReceivers && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">Cargando receptores...</p>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Formato del Plano *</label>

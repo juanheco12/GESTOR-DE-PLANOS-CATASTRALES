@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // ELIMINAR PLANO (Solo Admin)
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== "ADMINISTRADOR") {
@@ -48,7 +48,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 }
 
 // EDITAR PLANO (Solo Admin)
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== "ADMINISTRADOR") {
@@ -65,6 +65,13 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     }
 
     const updatedPlan = await prisma.$transaction(async (tx) => {
+      if (newData.receivedById) {
+        const receiverExists = await tx.receiver.findUnique({ where: { id: newData.receivedById } });
+        if (!receiverExists) {
+          throw new Error("Receptor no válido");
+        }
+      }
+
       const plan = await tx.plan.update({
         where: { id },
         data: {
@@ -76,6 +83,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           veredaBarrio: newData.veredaBarrio,
           profesionalResponsable: newData.profesionalResponsable,
           observaciones: newData.observaciones,
+          receivedById: newData.receivedById,
           estado: newData.estado,
         }
       });

@@ -43,6 +43,16 @@ async function main() {
   } else {
     console.log("El usuario ejecutor ya existe.");
   }
+
+  // Crear receptores iniciales
+  const receivers = ["William", "Karolinne"];
+  for (const name of receivers) {
+    const existing = await prisma.receiver.findUnique({ where: { name } });
+    if (!existing) {
+      await prisma.receiver.create({ data: { name } });
+      console.log(`Receptor creado: ${name}`);
+    }
+  }
 }
 
 main()

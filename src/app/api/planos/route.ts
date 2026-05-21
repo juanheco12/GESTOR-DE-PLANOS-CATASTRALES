@@ -15,6 +15,13 @@ export async function POST(req: NextRequest) {
 
     // Crear el plano y registrar en el historial
     const result = await prisma.$transaction(async (tx) => {
+      if (data.receivedById) {
+        const receiverExists = await tx.receiver.findUnique({ where: { id: data.receivedById } });
+        if (!receiverExists) {
+          throw new Error("Receptor no válido");
+        }
+      }
+
       const newPlan = await tx.plan.create({
         data: {
           radicado: data.radicado,
@@ -25,6 +32,7 @@ export async function POST(req: NextRequest) {
           veredaBarrio: data.veredaBarrio,
           profesionalResponsable: data.profesionalResponsable,
           observaciones: data.observaciones,
+          receivedById: data.receivedById,
           estado: "DISPONIBLE"
         }
       });
