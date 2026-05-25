@@ -11,7 +11,8 @@ import {
   Menu,
   X,
   FileCheck2,
-  Settings
+  Settings,
+  FilePlus2
 } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -31,9 +32,12 @@ export default function DashboardLayout({
   const navigation = [
     { name: "Inicio", href: "/dashboard", icon: LayoutDashboard },
     { name: "Buscar plano", href: "/dashboard/buscar", icon: Search },
-    ...(isEjecutor 
-      ? [{ name: "Mis Solicitudes", href: "/dashboard/solicitudes", icon: FileCheck2 }] 
-      : [{ name: "Planos entregados", href: "/dashboard/entregados", icon: FileCheck2 }]),
+    ...(isEjecutor
+      ? [{ name: "Mis Solicitudes", href: "/dashboard/solicitudes", icon: FileCheck2 }]
+      : [
+          { name: "Registrar plano", href: "/dashboard/registro", icon: FilePlus2 },
+          { name: "Planos entregados", href: "/dashboard/entregados", icon: FileCheck2 },
+        ]),
     ...(isAdministrador ? [{ name: "Configuración", href: "/dashboard/configuracion", icon: Settings }] : []),
   ];
 
