@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Plus } from "lucide-react";
 import Link from "next/link";
 import FilterPanel from "./FilterPanel";
+import ExportButton from "./ExportButton";
 
 const PAGE_SIZE = 20;
 
@@ -109,6 +110,7 @@ export default async function BuscarPlanoPage({
               ? "Sin resultados"
               : `Mostrando ${from}–${to} de ${total} plano${total !== 1 ? "s" : ""}`}
           </span>
+          {total > 0 && <ExportButton />}
         </div>
 
         <div className="flex-1 overflow-auto">
