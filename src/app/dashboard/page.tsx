@@ -1,211 +1,334 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { 
-  FileText, 
-  Map, 
-  Clock, 
+import {
+  FileText,
+  Clock,
   CheckCircle2,
   BellRing,
-  CornerUpLeft
+  CornerUpLeft,
+  Archive,
+  BookOpen,
+  AlertTriangle,
+  ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+
+const ACCION_LABELS: Record<string, string> = {
+  REGISTRO: "Plano registrado",
+  SOLICITUD: "Solicitud creada",
+  ENTREGA: "Plano entregado",
+  DEVOLUCION: "Plano devuelto",
+  EDICION: "Plano editado",
+};
+
+function StatCard({
+  label,
+  value,
+  icon: Icon,
+  colorBg,
+  colorText,
+  href,
+}: {
+  label: string;
+  value: number;
+  icon: React.ElementType;
+  colorBg: string;
+  colorText: string;
+  href?: string;
+}) {
+  const content = (
+    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 flex items-center gap-5 hover:shadow-md transition-shadow">
+      <div className={`p-3.5 rounded-xl ${colorBg} bg-opacity-10 dark:bg-opacity-20 shrink-0`}>
+        <Icon className={`h-6 w-6 ${colorText}`} />
+      </div>
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 truncate">{label}</p>
+        <p className="mt-0.5 text-3xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
+      </div>
+      {href && <ArrowRight className="ml-auto h-4 w-4 text-slate-300 dark:text-slate-600 shrink-0" />}
+    </div>
+  );
+  return href ? <Link href={href}>{content}</Link> : <div>{content}</div>;
+}
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   const isEjecutor = session?.user?.role === "EJECUTOR";
-  const isEncargado = session?.user?.role === "ADMINISTRADOR" || session?.user?.role === "ENCARGADO";
-  
+
+  /* ── DASHBOARD EJECUTOR ─────────────────────────────────── */
   if (isEjecutor) {
-    // DASHBOARD EJECUTOR
-    const userId = session?.user?.id;
-    const pendientesPorRecibir = await prisma.request.count({ 
-      where: { userId, estado: "LISTO_PARA_ENTREGA" } 
-    });
-    const totalDevueltos = await prisma.request.count({ 
-      where: { userId, estado: "DEVUELTO" } 
-    });
-    const pendientesFirma = await prisma.request.findMany({
-      where: { userId, estado: "LISTO_PARA_ENTREGA" },
-      include: { plan: true },
-    });
+    const userId = session!.user.id;
+
+    const [listosParaFirmar, misActivas, totalDevueltos, totalSolicitudes] = await Promise.all([
+      prisma.request.findMany({
+        where: { userId, estado: "LISTO_PARA_ENTREGA" },
+        include: { plan: { select: { radicado: true, mutacion: true } } },
+        orderBy: { fechaSolicitud: "desc" },
+      }),
+      prisma.request.findMany({
+        where: { userId, estado: { in: ["PENDIENTE", "LISTO_PARA_ENTREGA", "ENTREGADO", "DEVOLUCION_SOLICITADA"] } },
+        include: { plan: { select: { radicado: true, mutacion: true, estado: true } } },
+        orderBy: { fechaSolicitud: "desc" },
+        take: 5,
+      }),
+      prisma.request.count({ where: { userId, estado: "DEVUELTO" } }),
+      prisma.request.count({ where: { userId } }),
+    ]);
+
+    const ESTADO_REQ_LABELS: Record<string, string> = {
+      PENDIENTE: "Pendiente de aprobación",
+      LISTO_PARA_ENTREGA: "Listo para recoger",
+      ENTREGADO: "En tu poder",
+      DEVOLUCION_SOLICITADA: "Devolución en proceso",
+      DEVUELTO: "Devuelto",
+    };
+    const ESTADO_REQ_COLORS: Record<string, string> = {
+      PENDIENTE: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+      LISTO_PARA_ENTREGA: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+      ENTREGADO: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
+      DEVOLUCION_SOLICITADA: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+      DEVUELTO: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400",
+    };
 
     return (
-      <div className="p-6 lg:p-8 max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Panel de Ejecutor</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">
+      <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Mi Panel</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
             Bienvenido, {session?.user?.name || session?.user?.email}.
           </p>
         </div>
 
-        {pendientesFirma.length > 0 && (
-          <div className="mb-8 space-y-4">
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center">
-              <BellRing className="mr-2 h-5 w-5 text-amber-500" /> Planos Listos para Recoger
+        {/* Alerta urgente: listos para firmar */}
+        {listosParaFirmar.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <BellRing className="h-4 w-4 text-amber-500" /> Acción requerida
             </h2>
-            {pendientesFirma.map((req) => (
-              <div key={req.id} className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded-r-lg flex items-start justify-between">
+            {listosParaFirmar.map((req) => (
+              <div
+                key={req.id}
+                className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 border-l-4 border-l-amber-500 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+              >
                 <div>
-                  <p className="text-amber-800 dark:text-amber-400 font-medium">
-                    Firma Digital Requerida
+                  <p className="font-medium text-amber-900 dark:text-amber-300">
+                    Plano listo para recoger
                   </p>
-                  <p className="text-sm text-amber-700 dark:text-amber-500 mt-1">
-                    El plano con radicado <span className="font-bold underline">{req.plan.radicado}</span> está listo. Debes firmar para confirmar la recepción.
+                  <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
+                    Radicado <strong>{req.plan.radicado}</strong> — {req.plan.mutacion}
                   </p>
                 </div>
-                <Link 
+                <Link
                   href={`/dashboard/solicitudes/firmar/${req.id}`}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+                  className="shrink-0 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
                 >
-                  Firmar y Recibir
+                  Firmar y recibir
                 </Link>
               </div>
             ))}
           </div>
         )}
 
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
-          <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 flex items-center">
-            <div className={`p-4 rounded-xl bg-amber-500 bg-opacity-10 dark:bg-opacity-20 mr-5`}>
-              <Clock className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
-                Planos pendientes por recibir
-              </p>
-              <p className="mt-1 text-3xl font-semibold text-slate-900 dark:text-slate-100">
-                {pendientesPorRecibir}
-              </p>
-            </div>
-          </div>
-          
-          <div className="bg-white dark:bg-slate-900 overflow-hidden rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 flex items-center">
-            <div className={`p-4 rounded-xl bg-emerald-500 bg-opacity-10 dark:bg-opacity-20 mr-5`}>
-              <CheckCircle2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
-            </div>
-            <div>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
-                Total de planos devueltos
-              </p>
-              <p className="mt-1 text-3xl font-semibold text-slate-900 dark:text-slate-100">
-                {totalDevueltos}
-              </p>
-            </div>
-          </div>
+        {/* Métricas */}
+        <div className="grid grid-cols-2 gap-4">
+          <StatCard label="Total solicitudes" value={totalSolicitudes} icon={FileText} colorBg="bg-blue-500" colorText="text-blue-600 dark:text-blue-400" href="/dashboard/solicitudes" />
+          <StatCard label="Planos devueltos" value={totalDevueltos} icon={CheckCircle2} colorBg="bg-emerald-500" colorText="text-emerald-600 dark:text-emerald-400" />
         </div>
+
+        {/* Mis solicitudes recientes */}
+        {misActivas.length > 0 && (
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">Mis solicitudes activas</h2>
+              <Link href="/dashboard/solicitudes" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                Ver todas
+              </Link>
+            </div>
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden shadow-sm">
+              {misActivas.map((req) => (
+                <div key={req.id} className="px-5 py-3.5 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="font-medium text-slate-900 dark:text-slate-100 text-sm truncate">{req.plan.radicado}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{req.plan.mutacion}</p>
+                  </div>
+                  <span className={`shrink-0 text-xs px-2.5 py-1 rounded-full font-medium ${ESTADO_REQ_COLORS[req.estado] ?? ""}`}>
+                    {ESTADO_REQ_LABELS[req.estado] ?? req.estado}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
-  // DASHBOARD ADMINISTRADOR / ENCARGADO
-  const stats = {
-    totalPlanos: await prisma.plan.count(),
-    pendientes: await prisma.plan.count({ where: { estado: "PENDIENTE_REVISION" } }),
-    entregados: await prisma.plan.count({ where: { estado: "PRESTADO" } }),
-    enProceso: await prisma.plan.count({ where: { estado: "DISPONIBLE" } })
-  };
+  /* ── DASHBOARD ADMINISTRADOR / ENCARGADO ─────────────────── */
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
 
-  const statCards = [
-    { name: "Total Ingresados", value: stats.totalPlanos, icon: FileText, color: "bg-blue-500", text: "text-blue-600 dark:text-blue-400" },
-    { name: "Planos Pendientes", value: stats.pendientes, icon: Clock, color: "bg-amber-500", text: "text-amber-600 dark:text-amber-400" },
-    { name: "Planos Entregados", value: stats.entregados, icon: CheckCircle2, color: "bg-emerald-500", text: "text-emerald-600 dark:text-emerald-400" },
-    { name: "Trámites en Proceso", value: stats.enProceso, icon: Map, color: "bg-purple-500", text: "text-purple-600 dark:text-purple-400" },
-  ];
-
-  let solicitudesNuevas = await prisma.request.findMany({
-    where: { estado: "PENDIENTE" },
-    include: { plan: true, user: true },
-    orderBy: { fechaSolicitud: "desc" }
-  });
-
-  let devoluciones = await prisma.request.findMany({
-    where: { estado: "DEVOLUCION_SOLICITADA" },
-    include: { plan: true, user: true },
-    orderBy: { fechaSolicitud: "desc" }
-  });
+  const [
+    totalPlanos,
+    disponibles,
+    prestados,
+    pendientesRevision,
+    archivados,
+    solicitudesPendientes,
+    devolucionesPendientes,
+    ingresadosHoy,
+    actividadReciente,
+    alertasSolicitudes,
+    alertasDevoluciones,
+  ] = await Promise.all([
+    prisma.plan.count(),
+    prisma.plan.count({ where: { estado: "DISPONIBLE" } }),
+    prisma.plan.count({ where: { estado: "PRESTADO" } }),
+    prisma.plan.count({ where: { estado: "PENDIENTE_REVISION" } }),
+    prisma.plan.count({ where: { estado: "ARCHIVADO" } }),
+    prisma.request.count({ where: { estado: "PENDIENTE" } }),
+    prisma.request.count({ where: { estado: "DEVOLUCION_SOLICITADA" } }),
+    prisma.plan.count({ where: { createdAt: { gte: hoy } } }),
+    prisma.history.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 8,
+      include: {
+        plan: { select: { radicado: true } },
+        user: { select: { name: true, email: true } },
+      },
+    }),
+    prisma.request.findMany({
+      where: { estado: "PENDIENTE" },
+      include: { plan: { select: { radicado: true } }, user: { select: { name: true, email: true } } },
+      orderBy: { fechaSolicitud: "desc" },
+      take: 5,
+    }),
+    prisma.request.findMany({
+      where: { estado: "DEVOLUCION_SOLICITADA" },
+      include: { plan: { select: { radicado: true } }, user: { select: { name: true, email: true } } },
+      orderBy: { fechaSolicitud: "desc" },
+      take: 5,
+    }),
+  ]);
 
   return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Panel del Administrador</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-1">
-          Bienvenido, {session?.user?.name || session?.user?.email}. Aquí tienes un resumen del sistema.
-        </p>
+    <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Panel de control</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
+            Bienvenido, {session?.user?.name || session?.user?.email}.
+          </p>
+        </div>
+        {ingresadosHoy > 0 && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-full border border-blue-200 dark:border-blue-800">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {ingresadosHoy} plano{ingresadosHoy !== 1 ? "s" : ""} ingresado{ingresadosHoy !== 1 ? "s" : ""} hoy
+          </span>
+        )}
       </div>
 
-      {solicitudesNuevas.length > 0 && (
-        <div className="mb-8 space-y-4">
-          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center">
-            <BellRing className="mr-2 h-5 w-5 text-amber-500" /> Alertas de Solicitudes (Por entregar)
-          </h2>
-          {solicitudesNuevas.map((solicitud) => (
-            <div key={solicitud.id} className="bg-amber-50 dark:bg-amber-900/20 border-l-4 border-amber-500 p-4 rounded-r-lg flex items-start justify-between">
-              <div>
-                <p className="text-amber-800 dark:text-amber-400 font-medium">
-                  Nueva solicitud de préstamo de plano
-                </p>
-                <p className="text-sm text-amber-700 dark:text-amber-500 mt-1">
-                  El ejecutor <span className="font-semibold">{solicitud.user.name || solicitud.user.email}</span> ha solicitado el plano con radicado <span className="font-bold underline">{solicitud.plan.radicado}</span>.
-                </p>
-              </div>
-              <Link 
-                href={`/dashboard/entregados/gestionar/${solicitud.id}`}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                Revisar
-              </Link>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Métricas principales */}
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+        <StatCard label="Total en sistema" value={totalPlanos}         icon={FileText}       colorBg="bg-blue-500"    colorText="text-blue-600 dark:text-blue-400"    href="/dashboard/buscar" />
+        <StatCard label="Disponibles"       value={disponibles}        icon={BookOpen}       colorBg="bg-emerald-500" colorText="text-emerald-600 dark:text-emerald-400" href="/dashboard/buscar?estado=DISPONIBLE" />
+        <StatCard label="Prestados"         value={prestados}          icon={Clock}          colorBg="bg-amber-500"   colorText="text-amber-600 dark:text-amber-400"   href="/dashboard/buscar?estado=PRESTADO" />
+        <StatCard label="Pend. revisión"    value={pendientesRevision} icon={AlertTriangle}  colorBg="bg-orange-500"  colorText="text-orange-600 dark:text-orange-400" href="/dashboard/buscar?estado=PENDIENTE_REVISION" />
+        <StatCard label="Archivados"        value={archivados}         icon={Archive}        colorBg="bg-slate-500"   colorText="text-slate-600 dark:text-slate-400"   href="/dashboard/buscar?estado=ARCHIVADO" />
+      </div>
 
-      {devoluciones.length > 0 && (
-        <div className="mb-8 space-y-4">
-          <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-200 flex items-center">
-            <CornerUpLeft className="mr-2 h-5 w-5 text-purple-500" /> Alertas de Devoluciones (Por recibir)
-          </h2>
-          {devoluciones.map((solicitud) => (
-            <div key={solicitud.id} className="bg-purple-50 dark:bg-purple-900/20 border-l-4 border-purple-500 p-4 rounded-r-lg flex items-start justify-between">
-              <div>
-                <p className="text-purple-800 dark:text-purple-400 font-medium">
-                  Solicitud de devolución de plano
-                </p>
-                <p className="text-sm text-purple-700 dark:text-purple-500 mt-1">
-                  El ejecutor <span className="font-semibold">{solicitud.user.name || solicitud.user.email}</span> quiere devolver el plano <span className="font-bold underline">{solicitud.plan.radicado}</span>.
-                </p>
-              </div>
-              <Link 
-                href={`/dashboard/entregados/gestionar/${solicitud.id}`}
-                className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                Recibir Plano
-              </Link>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {statCards.map((stat) => (
-          <div
-            key={stat.name}
-            className="bg-white dark:bg-slate-900 overflow-hidden rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 flex items-center"
-          >
-            <div className={`p-4 rounded-xl ${stat.color} bg-opacity-10 dark:bg-opacity-20 mr-5`}>
-              <stat.icon className={`h-6 w-6 ${stat.text}`} />
-            </div>
+      {/* Alertas urgentes */}
+      {(alertasSolicitudes.length > 0 || alertasDevoluciones.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {alertasSolicitudes.length > 0 && (
             <div>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400 truncate">
-                {stat.name}
-              </p>
-              <p className="mt-1 text-3xl font-semibold text-slate-900 dark:text-slate-100">
-                {stat.value}
-              </p>
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-3">
+                <BellRing className="h-4 w-4 text-amber-500" />
+                Solicitudes pendientes
+                <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 font-bold">
+                  {solicitudesPendientes}
+                </span>
+              </h2>
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden shadow-sm">
+                {alertasSolicitudes.map((s) => (
+                  <div key={s.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{s.plan.radicado}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                        {s.user.name || s.user.email}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/dashboard/entregados/gestionar/${s.id}`}
+                      className="shrink-0 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded-lg transition-colors"
+                    >
+                      Gestionar
+                    </Link>
+                  </div>
+                ))}
+              </div>
             </div>
+          )}
+
+          {alertasDevoluciones.length > 0 && (
+            <div>
+              <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2 mb-3">
+                <CornerUpLeft className="h-4 w-4 text-purple-500" />
+                Devoluciones pendientes
+                <span className="ml-1 px-2 py-0.5 rounded-full text-xs bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 font-bold">
+                  {devolucionesPendientes}
+                </span>
+              </h2>
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 overflow-hidden shadow-sm">
+                {alertasDevoluciones.map((s) => (
+                  <div key={s.id} className="px-4 py-3 flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">{s.plan.radicado}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                        {s.user.name || s.user.email}
+                      </p>
+                    </div>
+                    <Link
+                      href={`/dashboard/entregados/gestionar/${s.id}`}
+                      className="shrink-0 px-3 py-1.5 bg-purple-500 hover:bg-purple-600 text-white text-xs font-medium rounded-lg transition-colors"
+                    >
+                      Confirmar
+                    </Link>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Actividad reciente */}
+      {actividadReciente.length > 0 && (
+        <div>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-3">Actividad reciente</h2>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+              {actividadReciente.map((h) => (
+                <li key={h.id} className="px-5 py-3 flex items-center gap-4">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-slate-800 dark:text-slate-200 truncate">
+                      <span className="font-medium">{ACCION_LABELS[h.accion] ?? h.accion}</span>
+                      {" — "}
+                      <Link href={`/dashboard/buscar/${h.planId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                        {h.plan.radicado}
+                      </Link>
+                    </p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                      {h.user.name || h.user.email} · {new Date(h.createdAt).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
