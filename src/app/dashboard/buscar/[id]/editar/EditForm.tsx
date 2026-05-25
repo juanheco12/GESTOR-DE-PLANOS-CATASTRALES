@@ -42,7 +42,13 @@ export default function EditForm({ plan }: { plan: any }) {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "predial") {
+      const onlyDigits = value.replace(/\D/g, "").slice(0, 30);
+      setFormData((prev) => ({ ...prev, predial: onlyDigits }));
+      return;
+    }
+    setFormData({ ...formData, [name]: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,8 +103,23 @@ export default function EditForm({ plan }: { plan: any }) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Número Predial *</label>
-          <input required type="text" name="predial" value={formData.predial} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" />
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Número Predial Nacional *</label>
+          <input
+            required
+            type="text"
+            name="predial"
+            inputMode="numeric"
+            maxLength={30}
+            value={formData.predial}
+            onChange={handleChange}
+            className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono tracking-wider"
+          />
+          <div className="mt-1 flex items-center justify-between">
+            <p className="text-xs text-slate-400 dark:text-slate-500">Solo dígitos numéricos</p>
+            <span className={`text-xs font-medium tabular-nums ${formData.predial.length === 30 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500"}`}>
+              {formData.predial.length}/30
+            </span>
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Propietario *</label>

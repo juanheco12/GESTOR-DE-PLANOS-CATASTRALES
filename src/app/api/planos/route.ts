@@ -13,6 +13,10 @@ export async function POST(req: NextRequest) {
 
     const data = await req.json();
 
+    if (data.predial && !/^\d{1,30}$/.test(data.predial)) {
+      return NextResponse.json({ error: "El número predial debe contener solo dígitos numéricos (máximo 30)." }, { status: 400 });
+    }
+
     // Crear el plano y registrar en el historial
     const result = await prisma.$transaction(async (tx) => {
       if (data.receivedById) {

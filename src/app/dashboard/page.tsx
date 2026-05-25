@@ -38,15 +38,15 @@ function StatCard({
   href?: string;
 }) {
   const content = (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 p-6 flex items-center gap-5 hover:shadow-md transition-shadow">
-      <div className={`p-3.5 rounded-xl ${colorBg} bg-opacity-10 dark:bg-opacity-20 shrink-0`}>
-        <Icon className={`h-6 w-6 ${colorText}`} />
+    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 p-5 flex items-center gap-4 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 group">
+      <div className={`p-3 rounded-xl ${colorBg} shrink-0 transition-transform duration-200 group-hover:scale-110`}>
+        <Icon className={`h-5 w-5 ${colorText}`} />
       </div>
-      <div className="min-w-0">
-        <p className="text-sm font-medium text-slate-500 dark:text-slate-400 truncate">{label}</p>
-        <p className="mt-0.5 text-3xl font-bold text-slate-900 dark:text-slate-100">{value}</p>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 truncate">{label}</p>
+        <p className="mt-0.5 text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
       </div>
-      {href && <ArrowRight className="ml-auto h-4 w-4 text-slate-300 dark:text-slate-600 shrink-0" />}
+      {href && <ArrowRight className="ml-auto h-4 w-4 text-slate-300 dark:text-slate-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />}
     </div>
   );
   return href ? <Link href={href}>{content}</Link> : <div>{content}</div>;
@@ -132,8 +132,8 @@ export default async function DashboardPage() {
 
         {/* Métricas */}
         <div className="grid grid-cols-2 gap-4">
-          <StatCard label="Total solicitudes" value={totalSolicitudes} icon={FileText} colorBg="bg-blue-500" colorText="text-blue-600 dark:text-blue-400" href="/dashboard/solicitudes" />
-          <StatCard label="Planos devueltos" value={totalDevueltos} icon={CheckCircle2} colorBg="bg-emerald-500" colorText="text-emerald-600 dark:text-emerald-400" />
+          <StatCard label="Total solicitudes" value={totalSolicitudes} icon={FileText} colorBg="bg-blue-50 dark:bg-blue-900/30" colorText="text-blue-600 dark:text-blue-400" href="/dashboard/solicitudes" />
+          <StatCard label="Planos devueltos" value={totalDevueltos} icon={CheckCircle2} colorBg="bg-emerald-50 dark:bg-emerald-900/30" colorText="text-emerald-600 dark:text-emerald-400" />
         </div>
 
         {/* Mis solicitudes recientes */}
@@ -230,11 +230,11 @@ export default async function DashboardPage() {
 
       {/* Métricas principales */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard label="Total en sistema" value={totalPlanos}         icon={FileText}       colorBg="bg-blue-500"    colorText="text-blue-600 dark:text-blue-400"    href="/dashboard/buscar" />
-        <StatCard label="Disponibles"       value={disponibles}        icon={BookOpen}       colorBg="bg-emerald-500" colorText="text-emerald-600 dark:text-emerald-400" href="/dashboard/buscar?estado=DISPONIBLE" />
-        <StatCard label="Prestados"         value={prestados}          icon={Clock}          colorBg="bg-amber-500"   colorText="text-amber-600 dark:text-amber-400"   href="/dashboard/buscar?estado=PRESTADO" />
-        <StatCard label="Pend. revisión"    value={pendientesRevision} icon={AlertTriangle}  colorBg="bg-orange-500"  colorText="text-orange-600 dark:text-orange-400" href="/dashboard/buscar?estado=PENDIENTE_REVISION" />
-        <StatCard label="Archivados"        value={archivados}         icon={Archive}        colorBg="bg-slate-500"   colorText="text-slate-600 dark:text-slate-400"   href="/dashboard/buscar?estado=ARCHIVADO" />
+        <StatCard label="Total en sistema" value={totalPlanos}         icon={FileText}       colorBg="bg-blue-50 dark:bg-blue-900/30"     colorText="text-blue-600 dark:text-blue-400"    href="/dashboard/buscar" />
+        <StatCard label="Disponibles"       value={disponibles}        icon={BookOpen}       colorBg="bg-emerald-50 dark:bg-emerald-900/30" colorText="text-emerald-600 dark:text-emerald-400" href="/dashboard/buscar?estado=DISPONIBLE" />
+        <StatCard label="Prestados"         value={prestados}          icon={Clock}          colorBg="bg-amber-50 dark:bg-amber-900/30"    colorText="text-amber-600 dark:text-amber-400"   href="/dashboard/buscar?estado=PRESTADO" />
+        <StatCard label="Pend. revisión"    value={pendientesRevision} icon={AlertTriangle}  colorBg="bg-orange-50 dark:bg-orange-900/30"  colorText="text-orange-600 dark:text-orange-400" href="/dashboard/buscar?estado=PENDIENTE_REVISION" />
+        <StatCard label="Archivados"        value={archivados}         icon={Archive}        colorBg="bg-slate-100 dark:bg-slate-800"      colorText="text-slate-600 dark:text-slate-400"   href="/dashboard/buscar?estado=ARCHIVADO" />
       </div>
 
       {/* Alertas urgentes */}
