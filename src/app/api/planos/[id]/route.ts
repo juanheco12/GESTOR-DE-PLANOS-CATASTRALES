@@ -59,8 +59,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const id = resolvedParams.id;
     const newData = await req.json();
 
-    if (newData.predial && !/^\d{1,30}$/.test(newData.predial)) {
-      return NextResponse.json({ error: "El número predial debe contener solo dígitos numéricos (máximo 30)." }, { status: 400 });
+    if (!newData.predial || !/^\d{30}$/.test(newData.predial)) {
+      return NextResponse.json({ error: "El número predial nacional debe tener exactamente 30 dígitos numéricos." }, { status: 400 });
     }
 
     const oldPlan = await prisma.plan.findUnique({ where: { id } });

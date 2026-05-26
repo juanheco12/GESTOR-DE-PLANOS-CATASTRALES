@@ -56,6 +56,12 @@ export default function EditForm({ plan }: { plan: any }) {
     setLoading(true);
     setError("");
 
+    if (formData.predial.length !== 30) {
+      setError("El número predial nacional debe tener exactamente 30 dígitos.");
+      setLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch(`/api/planos/${plan.id}`, {
         method: "PUT",
@@ -110,13 +116,35 @@ export default function EditForm({ plan }: { plan: any }) {
             name="predial"
             inputMode="numeric"
             maxLength={30}
+            minLength={30}
             value={formData.predial}
             onChange={handleChange}
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono tracking-wider"
+            className={`w-full px-4 py-2.5 rounded-xl border font-mono tracking-wider bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 ${
+              formData.predial.length > 0 && formData.predial.length < 30
+                ? "border-amber-400 dark:border-amber-500"
+                : formData.predial.length === 30
+                ? "border-emerald-500 dark:border-emerald-500"
+                : "border-slate-300 dark:border-slate-700"
+            }`}
+            placeholder="000000000000000000000000000000"
           />
-          <div className="mt-1 flex items-center justify-between">
-            <p className="text-xs text-slate-400 dark:text-slate-500">Solo dígitos numéricos</p>
-            <span className={`text-xs font-medium tabular-nums ${formData.predial.length === 30 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400 dark:text-slate-500"}`}>
+          <div className="mt-1.5 flex items-center justify-between">
+            <p className={`text-xs ${
+              formData.predial.length > 0 && formData.predial.length < 30
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-slate-400 dark:text-slate-500"
+            }`}>
+              {formData.predial.length > 0 && formData.predial.length < 30
+                ? `Faltan ${30 - formData.predial.length} dígitos`
+                : "Exactamente 30 dígitos numéricos"}
+            </p>
+            <span className={`text-xs font-bold tabular-nums ${
+              formData.predial.length === 30
+                ? "text-emerald-600 dark:text-emerald-400"
+                : formData.predial.length > 0
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-slate-400 dark:text-slate-500"
+            }`}>
               {formData.predial.length}/30
             </span>
           </div>
