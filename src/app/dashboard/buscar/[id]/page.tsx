@@ -31,7 +31,6 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
   if (!plano) notFound();
 
   const role = session?.user?.role;
-  const isSuperAdmin = role === "SUPERADMIN";
   const isAdministrador = role === "ADMINISTRADOR";
   const isEncargado = role === "ENCARGADO";
   const isEjecutor = role === "EJECUTOR";
@@ -77,8 +76,8 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
             <SolicitarPlanoBoton planId={plano.id} radicado={plano.radicado} />
           )}
 
-          {/* ── ADMIN / ENCARGADO / SUPERADMIN: gestionar solicitud activa cuando el plano NO está DISPONIBLE ── */}
-          {(isSuperAdmin || isAdministrador || isEncargado) && plano.estado !== "DISPONIBLE" && solicitudActiva && (
+          {/* ── ADMIN / ENCARGADO: gestionar solicitud activa cuando el plano NO está DISPONIBLE ── */}
+          {(isAdministrador || isEncargado) && plano.estado !== "DISPONIBLE" && solicitudActiva && (
             <Link
               href={`/dashboard/entregados/gestionar/${solicitudActiva.id}`}
               className="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium text-sm transition-colors shadow-sm"
@@ -88,8 +87,8 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
             </Link>
           )}
 
-          {/* ── SUPERADMIN: editar / eliminar planos ── */}
-          {isSuperAdmin && (
+          {/* ── ADMINISTRADOR: editar / eliminar planos ── */}
+          {isAdministrador && (
             <AdminActions planId={plano.id} />
           )}
         </div>
@@ -160,7 +159,7 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
               )}
 
               {/* Firma digital del ejecutor — visible para superadmin/admin/encargado */}
-              {(isSuperAdmin || isAdministrador || isEncargado) && solicitudConFirma && (
+              {(isAdministrador || isEncargado) && solicitudConFirma && (
                 <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
                   <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-4">Constancia de Entrega y Firma</h4>
                   <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">

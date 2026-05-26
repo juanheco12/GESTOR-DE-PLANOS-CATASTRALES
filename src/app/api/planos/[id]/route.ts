@@ -8,8 +8,8 @@ import { prisma } from "@/lib/prisma";
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
-    if (session?.user?.role !== "SUPERADMIN") {
-      return NextResponse.json({ error: "No autorizado. Solo el Super Administrador puede eliminar registros." }, { status: 403 });
+    if (session?.user?.role !== "ADMINISTRADOR") {
+      return NextResponse.json({ error: "No autorizado. Solo el Administrador puede eliminar registros." }, { status: 403 });
     }
 
     const resolvedParams = await params;
@@ -51,8 +51,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
-    if (session?.user?.role !== "SUPERADMIN") {
-      return NextResponse.json({ error: "No autorizado. Solo el Super Administrador puede editar registros." }, { status: 403 });
+    if (session?.user?.role !== "ADMINISTRADOR") {
+      return NextResponse.json({ error: "No autorizado. Solo el Administrador puede editar registros." }, { status: 403 });
     }
 
     const resolvedParams = await params;

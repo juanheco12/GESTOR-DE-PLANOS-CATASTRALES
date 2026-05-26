@@ -7,7 +7,7 @@ import ConfigTabs from "./ConfigTabs";
 export default async function ConfiguracionPage() {
   const session = await getServerSession(authOptions);
 
-  if (session?.user?.role !== "SUPERADMIN") {
+  if (session?.user?.role !== "ADMINISTRADOR") {
     redirect("/dashboard");
   }
 

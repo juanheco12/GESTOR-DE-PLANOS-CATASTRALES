@@ -9,7 +9,7 @@ const ALLOWED_ROLES = ["ADMINISTRADOR", "ENCARGADO", "EJECUTOR"] as const;
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
-    if (session?.user?.role !== "SUPERADMIN") {
+    if (session?.user?.role !== "ADMINISTRADOR") {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
