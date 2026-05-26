@@ -66,7 +66,7 @@ export default async function PlanosEntregadosPage() {
                     </td>
                     <td className="px-5 py-3 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                       {sol.fechaEntrega
-                        ? new Date(sol.fechaEntrega).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })
+                        ? new Date(sol.fechaEntrega).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" })
                         : "—"}
                     </td>
                     <td className="px-5 py-3 whitespace-nowrap">

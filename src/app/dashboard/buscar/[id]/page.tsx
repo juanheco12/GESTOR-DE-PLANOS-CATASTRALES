@@ -65,7 +65,7 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
               >
                 {plano.estado.replace("_", " ")}
               </span>
-              Registrado el {plano.createdAt.toLocaleDateString("es-CO")}
+              Registrado el {plano.createdAt.toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" })}
             </p>
           </div>
         </div>
@@ -169,7 +169,7 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                     <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
                       <strong>Fecha y hora:</strong>{" "}
                       {solicitudConFirma.fechaEntrega
-                        ? new Date(solicitudConFirma.fechaEntrega).toLocaleString("es-CO")
+                        ? new Date(solicitudConFirma.fechaEntrega).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" })
                         : "No registrada"}
                     </p>
                     <div className="bg-white border-2 border-slate-200 rounded-lg p-2 max-w-[300px] h-[150px] relative overflow-hidden">
@@ -227,7 +227,7 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                               </p>
                             </div>
                             <div className="text-right text-xs whitespace-nowrap text-slate-400">
-                              {new Date(evento.createdAt).toLocaleDateString("es-CO")}
+                              {new Date(evento.createdAt).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" })}
                             </div>
                           </div>
                         </div>

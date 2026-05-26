@@ -50,7 +50,7 @@ export default async function GestionarSolicitudPage({ params }: { params: { id:
             </div>
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center mb-1"><Calendar className="mr-2 h-4 w-4" /> Fecha Solicitud</p>
-              <p className="font-medium text-slate-900 dark:text-slate-100">{solicitud.fechaSolicitud.toLocaleString()}</p>
+              <p className="font-medium text-slate-900 dark:text-slate-100">{solicitud.fechaSolicitud.toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" })}</p>
             </div>
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center mb-1"><FileText className="mr-2 h-4 w-4" /> Mutación</p>

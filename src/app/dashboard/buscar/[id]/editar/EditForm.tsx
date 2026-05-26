@@ -152,14 +152,8 @@ export default function EditForm({ plan }: { plan: any }) {
             placeholder="000000000000000000000000000000"
           />
           <div className="mt-1.5 flex items-center justify-between">
-            <p className={`text-xs ${
-              formData.predial.length > 0 && formData.predial.length < 30
-                ? "text-amber-600 dark:text-amber-400"
-                : "text-slate-400 dark:text-slate-500"
-            }`}>
-              {formData.predial.length > 0 && formData.predial.length < 30
-                ? `Faltan ${30 - formData.predial.length} dígitos`
-                : "Exactamente 30 dígitos numéricos"}
+            <p className="text-xs text-slate-400 dark:text-slate-500">
+              Exactamente 30 dígitos numéricos
             </p>
             <span className={`text-xs font-bold tabular-nums ${
               formData.predial.length === 30
