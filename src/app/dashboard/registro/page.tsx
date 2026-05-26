@@ -280,11 +280,12 @@ export default function RegistroPlanoPage() {
                 onChange={handleChange}
                 className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               >
-                <option value="FISICO">Físico (Papel)</option>
-                <option value="DIGITAL">Digital General</option>
+                <option value="FISICO">Físico</option>
+                <option value="SHP">Archivo SHP</option>
                 <option value="PDF">Documento PDF</option>
-                <option value="DWG">Archivo DWG (AutoCAD)</option>
-                <option value="IMAGEN">Imagen (JPG/PNG)</option>
+                <option value="DWG">Archivo DWG</option>
+                <option value="CD">CD</option>
+                <option value="USB">USB</option>
                 <option value="OTRO">Otro Formato</option>
               </select>
             </div>

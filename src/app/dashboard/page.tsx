@@ -320,7 +320,7 @@ export default async function DashboardPage() {
                       </Link>
                     </p>
                     <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                      {h.user.name || h.user.email} · {new Date(h.createdAt).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })}
+                      {h.user.name || h.user.email} · {new Date(h.createdAt).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" })}
                     </p>
                   </div>
                 </li>

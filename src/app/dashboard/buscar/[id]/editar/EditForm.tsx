@@ -194,8 +194,12 @@ export default function EditForm({ plan }: { plan: any }) {
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Formato del Plano *</label>
           <select required name="formato" value={formData.formato} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100">
             <option value="FISICO">Físico</option>
-            <option value="DIGITAL_PDF">Digital (PDF)</option>
-            <option value="DIGITAL_DWG">Digital (DWG)</option>
+            <option value="SHP">Archivo SHP</option>
+            <option value="PDF">Documento PDF</option>
+            <option value="DWG">Archivo DWG</option>
+            <option value="CD">CD</option>
+            <option value="USB">USB</option>
+            <option value="OTRO">Otro Formato</option>
           </select>
         </div>
         <div>
