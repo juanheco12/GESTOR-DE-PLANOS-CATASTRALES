@@ -38,15 +38,15 @@ function StatCard({
   href?: string;
 }) {
   const content = (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700/60 p-5 flex items-center gap-4 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 group">
-      <div className={`p-3 rounded-xl ${colorBg} shrink-0 transition-transform duration-200 group-hover:scale-110`}>
-        <Icon className={`h-5 w-5 ${colorText}`} />
+    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-5 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 group">
+      <div className="flex items-start justify-between mb-3">
+        <div className={`p-2.5 rounded-xl ${colorBg} shrink-0`}>
+          <Icon className={`h-5 w-5 ${colorText}`} />
+        </div>
+        {href && <ArrowRight className="h-4 w-4 text-slate-300 dark:text-slate-500 shrink-0 group-hover:translate-x-0.5 transition-transform mt-1" />}
       </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 truncate">{label}</p>
-        <p className="mt-0.5 text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
-      </div>
-      {href && <ArrowRight className="ml-auto h-4 w-4 text-slate-300 dark:text-slate-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />}
+      <p className="text-2xl font-bold text-slate-900 dark:text-white leading-none">{value}</p>
+      <p className="mt-1.5 text-xs font-medium text-slate-500 dark:text-slate-300 leading-snug">{label}</p>
     </div>
   );
   return href ? <Link href={href}>{content}</Link> : <div>{content}</div>;

@@ -36,6 +36,26 @@ export default function RegistroPlanoPage() {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handlePredialKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"];
+    if (allowed.includes(e.key)) return;
+    if (formData.predial.length >= 30) {
+      e.preventDefault();
+      return;
+    }
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  const handlePredialPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "");
+    const current = formData.predial;
+    const combined = (current + pasted).slice(0, 30);
+    setFormData((prev) => ({ ...prev, predial: combined }));
+  };
+
   useEffect(() => {
     async function loadReceivers() {
       try {
@@ -186,6 +206,8 @@ export default function RegistroPlanoPage() {
                 minLength={30}
                 value={formData.predial}
                 onChange={handleChange}
+                onKeyDown={handlePredialKeyDown}
+                onPaste={handlePredialPaste}
                 className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors font-mono tracking-wider bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 ${
                   formData.predial.length > 0 && formData.predial.length < 30
                     ? "border-amber-400 dark:border-amber-500"
