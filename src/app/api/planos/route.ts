@@ -13,29 +13,32 @@ export async function POST(req: NextRequest) {
 
     const data = await req.json();
 
-    if (!data.predial || !/^\d{30}$/.test(data.predial)) {
-      return NextResponse.json({ error: "El número predial nacional debe tener exactamente 30 dígitos numéricos." }, { status: 400 });
+    // Solo los 4 campos obligatorios
+    if (!data.radicado || !data.mutacion || !data.formato || !data.receivedById) {
+      return NextResponse.json({ error: "Radicado, tipo de trámite, soporte físico y receptor son obligatorios." }, { status: 400 });
+    }
+
+    // Predial: si viene, solo dígitos máximo 30 (no obligatorio)
+    if (data.predial && !/^\d{1,30}$/.test(data.predial)) {
+      return NextResponse.json({ error: "El número predial solo puede contener dígitos (máximo 30)." }, { status: 400 });
     }
 
     // Crear el plano y registrar en el historial
     const result = await prisma.$transaction(async (tx) => {
-      if (data.receivedById) {
-        const receiverExists = await tx.receiver.findUnique({ where: { id: data.receivedById } });
-        if (!receiverExists) {
-          throw new Error("Receptor no válido");
-        }
-      }
+      const receiverExists = await tx.receiver.findUnique({ where: { id: data.receivedById } });
+      if (!receiverExists) throw new Error("Receptor no válido");
 
       const newPlan = await tx.plan.create({
         data: {
           radicado: data.radicado,
           mutacion: data.mutacion,
           formato: data.formato,
-          propietario: data.propietario,
-          predial: data.predial,
-          veredaBarrio: data.veredaBarrio,
-          profesionalResponsable: data.profesionalResponsable,
-          observaciones: data.observaciones,
+          propietario: data.propietario || null,
+          predial: data.predial || null,
+          veredaBarrio: data.veredaBarrio || null,
+          profesionalResponsable: data.profesionalResponsable || null,
+          observaciones: data.observaciones || null,
+          ubicacionFisica: data.ubicacionFisica || null,
           receivedById: data.receivedById,
           estado: "DISPONIBLE"
         }

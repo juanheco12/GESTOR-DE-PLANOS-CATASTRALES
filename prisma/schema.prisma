@@ -41,6 +41,7 @@ model Plan {
   veredaBarrio        String?
   profesionalResponsable String?
   observaciones       String?
+  ubicacionFisica     String?
   estado              PlanState   @default(DISPONIBLE)
   inconsistencias     String?     // Novedades o errores
   qrCode              String?     // Opcional para escanear

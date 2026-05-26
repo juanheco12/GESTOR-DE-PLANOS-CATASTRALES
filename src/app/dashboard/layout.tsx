@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import InactivityLogout from "@/components/InactivityLogout";
 
 export default function DashboardLayout({
   children,
@@ -44,6 +45,7 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex">
+      <InactivityLogout />
       {/* Sidebar Mobile Overlay */}
       {sidebarOpen && (
         <div
