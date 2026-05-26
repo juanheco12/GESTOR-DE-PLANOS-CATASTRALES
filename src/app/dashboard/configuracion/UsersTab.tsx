@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck } from "lucide-react";
+import { UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck, KeyRound } from "lucide-react";
 
 const ROLE_OPTIONS = [
   { value: "ADMINISTRADOR", label: "Administrador" },
@@ -25,6 +25,9 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
   const [formData, setFormData] = useState({ name: "", email: "", password: "", role: "EJECUTOR" });
   const [createError, setCreateError] = useState("");
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
+  const [changingPwdFor, setChangingPwdFor] = useState<string | null>(null);
+  const [newPwd, setNewPwd] = useState("");
+  const [pwdError, setPwdError] = useState("");
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +72,32 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
       setUsers(users.map((u) => (u.id === userId ? { ...u, isActive: !currentStatus } : u)));
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleChangePassword = async (userId: string) => {
+    if (!newPwd || newPwd.length < 6) {
+      setPwdError("Mínimo 6 caracteres");
+      return;
+    }
+    setLoadingAction(`PWD_${userId}`);
+    setPwdError("");
+    try {
+      const res = await fetch(`/api/usuarios/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newPassword: newPwd }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error al cambiar contraseña");
+      }
+      setChangingPwdFor(null);
+      setNewPwd("");
+    } catch (err: any) {
+      setPwdError(err.message);
     } finally {
       setLoadingAction(null);
     }
@@ -218,24 +247,53 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-3">
-                      <button
-                        onClick={() => handleToggleBlock(user.id, user.isActive)}
-                        disabled={loadingAction === `TOGGLE_${user.id}`}
-                        className={`text-sm font-medium hover:underline disabled:opacity-50 ${user.isActive ? "text-amber-600 dark:text-amber-500" : "text-emerald-600 dark:text-emerald-500"}`}
-                      >
-                        {user.isActive ? "Bloquear" : "Desbloquear"}
-                      </button>
-                      <span className="text-slate-300 dark:text-slate-700">|</span>
-                      <button
-                        onClick={() => handleDelete(user.id)}
-                        disabled={loadingAction === `DELETE_${user.id}`}
-                        className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-500 hover:underline disabled:opacity-50 inline-flex items-center gap-1"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                        Eliminar
-                      </button>
+                  <td className="px-6 py-4">
+                    <div className="flex flex-col gap-2 items-end">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => { setChangingPwdFor(changingPwdFor === user.id ? null : user.id); setNewPwd(""); setPwdError(""); }}
+                          className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+                        >
+                          <KeyRound className="h-3.5 w-3.5" />
+                          Clave
+                        </button>
+                        <span className="text-slate-300 dark:text-slate-700">|</span>
+                        <button
+                          onClick={() => handleToggleBlock(user.id, user.isActive)}
+                          disabled={loadingAction === `TOGGLE_${user.id}`}
+                          className={`text-sm font-medium hover:underline disabled:opacity-50 ${user.isActive ? "text-amber-600 dark:text-amber-500" : "text-emerald-600 dark:text-emerald-500"}`}
+                        >
+                          {user.isActive ? "Bloquear" : "Desbloquear"}
+                        </button>
+                        <span className="text-slate-300 dark:text-slate-700">|</span>
+                        <button
+                          onClick={() => handleDelete(user.id)}
+                          disabled={loadingAction === `DELETE_${user.id}`}
+                          className="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-500 hover:underline disabled:opacity-50 inline-flex items-center gap-1"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Eliminar
+                        </button>
+                      </div>
+                      {changingPwdFor === user.id && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <input
+                            type="password"
+                            placeholder="Nueva contraseña"
+                            value={newPwd}
+                            onChange={(e) => setNewPwd(e.target.value)}
+                            className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 w-40"
+                          />
+                          <button
+                            onClick={() => handleChangePassword(user.id)}
+                            disabled={loadingAction === `PWD_${user.id}`}
+                            className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded disabled:opacity-50"
+                          >
+                            {loadingAction === `PWD_${user.id}` ? "..." : "Guardar"}
+                          </button>
+                          {pwdError && <span className="text-xs text-red-500">{pwdError}</span>}
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>

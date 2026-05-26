@@ -30,18 +30,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       result = await prisma.$transaction(async (tx) => {
         const reqUpdated = await tx.request.update({
           where: { id },
-          data: { 
+          data: {
             estado: "LISTO_PARA_ENTREGA",
-            adminEntregaId: session.user.id
-          }
+            adminEntregaId: session.user.id,
+          },
         });
         await tx.history.create({
           data: {
-            planId: request.planId,
-            userId: session.user.id,
-            accion: "ENTREGA_AUTORIZADA",
-            detalles: "El administrador autorizó la entrega. Pendiente de firma."
-          }
+            planId:   request.planId,
+            userId:   session.user.id,
+            accion:   "ENTREGA_AUTORIZADA",
+            detalles: "El encargado autorizó la entrega. Pendiente de firma.",
+          },
+        });
+        // Quitar alertas de solicitud para este encargado
+        await tx.notification.updateMany({
+          where: { userId: session.user.id, planoId: request.planId, isRead: false },
+          data:  { isRead: true },
         });
         return reqUpdated;
       });
@@ -94,22 +99,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       result = await prisma.$transaction(async (tx) => {
         const reqUpdated = await tx.request.update({
           where: { id },
-          data: { 
-            estado: "DEVUELTO",
-            fechaDevolucion: new Date()
-          }
+          data: {
+            estado:         "DEVUELTO",
+            fechaDevolucion: new Date(),
+          },
         });
         await tx.plan.update({
           where: { id: request.planId },
-          data: { estado: "DISPONIBLE" }
+          data:  { estado: "DISPONIBLE" },
         });
         await tx.history.create({
           data: {
-            planId: request.planId,
-            userId: session.user.id,
-            accion: "PLANO_ARCHIVADO",
-            detalles: "El administrador recibió y archivó el plano devuelto."
-          }
+            planId:   request.planId,
+            userId:   session.user.id,
+            accion:   "PLANO_ARCHIVADO",
+            detalles: "El encargado recibió y archivó el plano devuelto.",
+          },
+        });
+        await tx.notification.updateMany({
+          where: { userId: session.user.id, planoId: request.planId, isRead: false },
+          data:  { isRead: true },
         });
         return reqUpdated;
       });

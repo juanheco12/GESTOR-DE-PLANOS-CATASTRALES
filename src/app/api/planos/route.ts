@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
         const mensaje = `${registrador?.name ?? "Radicadora"} registró el plano ${data.radicado} y fue entregado físicamente a ${receptor}.`;
 
         const destinatarios = await tx.user.findMany({
-          where: { role: { in: ["ADMINISTRADOR", "ENCARGADO"] }, isActive: true },
+          where: { role: "ENCARGADO", isActive: true },
           select: { id: true },
         });
 
