@@ -29,7 +29,12 @@ export default function FilterPanel() {
   );
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFilters({ ...filters, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "predial") {
+      setFilters({ ...filters, predial: value.replace(/\D/g, "").slice(0, 30) });
+      return;
+    }
+    setFilters({ ...filters, [name]: value });
   };
 
   const handleSearch = (e: React.FormEvent) => {
@@ -100,7 +105,7 @@ export default function FilterPanel() {
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Número Predial</label>
-              <input type="text" name="predial" value={filters.predial} onChange={handleChange} className={inputClass} />
+              <input type="text" name="predial" inputMode="numeric" maxLength={30} value={filters.predial} onChange={handleChange} placeholder="30 dígitos" className={`${inputClass} font-mono`} />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Estado</label>

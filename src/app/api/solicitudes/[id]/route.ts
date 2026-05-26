@@ -114,6 +114,30 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         return reqUpdated;
       });
     }
+    else if (accion === 'FORZAR_DEVOLUCION' && isAdmin && request.estado === 'ENTREGADO') {
+      result = await prisma.$transaction(async (tx) => {
+        const reqUpdated = await tx.request.update({
+          where: { id },
+          data: {
+            estado: "DEVUELTO",
+            fechaDevolucion: new Date()
+          }
+        });
+        await tx.plan.update({
+          where: { id: request.planId },
+          data: { estado: "DISPONIBLE" }
+        });
+        await tx.history.create({
+          data: {
+            planId: request.planId,
+            userId: session.user.id,
+            accion: "DEVOLUCION",
+            detalles: "El administrador registró la devolución manual del plano (sin solicitud previa del ejecutor)."
+          }
+        });
+        return reqUpdated;
+      });
+    }
     else {
       return NextResponse.json({ error: "Acción no válida o sin permisos" }, { status: 400 });
     }

@@ -42,13 +42,46 @@ export default function EditForm({ plan }: { plan: any }) {
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    if (name === "predial") {
+      const onlyDigits = value.replace(/\D/g, "").slice(0, 30);
+      setFormData((prev) => ({ ...prev, predial: onlyDigits }));
+      return;
+    }
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handlePredialKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.ctrlKey || e.metaKey) return;
+    const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"];
+    if (allowed.includes(e.key)) return;
+    if (formData.predial.length >= 30) {
+      e.preventDefault();
+      return;
+    }
+    if (!/^\d$/.test(e.key)) {
+      e.preventDefault();
+    }
+  };
+
+  const handlePredialPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text").replace(/\D/g, "");
+    const current = formData.predial;
+    const combined = (current + pasted).slice(0, 30);
+    setFormData((prev) => ({ ...prev, predial: combined }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+
+    if (formData.predial.length !== 30) {
+      setError("El número predial nacional debe tener exactamente 30 dígitos.");
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch(`/api/planos/${plan.id}`, {
@@ -97,8 +130,47 @@ export default function EditForm({ plan }: { plan: any }) {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Número Predial *</label>
-          <input required type="text" name="predial" value={formData.predial} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100" />
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Número Predial Nacional *</label>
+          <input
+            required
+            type="text"
+            name="predial"
+            inputMode="numeric"
+            maxLength={30}
+            minLength={30}
+            value={formData.predial}
+            onChange={handleChange}
+            onKeyDown={handlePredialKeyDown}
+            onPaste={handlePredialPaste}
+            className={`w-full px-4 py-2.5 rounded-xl border font-mono tracking-wider bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 ${
+              formData.predial.length > 0 && formData.predial.length < 30
+                ? "border-amber-400 dark:border-amber-500"
+                : formData.predial.length === 30
+                ? "border-emerald-500 dark:border-emerald-500"
+                : "border-slate-300 dark:border-slate-700"
+            }`}
+            placeholder="000000000000000000000000000000"
+          />
+          <div className="mt-1.5 flex items-center justify-between">
+            <p className={`text-xs ${
+              formData.predial.length > 0 && formData.predial.length < 30
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-slate-400 dark:text-slate-500"
+            }`}>
+              {formData.predial.length > 0 && formData.predial.length < 30
+                ? `Faltan ${30 - formData.predial.length} dígitos`
+                : "Exactamente 30 dígitos numéricos"}
+            </p>
+            <span className={`text-xs font-bold tabular-nums ${
+              formData.predial.length === 30
+                ? "text-emerald-600 dark:text-emerald-400"
+                : formData.predial.length > 0
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-slate-400 dark:text-slate-500"
+            }`}>
+              {formData.predial.length}/30
+            </span>
+          </div>
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Propietario *</label>

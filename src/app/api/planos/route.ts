@@ -13,6 +13,10 @@ export async function POST(req: NextRequest) {
 
     const data = await req.json();
 
+    if (!data.predial || !/^\d{30}$/.test(data.predial)) {
+      return NextResponse.json({ error: "El número predial nacional debe tener exactamente 30 dígitos numéricos." }, { status: 400 });
+    }
+
     // Crear el plano y registrar en el historial
     const result = await prisma.$transaction(async (tx) => {
       if (data.receivedById) {

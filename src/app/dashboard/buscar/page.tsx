@@ -114,44 +114,48 @@ export default async function BuscarPlanoPage({
         </div>
 
         <div className="flex-1 overflow-auto">
-          <table className="w-full text-left text-sm whitespace-nowrap">
+          <table className="w-full text-left text-sm">
             <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-10 text-slate-500 dark:text-slate-400 font-medium">
               <tr>
-                <th className="px-6 py-3 font-medium">Radicado</th>
-                <th className="px-6 py-3 font-medium">Número Predial</th>
-                <th className="px-6 py-3 font-medium">Propietario</th>
-                <th className="px-6 py-3 font-medium">Trámite</th>
-                <th className="px-6 py-3 font-medium">Formato</th>
-                <th className="px-6 py-3 font-medium">Fecha Ingreso</th>
-                <th className="px-6 py-3 font-medium">Estado</th>
-                <th className="px-6 py-3 font-medium text-right">Acciones</th>
+                <th className="px-4 py-3 font-medium">Radicado</th>
+                <th className="px-4 py-3 font-medium">Número Predial</th>
+                <th className="px-4 py-3 font-medium">Propietario</th>
+                <th className="px-4 py-3 font-medium">Trámite</th>
+                <th className="px-4 py-3 font-medium">Formato</th>
+                <th className="px-4 py-3 font-medium">Fecha</th>
+                <th className="px-4 py-3 font-medium">Estado</th>
+                <th className="px-4 py-3 font-medium text-center">Detalle</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
               {planos.length > 0 ? (
                 planos.map((plano) => (
                   <tr key={plano.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                    <td className="px-6 py-4 font-medium text-slate-900 dark:text-slate-100">{plano.radicado}</td>
-                    <td className="px-6 py-4">{plano.predial}</td>
-                    <td className="px-6 py-4 truncate max-w-xs">{plano.propietario}</td>
-                    <td className="px-6 py-4">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300">
+                    <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">{plano.radicado}</td>
+                    <td className="px-4 py-3 font-mono text-xs max-w-[160px]">
+                      <span title={plano.predial} className="block truncate">
+                        {plano.predial}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 max-w-[150px] truncate">{plano.propietario}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300">
                         {plano.mutacion}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400">{plano.formato}</td>
-                    <td className="px-6 py-4 text-xs text-slate-500 dark:text-slate-400">
+                    <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">{plano.formato}</td>
+                    <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                       {new Date(plano.fechaIngreso).toLocaleDateString("es-CO")}
                     </td>
-                    <td className="px-6 py-4">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${ESTADO_COLORS[plano.estado] ?? "bg-slate-100 text-slate-800"}`}>
                         {ESTADO_LABELS[plano.estado] ?? plano.estado}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
                       <Link
                         href={`/dashboard/buscar/${plano.id}`}
-                        className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium text-sm"
+                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 font-medium text-xs transition-colors border border-blue-200 dark:border-blue-800"
                       >
                         Ver detalle
                       </Link>
