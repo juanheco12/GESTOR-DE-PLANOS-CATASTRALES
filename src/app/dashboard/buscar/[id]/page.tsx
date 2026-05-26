@@ -76,8 +76,8 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
             <SolicitarPlanoBoton planId={plano.id} radicado={plano.radicado} />
           )}
 
-          {/* ── ADMIN / ENCARGADO: gestionar solicitud activa si el plano está PRESTADO ── */}
-          {(isAdministrador || isEncargado) && plano.estado === "PRESTADO" && solicitudActiva && (
+          {/* ── ADMIN / ENCARGADO: gestionar solicitud activa cuando el plano NO está DISPONIBLE ── */}
+          {(isAdministrador || isEncargado) && plano.estado !== "DISPONIBLE" && solicitudActiva && (
             <Link
               href={`/dashboard/entregados/gestionar/${solicitudActiva.id}`}
               className="inline-flex items-center px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg font-medium text-sm transition-colors shadow-sm"
