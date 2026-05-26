@@ -121,12 +121,10 @@ export default function FilterPanel() {
               <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Formato</label>
               <select name="formato" value={filters.formato} onChange={handleChange} className={inputClass}>
                 <option value="">Todos</option>
-                <option value="FISICO">Físico</option>
-                <option value="DIGITAL">Digital</option>
-                <option value="PDF">PDF</option>
-                <option value="DWG">DWG</option>
-                <option value="IMAGEN">Imagen</option>
-                <option value="OTRO">Otro</option>
+                <option value="FISICO">Físico (Plano impreso)</option>
+                <option value="CD">CD</option>
+                <option value="USB">USB</option>
+                <option value="OTRO">Otro Formato</option>
               </select>
             </div>
             <div>

@@ -65,23 +65,27 @@ export async function GET(req: NextRequest) {
 
     const planos = await prisma.plan.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { radicado: "asc" },
       take: 5000,
       include: { receivedBy: { select: { name: true } } },
     });
 
+    const COL = "America/Bogota";
+    const fmt = (d: Date | null | undefined) =>
+      d ? new Date(d).toLocaleString("es-CO", { timeZone: COL, dateStyle: "short", timeStyle: "short" }) : "";
+
     const headers = [
       "Radicado",
       "Mutación / Trámite",
-      "Formato",
+      "Soporte Físico",
       "Propietario",
       "Número Predial",
       "Vereda / Barrio",
       "Profesional Responsable",
+      "Ubicación Física en Oficina",
       "Estado",
       "Recibido por",
       "Observaciones",
-      "Inconsistencias",
       "Fecha Ingreso",
       "Última actualización",
     ];
@@ -90,25 +94,27 @@ export async function GET(req: NextRequest) {
       p.radicado,
       p.mutacion,
       p.formato,
-      p.propietario,
-      p.predial,
+      p.propietario ?? "",
+      p.predial ?? "",
       p.veredaBarrio ?? "",
       p.profesionalResponsable ?? "",
+      (p as any).ubicacionFisica ?? "",
       ESTADO_LABELS[p.estado] ?? p.estado,
       p.receivedBy?.name ?? "",
       p.observaciones ?? "",
-      p.inconsistencias ?? "",
-      new Date(p.fechaIngreso).toLocaleDateString("es-CO"),
-      new Date(p.updatedAt).toLocaleDateString("es-CO"),
+      fmt(p.fechaIngreso),
+      fmt(p.updatedAt),
     ]);
 
+    // sep=, tells Excel which delimiter to use (works in all locales)
     const csv = [
+      "sep=,",
       headers.map(escapeCSV).join(","),
       ...rows.map((r) => r.map(escapeCSV).join(",")),
     ].join("\r\n");
 
-    const fecha = new Date().toISOString().slice(0, 10);
-    const filename = `planos-catastrales-${fecha}.csv`;
+    const fecha = new Date().toLocaleString("es-CO", { timeZone: COL }).slice(0, 10).replace(/\//g, "-");
+    const filename = `planos-catastrales-${new Date().toISOString().slice(0, 10)}.csv`;
 
     return new NextResponse("﻿" + csv, {
       status: 200,

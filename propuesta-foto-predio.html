@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Propuesta: Foto del Predio</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; padding: 32px; }
+  h2 { font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 16px; }
+  .card { background: #1e293b; border: 1px solid #334155; border-radius: 16px; overflow: hidden; max-width: 860px; margin: 0 auto 32px; }
+  .card-header { padding: 18px 24px; border-bottom: 1px solid #334155; }
+  .card-header h3 { font-size: 17px; font-weight: 600; }
+  .card-body { padding: 24px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .field dt { font-size: 13px; color: #94a3b8; margin-bottom: 4px; display: flex; align-items: center; gap: 6px; }
+  .field dd { font-size: 15px; color: #f1f5f9; }
+  .field dd.mono { font-family: monospace; font-size: 13px; word-break: break-all; }
+  .divider { border-top: 1px solid #334155; margin: 20px 0; }
+
+  /* ── OPCIÓN A: Panel lateral derecho ── */
+  .option-a .layout { display: grid; grid-template-columns: 1fr 300px; gap: 24px; max-width: 860px; margin: 0 auto 40px; }
+  .option-a .side-panel { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 20px; }
+  .option-a .side-panel h4 { font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing:.06em; margin-bottom: 12px; }
+  .photo-box { background: #0f172a; border: 2px dashed #475569; border-radius: 12px; height: 200px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+  .photo-box:hover { border-color: #3b82f6; }
+  .photo-box svg { opacity: .4; }
+  .photo-box p { font-size: 13px; color: #64748b; text-align: center; padding: 0 16px; }
+  .photo-preview { background: #0f172a; border-radius: 12px; height: 200px; overflow: hidden; position: relative; }
+  .photo-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .photo-preview .badge { position: absolute; top: 8px; right: 8px; background: #22c55e; color: #fff; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+  .btn-upload { margin-top: 10px; width: 100%; padding: 8px; background: #1d4ed8; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; }
+
+  /* ── OPCIÓN B: Dentro de la ficha principal ── */
+  .option-b { max-width: 860px; margin: 0 auto 40px; }
+  .foto-inline { margin-top: 20px; padding-top: 20px; border-top: 1px solid #334155; }
+  .foto-inline h4 { font-size: 13px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing:.06em; margin-bottom: 12px; }
+  .foto-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .foto-thumb { background: #0f172a; border: 1px solid #334155; border-radius: 10px; aspect-ratio: 4/3; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: #64748b; cursor: pointer; }
+  .foto-thumb:hover { border-color: #3b82f6; color: #93c5fd; }
+  .foto-thumb.has-photo { border-color: #334155; overflow: hidden; }
+  .foto-thumb.has-photo img { width: 100%; height: 100%; object-fit: cover; }
+  .tag { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; }
+  .tag.recommended { background: #1d4ed8; color: #bfdbfe; }
+
+  /* ── OPCIÓN C: Modal / lightbox ── */
+  .option-c { max-width: 860px; margin: 0 auto 40px; }
+  .btn-photo { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; background: #1e293b; border: 1px solid #475569; border-radius: 8px; font-size: 13px; color: #94a3b8; cursor: pointer; }
+  .btn-photo:hover { border-color: #3b82f6; color: #60a5fa; }
+
+  .label-section { font-size: 13px; font-weight: 700; color: #3b82f6; margin-bottom: 12px; margin-top: 32px; }
+</style>
+</head>
+<body>
+
+<div style="max-width:860px;margin:0 auto">
+  <p style="font-size:22px;font-weight:700;color:#f1f5f9;margin-bottom:4px">Propuesta: Foto del Predio</p>
+  <p style="font-size:14px;color:#64748b;margin-bottom:32px">3 opciones de dónde ubicar la foto del predio en la ficha del plano. Solo se implementa la que elijas.</p>
+
+  <!-- ======== OPCIÓN A ======== -->
+  <p class="label-section">OPCIÓN A — Panel lateral derecho (recomendada) <span class="tag recommended">Recomendada</span></p>
+  <p style="font-size:13px;color:#94a3b8;margin-bottom:16px">La foto aparece en un panel a la derecha de la ficha de detalles. No desplaza el contenido existente y queda siempre visible.</p>
+  <div class="option-a">
+    <div class="layout">
+      <!-- Ficha izquierda -->
+      <div class="card">
+        <div class="card-header"><h3>Detalles del Trámite</h3></div>
+        <div class="card-body">
+          <div class="grid">
+            <div class="field"><dt>📄 Trámite</dt><dd>Mutación de Segunda</dd></div>
+            <div class="field"><dt>🗺 Número Predial</dt><dd class="mono">230010102000000586002100000000</dd></div>
+            <div class="field"><dt>👤 Propietario</dt><dd>Vanessa Torres</dd></div>
+            <div class="field"><dt>📦 Soporte</dt><dd>Físico (Plano impreso)</dd></div>
+            <div class="field"><dt>📍 Ubicación</dt><dd>Archivador 2 – Gaveta 3</dd></div>
+            <div class="field"><dt>👤 Recibido por</dt><dd>William</dd></div>
+          </div>
+        </div>
+      </div>
+      <!-- Panel lateral foto -->
+      <div class="side-panel">
+        <h4>📷 Foto del Predio</h4>
+        <div class="photo-preview">
+          <div style="width:100%;height:100%;background:linear-gradient(135deg,#1e3a5f,#0f2a45);display:flex;align-items:center;justify-content:center;font-size:48px;">🏠</div>
+          <span class="badge">✓ 1 foto</span>
+        </div>
+        <button class="btn-upload">+ Agregar otra foto</button>
+        <p style="font-size:11px;color:#475569;margin-top:8px;text-align:center">Formatos: JPG, PNG — Máx. 5MB</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== OPCIÓN B ======== -->
+  <p class="label-section">OPCIÓN B — Galería dentro de la ficha</p>
+  <p style="font-size:13px;color:#94a3b8;margin-bottom:16px">Sección de fotos integrada al final de la ficha de detalles. Permite subir hasta 3 fotos (fachada, plano, referencia).</p>
+  <div class="option-b">
+    <div class="card">
+      <div class="card-header"><h3>Detalles del Trámite</h3></div>
+      <div class="card-body">
+        <div class="grid">
+          <div class="field"><dt>📄 Trámite</dt><dd>Mutación de Segunda</dd></div>
+          <div class="field"><dt>👤 Propietario</dt><dd>Vanessa Torres</dd></div>
+        </div>
+        <div class="divider"></div>
+        <div class="foto-inline">
+          <h4>📷 Fotos del Predio</h4>
+          <div class="foto-grid">
+            <div class="foto-thumb has-photo">
+              <div style="width:100%;height:100%;background:linear-gradient(135deg,#1e3a5f,#0f2a45);display:flex;align-items:center;justify-content:center;font-size:40px;">🏠</div>
+            </div>
+            <div class="foto-thumb">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+              <span>Agregar foto</span>
+            </div>
+            <div class="foto-thumb">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+              <span>Agregar foto</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======== OPCIÓN C ======== -->
+  <p class="label-section">OPCIÓN C — Botón que abre visor (más simple)</p>
+  <p style="font-size:13px;color:#94a3b8;margin-bottom:16px">Un botón pequeño en la cabecera. Al hacer clic abre un modal con la foto. Ocupa menos espacio.</p>
+  <div class="option-c">
+    <div class="card">
+      <div style="padding:18px 24px;border-bottom:1px solid #334155;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <p style="font-size:18px;font-weight:700">Plano 2026-4550</p>
+          <p style="font-size:13px;color:#94a3b8;margin-top:4px">Estado: Disponible · Registrado 26/5/2026</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn-photo">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            Ver foto del predio
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="grid">
+          <div class="field"><dt>📄 Trámite</dt><dd>Mutación de Segunda</dd></div>
+          <div class="field"><dt>👤 Propietario</dt><dd>Vanessa Torres</dd></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;max-width:860px;margin:0 auto">
+    <p style="font-size:14px;font-weight:600;color:#f1f5f9;margin-bottom:8px">Recomendación</p>
+    <p style="font-size:13px;color:#94a3b8;line-height:1.6">
+      La <strong style="color:#60a5fa">Opción A (panel lateral)</strong> es la mejor porque no rompe el diseño existente, la foto está siempre visible al ver el detalle, y hay espacio para agregar más fotos si se necesita. Dime cuál prefieres y la implemento.
+    </p>
+  </div>
+</div>
+
+</body>
+</html>
