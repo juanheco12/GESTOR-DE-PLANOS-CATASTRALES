@@ -13,6 +13,11 @@ export async function POST(req: NextRequest) {
 
     const { planId, observaciones } = await req.json();
 
+    // Solo EJECUTOR puede crear solicitudes de planos
+    if (session.user.role !== "EJECUTOR") {
+      return NextResponse.json({ error: "Solo los ejecutores pueden solicitar planos." }, { status: 403 });
+    }
+
     if (!planId) {
       return NextResponse.json({ error: "ID del plano es requerido" }, { status: 400 });
     }

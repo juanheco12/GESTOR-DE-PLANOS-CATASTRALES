@@ -64,10 +64,12 @@ export default async function DetallePlanoPage({ params }: { params: { id: strin
         </div>
 
         <div className="flex gap-2 items-center">
-          {plano.estado === 'DISPONIBLE' && isEjecutor && (
+          {/* Solo EJECUTOR puede solicitar planos */}
+          {plano.estado === 'DISPONIBLE' && session?.user?.role === "EJECUTOR" && (
             <SolicitarPlanoBoton planId={plano.id} radicado={plano.radicado} />
           )}
-          {isAdministrador && (
+          {/* Solo ADMINISTRADOR puede editar/eliminar */}
+          {session?.user?.role === "ADMINISTRADOR" && (
             <AdminActions planId={plano.id} />
           )}
         </div>
