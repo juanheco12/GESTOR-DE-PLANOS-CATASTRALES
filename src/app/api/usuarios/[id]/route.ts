@@ -7,7 +7,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try {
     const resolvedParams = await params;
     const session = await getServerSession(authOptions);
-    if (session?.user?.role !== "ADMINISTRADOR") {
+    if (session?.user?.role !== "SUPERADMIN") {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
@@ -30,7 +30,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   try {
     const resolvedParams = await params;
     const session = await getServerSession(authOptions);
-    if (session?.user?.role !== "ADMINISTRADOR") {
+    if (session?.user?.role !== "SUPERADMIN") {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 

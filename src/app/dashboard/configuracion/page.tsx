@@ -7,11 +7,11 @@ import ConfigTabs from "./ConfigTabs";
 export default async function ConfiguracionPage() {
   const session = await getServerSession(authOptions);
 
-  if (session?.user?.role !== "ADMINISTRADOR") {
+  if (session?.user?.role !== "SUPERADMIN") {
     redirect("/dashboard");
   }
 
-  // Fetch all users except the current admin
+  // Fetch all users except the current superadmin
   const users = await prisma.user.findMany({
     where: {
       id: { not: session.user.id }
@@ -41,7 +41,7 @@ export default async function ConfiguracionPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Configuración del Sistema</h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1">
-          Gestiona las cuentas de ejecutores, los receptores de planos y la seguridad de tu perfil.
+          Gestiona todos los usuarios del sistema, receptores de planos y la seguridad de tu perfil.
         </p>
       </div>
 

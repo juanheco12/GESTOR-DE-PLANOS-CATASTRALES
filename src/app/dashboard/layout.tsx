@@ -12,7 +12,8 @@ import {
   X,
   FileCheck2,
   Settings,
-  FilePlus2
+  FilePlus2,
+  ShieldCheck
 } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -26,8 +27,9 @@ export default function DashboardLayout({
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const isEjecutor = session?.user?.role === "EJECUTOR";
-  const isAdministrador = session?.user?.role === "ADMINISTRADOR";
+  const role = session?.user?.role;
+  const isEjecutor = role === "EJECUTOR";
+  const isSuperAdmin = role === "SUPERADMIN";
 
   const navigation = [
     { name: "Inicio", href: "/dashboard", icon: LayoutDashboard },
@@ -38,7 +40,7 @@ export default function DashboardLayout({
           { name: "Registrar plano", href: "/dashboard/registro", icon: FilePlus2 },
           { name: "Planos entregados", href: "/dashboard/entregados", icon: FileCheck2 },
         ]),
-    ...(isAdministrador ? [{ name: "Configuración", href: "/dashboard/configuracion", icon: Settings }] : []),
+    ...(isSuperAdmin ? [{ name: "Configuración", href: "/dashboard/configuracion", icon: Settings }] : []),
   ];
 
   return (
@@ -99,8 +101,13 @@ export default function DashboardLayout({
               <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate leading-tight">
                 {session?.user?.name || 'Usuario'}
               </p>
-              <span className="inline-block text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-1.5 py-0.5 rounded-md leading-tight mt-0.5">
-                {session?.user?.role}
+              <span className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-md leading-tight mt-0.5 ${
+                isSuperAdmin
+                  ? "text-purple-700 dark:text-purple-300 bg-purple-100 dark:bg-purple-900/40"
+                  : "text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40"
+              }`}>
+                {isSuperAdmin && <ShieldCheck className="h-3 w-3" />}
+                {isSuperAdmin ? "Super Admin" : role}
               </span>
             </div>
           </div>
