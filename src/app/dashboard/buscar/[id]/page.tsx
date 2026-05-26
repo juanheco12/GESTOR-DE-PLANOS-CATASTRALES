@@ -15,7 +15,8 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
   const plano = await prisma.plan.findUnique({
     where: { id },
     include: {
-      receivedBy: true,
+      receivedBy:    true,
+      registradoPor: { select: { name: true } },
       history: {
         include: { user: true },
         orderBy: { createdAt: "asc" },
@@ -32,8 +33,9 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
 
   const role = session?.user?.role;
   const isAdministrador = role === "ADMINISTRADOR";
-  const isEncargado = role === "ENCARGADO";
-  const isEjecutor = role === "EJECUTOR";
+  const isEncargado     = role === "ENCARGADO";
+  const isEjecutor      = role === "EJECUTOR";
+  const isRadicadora    = role === "RADICADORA";
 
   // Solicitud activa (para mostrar firma o gestionar devolución)
   const solicitudConFirma = plano.requests.find((r) => r.firma !== null);
@@ -141,6 +143,17 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                     {plano.receivedBy?.name || "No especificado"}
                   </dd>
                 </div>
+                {plano.registradoPor && (
+                  <div>
+                    <dt className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center">
+                      <User className="mr-2 h-4 w-4" /> Registrado por
+                    </dt>
+                    <dd className="mt-1 text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      {plano.registradoPor.name}
+                      <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">Radicadora</span>
+                    </dd>
+                  </div>
+                )}
                 <div>
                   <dt className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center">
                     <FileType className="mr-2 h-4 w-4" /> Soporte Físico

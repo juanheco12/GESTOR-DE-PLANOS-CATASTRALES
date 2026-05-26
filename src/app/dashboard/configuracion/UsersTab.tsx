@@ -6,14 +6,16 @@ import { UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck } from "lucide-react";
 
 const ROLE_OPTIONS = [
   { value: "ADMINISTRADOR", label: "Administrador" },
-  { value: "ENCARGADO", label: "Encargado" },
-  { value: "EJECUTOR", label: "Ejecutor" },
+  { value: "ENCARGADO",     label: "Encargado" },
+  { value: "EJECUTOR",      label: "Ejecutor" },
+  { value: "RADICADORA",    label: "Radicadora Segunda" },
 ];
 
 const ROLE_COLORS: Record<string, string> = {
   ADMINISTRADOR: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
-  ENCARGADO: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
-  EJECUTOR: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  ENCARGADO:     "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  EJECUTOR:      "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  RADICADORA:    "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
 };
 
 export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
