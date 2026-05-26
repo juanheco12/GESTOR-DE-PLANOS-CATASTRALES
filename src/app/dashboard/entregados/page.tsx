@@ -7,8 +7,8 @@ export default async function PlanosEntregadosPage() {
   const session = await getServerSession(authOptions);
 
   const solicitudesActivas = await prisma.request.findMany({
-    where: { estado: { in: ["ENTREGADO", "DEVOLUCION_SOLICITADA"] } },
-    orderBy: { fechaEntrega: "desc" },
+    where: { estado: { in: ["LISTO_PARA_ENTREGA", "ENTREGADO", "DEVOLUCION_SOLICITADA"] } },
+    orderBy: { fechaSolicitud: "desc" },
     include: {
       plan: true,
       user: true,
@@ -16,10 +16,12 @@ export default async function PlanosEntregadosPage() {
   });
 
   const ESTADO_LABELS: Record<string, string> = {
+    LISTO_PARA_ENTREGA: "Pendiente de firma",
     ENTREGADO: "Entregado",
     DEVOLUCION_SOLICITADA: "Devolución solicitada",
   };
   const ESTADO_COLORS: Record<string, string> = {
+    LISTO_PARA_ENTREGA: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
     ENTREGADO: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
     DEVOLUCION_SOLICITADA: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
   };
