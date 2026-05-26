@@ -32,6 +32,7 @@ export default async function DetallePlanoPage({ params }: { params: { id: strin
   });
 
   const isAdministrador = session?.user?.role === "ADMINISTRADOR";
+  const isEjecutor = session?.user?.role === "EJECUTOR";
   const ultimaFirma = plano?.requests[0];
 
   if (!plano) {
@@ -63,7 +64,7 @@ export default async function DetallePlanoPage({ params }: { params: { id: strin
         </div>
 
         <div className="flex gap-2 items-center">
-          {plano.estado === 'DISPONIBLE' && (
+          {plano.estado === 'DISPONIBLE' && isEjecutor && (
             <SolicitarPlanoBoton planId={plano.id} radicado={plano.radicado} />
           )}
           {isAdministrador && (

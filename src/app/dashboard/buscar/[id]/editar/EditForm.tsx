@@ -52,6 +52,7 @@ export default function EditForm({ plan }: { plan: any }) {
   };
 
   const handlePredialKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.ctrlKey || e.metaKey) return;
     const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"];
     if (allowed.includes(e.key)) return;
     if (formData.predial.length >= 30) {

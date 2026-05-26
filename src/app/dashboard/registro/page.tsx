@@ -37,12 +37,16 @@ export default function RegistroPlanoPage() {
   };
 
   const handlePredialKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Permitir teclas de control y navegación siempre
+    if (e.ctrlKey || e.metaKey) return;
     const allowed = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"];
     if (allowed.includes(e.key)) return;
+    // Bloquear si ya hay 30 dígitos
     if (formData.predial.length >= 30) {
       e.preventDefault();
       return;
     }
+    // Solo permitir dígitos
     if (!/^\d$/.test(e.key)) {
       e.preventDefault();
     }
