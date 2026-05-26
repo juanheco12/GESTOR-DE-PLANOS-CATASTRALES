@@ -54,16 +54,17 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Notificar a todos los ENCARGADO
-      const encargados = await tx.user.findMany({
-        where: { role: "ENCARGADO", isActive: true },
+      // ENCARGADO recibe alerta para gestionar la solicitud
+      // ADMINISTRADOR recibe todo para tener visibilidad completa
+      const destinatarios = await tx.user.findMany({
+        where: { role: { in: ["ENCARGADO", "ADMINISTRADOR"] }, isActive: true },
         select: { id: true },
       });
 
-      if (encargados.length > 0) {
+      if (destinatarios.length > 0) {
         const mensaje = `${session.user.name ?? "Un ejecutor"} solicitó el plano ${plan.radicado}. Requiere autorización.`;
         await tx.notification.createMany({
-          data: encargados.map((u) => ({
+          data: destinatarios.map((u) => ({
             message: mensaje,
             userId:  u.id,
             planoId: planId,

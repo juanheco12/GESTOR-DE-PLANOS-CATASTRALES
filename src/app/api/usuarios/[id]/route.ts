@@ -25,6 +25,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         data:  { password: hashed },
         select: { id: true, name: true, email: true },
       });
+
+      // Notificar a todos los ADMINISTRADOR del cambio
+      const admins = await prisma.user.findMany({
+        where: { role: "ADMINISTRADOR", isActive: true },
+        select: { id: true },
+      });
+      if (admins.length > 0) {
+        await prisma.notification.createMany({
+          data: admins.map((u) => ({
+            message: `La contraseña de ${updated.name ?? updated.email} fue actualizada por el administrador.`,
+            userId:  u.id,
+          })),
+        });
+      }
+
       return NextResponse.json(updated, { status: 200 });
     }
 

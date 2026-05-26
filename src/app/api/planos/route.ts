@@ -53,7 +53,8 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Notificar a todos los ADMINISTRADOR y ENCARGADO si quien registra es RADICADORA
+      // Notificar si quien registra es RADICADORA → ENCARGADO recibe alerta
+      // ADMINISTRADOR recibe siempre todos los movimientos
       if (session.user.role === "RADICADORA") {
         const registrador = await tx.user.findUnique({
           where: { id: session.user.id },
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
         const mensaje = `${registrador?.name ?? "Radicadora"} registró el plano ${data.radicado} y fue entregado físicamente a ${receptor}.`;
 
         const destinatarios = await tx.user.findMany({
-          where: { role: "ENCARGADO", isActive: true },
+          where: { role: { in: ["ENCARGADO", "ADMINISTRADOR"] }, isActive: true },
           select: { id: true },
         });
 
