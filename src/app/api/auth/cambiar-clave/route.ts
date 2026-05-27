@@ -31,7 +31,7 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "La contraseña actual es incorrecta" }, { status: 400 });
     }
 
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    const hashedNewPassword = await bcrypt.hash(newPassword, 8);
 
     await prisma.user.update({
       where: { id: session.user.id },

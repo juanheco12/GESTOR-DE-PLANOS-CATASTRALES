@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "El correo ya está en uso" }, { status: 400 });
     }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, 8);
 
     const newUser = await prisma.user.create({
       data: { name, email, password: hashedPassword, role, isActive: true },

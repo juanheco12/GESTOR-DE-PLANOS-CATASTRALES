@@ -19,7 +19,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (!body.newPassword || body.newPassword.length < 6) {
         return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres" }, { status: 400 });
       }
-      const hashed = await bcrypt.hash(body.newPassword, 10);
+      const hashed = await bcrypt.hash(body.newPassword, 8);
       const updated = await prisma.user.update({
         where: { id: resolvedParams.id },
         data:  { password: hashed },
