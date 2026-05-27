@@ -14,6 +14,7 @@ import {
   Settings,
   FilePlus2,
   ClipboardList,
+  History,
 } from "lucide-react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -47,6 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ? [
           { name: "Registrar plano",    href: "/dashboard/registro",   icon: FilePlus2 },
           { name: "Planos entregados",  href: "/dashboard/entregados", icon: FileCheck2 },
+          { name: "Historial",          href: "/dashboard/historial",  icon: History },
         ]
       : []),
     ...(isAdministrador
