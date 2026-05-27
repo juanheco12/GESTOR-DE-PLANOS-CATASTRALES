@@ -51,12 +51,6 @@ export default function RegistroPlanoPage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    if (name === "predial") {
-      // Solo dígitos, máximo 30
-      const clean = value.replace(/\D/g, "").slice(0, 30);
-      setFormData((p) => ({ ...p, predial: clean }));
-      return;
-    }
     setFormData((p) => ({ ...p, [name]: value }));
   };
 
@@ -188,19 +182,11 @@ export default function RegistroPlanoPage() {
               <input
                 type="text"
                 name="predial"
-                inputMode="numeric"
-                maxLength={30}
                 value={formData.predial}
                 onChange={handleChange}
-                className={`${inputClass} font-mono tracking-wider`}
-                placeholder="000000000000000000000000000000"
+                className={`${inputClass} font-mono`}
+                placeholder="Pega o escribe el número predial"
               />
-              <div className="mt-1 flex justify-between">
-                <span className="text-xs text-slate-400 dark:text-slate-500">Máximo 30 dígitos</span>
-                <span className={`text-xs font-mono ${formData.predial.length === 30 ? "text-emerald-600" : "text-slate-400"}`}>
-                  {formData.predial.length}/30
-                </span>
-              </div>
             </div>
 
             {/* Propietario */}

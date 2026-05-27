@@ -19,11 +19,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Radicado, tipo de trámite, soporte físico y receptor son obligatorios." }, { status: 400 });
     }
 
-    if (data.predial && !/^\d{1,30}$/.test(data.predial)) {
-      return NextResponse.json({ error: "El número predial solo puede contener dígitos (máximo 30)." }, { status: 400 });
-    }
-
-    const result = await prisma.$transaction(async (tx) => {
+const result = await prisma.$transaction(async (tx) => {
       const receiverExists = await tx.receiver.findUnique({ where: { id: data.receivedById } });
       if (!receiverExists) throw new Error("Receptor no válido");
 

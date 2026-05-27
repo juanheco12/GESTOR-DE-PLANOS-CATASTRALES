@@ -59,11 +59,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const id = resolvedParams.id;
     const newData = await req.json();
 
-    if (newData.predial && !/^\d{1,30}$/.test(newData.predial)) {
-      return NextResponse.json({ error: "El número predial solo puede contener dígitos (máximo 30)." }, { status: 400 });
-    }
-
-    const oldPlan = await prisma.plan.findUnique({ where: { id } });
+const oldPlan = await prisma.plan.findUnique({ where: { id } });
     if (!oldPlan) {
       return NextResponse.json({ error: "Plano no encontrado" }, { status: 404 });
     }

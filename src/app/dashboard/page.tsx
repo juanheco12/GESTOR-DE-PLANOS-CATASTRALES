@@ -178,7 +178,7 @@ export default async function DashboardPage() {
     solicitudesPendientes,
     devolucionesPendientes,
     ingresadosHoy,
-    actividadReciente,
+    actividadHoy,
     alertasSolicitudes,
     alertasDevoluciones,
   ] = await Promise.all([
@@ -191,10 +191,11 @@ export default async function DashboardPage() {
     prisma.request.count({ where: { estado: "DEVOLUCION_SOLICITADA" } }),
     prisma.plan.count({ where: { createdAt: { gte: hoy } } }),
     prisma.history.findMany({
+      where:   { createdAt: { gte: hoy } },
       orderBy: { createdAt: "desc" },
-      take: 8,
+      take:    50,
       include: {
-        plan: { select: { radicado: true } },
+        plan: { select: { radicado: true, id: true } },
         user: { select: { name: true, email: true } },
       },
     }),
@@ -303,33 +304,53 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Actividad reciente */}
-      {actividadReciente.length > 0 && (
-        <div>
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-3">Actividad reciente</h2>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+      {/* Actividad de hoy */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">
+            Actividad de hoy
+            {actividadHoy.length > 0 && (
+              <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                {actividadHoy.length}
+              </span>
+            )}
+          </h2>
+          <Link
+            href="/dashboard/buscar"
+            className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+          >
+            Ver todo el historial →
+          </Link>
+        </div>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+          {actividadHoy.length === 0 ? (
+            <p className="px-5 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+              Sin actividad registrada hoy. Los movimientos de días anteriores puedes consultarlos en{" "}
+              <Link href="/dashboard/buscar" className="text-blue-600 dark:text-blue-400 hover:underline">Buscar plano</Link>.
+            </p>
+          ) : (
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-              {actividadReciente.map((h) => (
+              {actividadHoy.map((h) => (
                 <li key={h.id} className="px-5 py-3 flex items-center gap-4">
                   <div className="w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-slate-800 dark:text-slate-200 truncate">
                       <span className="font-medium">{ACCION_LABELS[h.accion] ?? h.accion}</span>
                       {" — "}
-                      <Link href={`/dashboard/buscar/${h.planId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                      <Link href={`/dashboard/buscar/${h.plan.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
                         {h.plan.radicado}
                       </Link>
                     </p>
                     <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                      {h.user.name || h.user.email} · {new Date(h.createdAt).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" })}
+                      {h.user.name || h.user.email} · {new Date(h.createdAt).toLocaleString("es-CO", { timeZone: "America/Bogota", timeStyle: "short" })}
                     </p>
                   </div>
                 </li>
               ))}
             </ul>
-          </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -43,10 +43,6 @@ export default function EditForm({ plan }: { plan: any }) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    if (name === "predial") {
-      setFormData((p) => ({ ...p, predial: value.replace(/\D/g, "").slice(0, 30) }));
-      return;
-    }
     setFormData((p) => ({ ...p, [name]: value }));
   };
 
@@ -126,16 +122,10 @@ export default function EditForm({ plan }: { plan: any }) {
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Número Predial Nacional</label>
-          <input type="text" name="predial" inputMode="numeric" maxLength={30}
+          <input type="text" name="predial"
             value={formData.predial} onChange={handleChange}
-            className={`${inputClass} font-mono tracking-wider`}
-            placeholder="000000000000000000000000000000" />
-          <div className="mt-1 flex justify-between">
-            <span className="text-xs text-slate-400">Máximo 30 dígitos</span>
-            <span className={`text-xs font-mono ${formData.predial.length === 30 ? "text-emerald-600" : "text-slate-400"}`}>
-              {formData.predial.length}/30
-            </span>
-          </div>
+            className={`${inputClass} font-mono`}
+            placeholder="Pega o escribe el número predial" />
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Propietario</label>
