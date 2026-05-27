@@ -1,19 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { MapPin, Eye, EyeOff } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Pre-warm the NextAuth serverless function so the user doesn't hit a cold start on submit
+  useEffect(() => {
+    fetch("/api/auth/csrf").catch(() => {});
+  }, []);
 
   const getDestination = () => {
     const raw = searchParams.get("callbackUrl") ?? "";
@@ -35,8 +39,8 @@ export default function LoginForm() {
       setError(result.error);
       setLoading(false);
     } else {
-      router.refresh();
-      router.push(getDestination());
+      // Navigate immediately — don't wait for the dashboard to pre-load
+      window.location.href = getDestination();
     }
   };
 
