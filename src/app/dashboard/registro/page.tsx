@@ -26,7 +26,7 @@ export default function RegistroPlanoPage() {
   const [formData, setFormData] = useState({
     radicado: "",
     mutacion: "",
-    formato: "FISICO",
+    formato: "",
     propietario: "",
     predial: "",
     veredaBarrio: "",
@@ -145,6 +145,7 @@ export default function RegistroPlanoPage() {
                 Tipo de Soporte Físico <span className="text-red-500">*</span>
               </label>
               <select name="formato" required value={formData.formato} onChange={handleChange} className={inputClass}>
+                <option value="">Seleccione</option>
                 {FORMATO_OPTIONS.map((o) => (
                   <option key={o.value} value={o.value}>{o.label}</option>
                 ))}
