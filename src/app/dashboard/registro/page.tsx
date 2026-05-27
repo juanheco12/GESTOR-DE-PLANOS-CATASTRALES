@@ -185,7 +185,7 @@ export default function RegistroPlanoPage() {
                 value={formData.predial}
                 onChange={handleChange}
                 className={`${inputClass} font-mono`}
-                placeholder="Pega o escribe el número predial"
+                placeholder=""
               />
             </div>
 
@@ -216,17 +216,19 @@ export default function RegistroPlanoPage() {
                 className={inputClass} placeholder="Topógrafo o ejecutor encargado" />
             </div>
 
-            {/* Ubicación física */}
+            {/* Ubicación física — próximamente */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
-                <MapPin className="h-4 w-4 text-blue-500" />
-                Ubicación Física en Oficina
-              </label>
-              <input type="text" name="ubicacionFisica" value={formData.ubicacionFisica} onChange={handleChange}
-                className={inputClass} placeholder='Ej. "Archivador 2 - Gaveta 3" / "Estante A" / "Caja 5"' />
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                Indica dónde está guardado físicamente el plano en la oficina para que cualquier usuario pueda encontrarlo.
-              </p>
+              <div className="flex items-center gap-2 mb-2">
+                <MapPin className="h-4 w-4 text-slate-400 dark:text-slate-500" />
+                <span className="text-sm font-medium text-slate-400 dark:text-slate-500">Ubicación Física en Oficina</span>
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border border-amber-200 dark:border-amber-800">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse inline-block" />
+                  Próximamente
+                </span>
+              </div>
+              <div className="w-full px-4 py-2.5 rounded-lg border border-dashed border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40 text-slate-400 dark:text-slate-500 text-sm select-none cursor-not-allowed">
+                Esta función estará disponible en una próxima actualización
+              </div>
             </div>
 
             {/* Observaciones */}
