@@ -1,6 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { neon } from "@neondatabase/serverless";
+import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
@@ -16,44 +16,24 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Credenciales incompletas");
         }
 
-        const sql = neon(process.env.DATABASE_URL!);
-        const rows = await sql`
-          SELECT id, name, email, password, role, "isActive"
-          FROM "User"
-          WHERE email = ${credentials.email}
-          LIMIT 1
-        `;
-        const user = rows[0];
+        const user = await prisma.user.findUnique({
+          where: { email: credentials.email },
+          select: { id: true, name: true, email: true, password: true, role: true, isActive: true },
+        });
 
-        if (!user || !user.password) {
-          throw new Error("Usuario no encontrado");
-        }
+        if (!user || !user.password) throw new Error("Usuario no encontrado");
+        if (!user.isActive) throw new Error("Cuenta bloqueada por el administrador");
 
-        if (!user.isActive) {
-          throw new Error("Cuenta bloqueada por el administrador");
-        }
+        const valid = await bcrypt.compare(credentials.password, user.password);
+        if (!valid) throw new Error("Contraseña incorrecta");
 
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password as string);
-
-        if (!isPasswordValid) {
-          throw new Error("Contraseña incorrecta");
-        }
-
-        return {
-          id: user.id as string,
-          name: user.name as string,
-          email: user.email as string,
-          role: user.role as string,
-        };
+        return { id: user.id, name: user.name, email: user.email, role: user.role };
       }
     })
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-        token.role = user.role;
-      }
+      if (user) { token.id = user.id; token.role = user.role; }
       return token;
     },
     async session({ session, token }) {
@@ -64,11 +44,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     }
   },
-  session: {
-    strategy: "jwt",
-  },
-  pages: {
-    signIn: "/login",
-  },
+  session: { strategy: "jwt" },
+  pages: { signIn: "/login" },
   secret: process.env.NEXTAUTH_SECRET || "supersecretkey-change-me-in-production",
 };
