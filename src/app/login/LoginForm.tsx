@@ -14,9 +14,11 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Pre-warm the NextAuth serverless function so the user doesn't hit a cold start on submit
+  // Wake up Vercel functions and Neon DB in parallel as soon as the page loads,
+  // so the user doesn't hit a cold start when they click submit.
   useEffect(() => {
     fetch("/api/auth/csrf").catch(() => {});
+    fetch("/api/ping").catch(() => {});
   }, []);
 
   const getDestination = () => {
