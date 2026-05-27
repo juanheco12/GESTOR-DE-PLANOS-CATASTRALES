@@ -150,7 +150,7 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                     </dt>
                     <dd className="mt-1 text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
                       {plano.registradoPor.name}
-                      <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">Radicadora</span>
+                      <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">Radicador</span>
                     </dd>
                   </div>
                 )}

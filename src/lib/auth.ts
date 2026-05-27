@@ -1,6 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import { prisma } from "./prisma";
+import { neon } from "@neondatabase/serverless";
 import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
@@ -15,10 +15,15 @@ export const authOptions: NextAuthOptions = {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Credenciales incompletas");
         }
-        
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
-        });
+
+        const sql = neon(process.env.DATABASE_URL!);
+        const rows = await sql`
+          SELECT id, name, email, password, role, "isActive"
+          FROM "User"
+          WHERE email = ${credentials.email}
+          LIMIT 1
+        `;
+        const user = rows[0];
 
         if (!user || !user.password) {
           throw new Error("Usuario no encontrado");
@@ -28,17 +33,17 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Cuenta bloqueada por el administrador");
         }
 
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+        const isPasswordValid = await bcrypt.compare(credentials.password, user.password as string);
 
         if (!isPasswordValid) {
           throw new Error("Contraseña incorrecta");
         }
 
         return {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role,
+          id: user.id as string,
+          name: user.name as string,
+          email: user.email as string,
+          role: user.role as string,
         };
       }
     })

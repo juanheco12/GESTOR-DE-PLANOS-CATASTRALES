@@ -117,7 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 role === "RADICADORA"    ? "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/40" :
                 "text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800"
               }`}>
-                {role === "RADICADORA" ? "Radicadora" : role}
+                {role === "ADMINISTRADOR" ? "Administrador" : role === "ENCARGADO" ? "Encargado" : role === "RADICADORA" ? "Radicador" : role === "EJECUTOR" ? "Ejecutor" : role}
               </span>
             </div>
           </div>

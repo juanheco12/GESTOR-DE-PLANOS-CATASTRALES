@@ -8,7 +8,7 @@ const ROLE_OPTIONS = [
   { value: "ADMINISTRADOR", label: "Administrador" },
   { value: "ENCARGADO",     label: "Encargado" },
   { value: "EJECUTOR",      label: "Ejecutor" },
-  { value: "RADICADORA",    label: "Radicadora Segunda" },
+  { value: "RADICADORA",    label: "Radicador" },
 ];
 
 const ROLE_COLORS: Record<string, string> = {
