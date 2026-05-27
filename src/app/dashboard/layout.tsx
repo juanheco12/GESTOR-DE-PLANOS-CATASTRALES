@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isEjecutor     = role === "EJECUTOR";
   const isAdministrador = role === "ADMINISTRADOR";
   const isRadicadora   = role === "RADICADORA";
-  const showNotifBell  = role === "ADMINISTRADOR" || role === "ENCARGADO";
+  const showPushBell   = role === "ADMINISTRADOR" || role === "ENCARGADO";
 
   const navigation = [
     { name: "Inicio",        href: "/dashboard",            icon: LayoutDashboard },
@@ -144,16 +144,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
           <span className="text-sm font-bold text-slate-800 dark:text-white truncate max-w-[180px]">Catastro Montería</span>
           <div className="flex items-center gap-1">
-            <PushManager />
-            {showNotifBell && <NotificationBell />}
+            {showPushBell && <PushManager />}
+            {showPushBell && <NotificationBell />}
             <ThemeToggle />
           </div>
         </header>
 
         {/* Header desktop */}
         <header className="hidden lg:flex h-14 items-center justify-end gap-2 px-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
-          <PushManager />
-          {showNotifBell && <NotificationBell />}
+          {showPushBell && <PushManager />}
+          {showPushBell && <NotificationBell />}
           <ThemeToggle />
         </header>
 
