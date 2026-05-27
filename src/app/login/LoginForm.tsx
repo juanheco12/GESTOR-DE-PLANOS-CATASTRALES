@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { MapPin, Eye, EyeOff } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -13,10 +14,10 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Pre-warm Vercel function + Neon DB before user submits
+  // Pre-warm Neon DB and Vercel function before user submits
   useEffect(() => {
-    fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }).catch(() => {});
     fetch("/api/ping").catch(() => {});
+    fetch("/api/auth/csrf").catch(() => {});
   }, []);
 
   const getDestination = () => {
@@ -29,23 +30,17 @@ export default function LoginForm() {
     setLoading(true);
     setError("");
 
-    try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
+    const result = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
 
-      if (!res.ok) {
-        setError(data.error || "Error al iniciar sesión");
-        setLoading(false);
-      } else {
-        window.location.href = getDestination();
-      }
-    } catch {
-      setError("Error de conexión. Intenta de nuevo.");
+    if (result?.error) {
+      setError(result.error);
       setLoading(false);
+    } else {
+      window.location.href = getDestination();
     }
   };
 
@@ -60,7 +55,9 @@ export default function LoginForm() {
           <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center text-white mb-4 shadow-sm">
             <MapPin size={32} />
           </div>
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 text-center tracking-tight">GESTOR DE PLANOS</h1>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 text-center tracking-tight">
+            GESTOR DE PLANOS
+          </h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 text-center">Catastro Montería</p>
         </div>
 
@@ -78,6 +75,7 @@ export default function LoginForm() {
             <input
               type="email"
               required
+              autoComplete="email"
               className="w-full px-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
               placeholder="admin@catastro.com"
               value={email}
@@ -93,6 +91,7 @@ export default function LoginForm() {
               <input
                 type={showPassword ? "text" : "password"}
                 required
+                autoComplete="current-password"
                 className="w-full px-4 py-2 pr-10 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 placeholder="••••••••"
                 value={password}

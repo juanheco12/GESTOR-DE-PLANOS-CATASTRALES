@@ -8,8 +8,8 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "correo@ejemplo.com" },
-        password: { label: "Contraseña", type: "password" }
+        email: { label: "Email", type: "email" },
+        password: { label: "Contraseña", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -28,8 +28,8 @@ export const authOptions: NextAuthOptions = {
         if (!valid) throw new Error("Contraseña incorrecta");
 
         return { id: user.id, name: user.name, email: user.email, role: user.role };
-      }
-    })
+      },
+    }),
   ],
   callbacks: {
     async jwt({ token, user }) {
@@ -42,25 +42,11 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string;
       }
       return session;
-    }
+    },
   },
   session: {
     strategy: "jwt",
-    maxAge: 8 * 60 * 60, // 8 hours
-  },
-  cookies: {
-    sessionToken: {
-      name: process.env.NODE_ENV === "production"
-        ? "__Secure-next-auth.session-token"
-        : "next-auth.session-token",
-      options: {
-        httpOnly: true,
-        sameSite: "lax" as const,
-        path: "/",
-        secure: process.env.NODE_ENV === "production",
-        // No maxAge → session cookie: expires when browser closes
-      },
-    },
+    maxAge: 8 * 60 * 60, // 8 hours — expires mid-day at most
   },
   pages: { signIn: "/login" },
   secret: process.env.NEXTAUTH_SECRET || "supersecretkey-change-me-in-production",
