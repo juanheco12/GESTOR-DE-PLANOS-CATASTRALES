@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { MapPin, Eye, EyeOff } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -14,10 +13,9 @@ export default function LoginForm() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  // Wake up Vercel functions and Neon DB in parallel as soon as the page loads,
-  // so the user doesn't hit a cold start when they click submit.
+  // Pre-warm Vercel function + Neon DB before user submits
   useEffect(() => {
-    fetch("/api/auth/csrf").catch(() => {});
+    fetch("/api/login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }).catch(() => {});
     fetch("/api/ping").catch(() => {});
   }, []);
 
@@ -31,18 +29,23 @@ export default function LoginForm() {
     setLoading(true);
     setError("");
 
-    const result = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
 
-    if (result?.error) {
-      setError(result.error);
+      if (!res.ok) {
+        setError(data.error || "Error al iniciar sesión");
+        setLoading(false);
+      } else {
+        window.location.href = getDestination();
+      }
+    } catch {
+      setError("Error de conexión. Intenta de nuevo.");
       setLoading(false);
-    } else {
-      // Navigate immediately — don't wait for the dashboard to pre-load
-      window.location.href = getDestination();
     }
   };
 
