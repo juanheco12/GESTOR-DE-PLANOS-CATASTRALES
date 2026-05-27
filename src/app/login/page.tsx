@@ -1,18 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { signIn, useSession } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { MapPin, Eye, EyeOff } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function LoginPage() {
-  const router = useRouter();
+  const { data: session, status } = useSession();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      const raw = searchParams.get("callbackUrl") ?? "";
+      const dest = raw.startsWith("/") ? raw : "/dashboard";
+      window.location.href = dest;
+    }
+  }, [status, searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +38,9 @@ export default function LoginPage() {
       setError(result.error);
       setLoading(false);
     } else {
-      window.location.href = "/dashboard";
+      const raw = searchParams.get("callbackUrl") ?? "";
+      const dest = raw.startsWith("/") ? raw : "/dashboard";
+      window.location.href = dest;
     }
   };
 
