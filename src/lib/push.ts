@@ -13,29 +13,29 @@ export interface PushPayload {
   tag?:  string;
 }
 
-async function sendToSubscription(subId: string, endpoint: string, p256dh: string, auth: string, payload: PushPayload) {
+async function deliver(subId: string, endpoint: string, p256dh: string, auth: string, payload: PushPayload) {
   try {
     await webpush.sendNotification(
       { endpoint, keys: { p256dh, auth } },
-      JSON.stringify(payload)
+      JSON.stringify(payload),
+      { TTL: 60 }   // 60s time-to-live — drops stale notifications fast
     );
   } catch (err: any) {
-    // 410 Gone or 404 → subscription expired, remove it
     if (err.statusCode === 410 || err.statusCode === 404) {
       await prisma.pushSubscription.delete({ where: { id: subId } }).catch(() => {});
     }
   }
 }
 
-export async function sendPushToUser(userId: string, payload: PushPayload) {
-  const subs = await prisma.pushSubscription.findMany({ where: { userId } });
-  await Promise.allSettled(subs.map((s) => sendToSubscription(s.id, s.endpoint, s.p256dh, s.auth, payload)));
+// Single DB round-trip: join subscriptions with users by role
+export async function sendPushToRoles(roles: string[], payload: PushPayload) {
+  const subs = await prisma.pushSubscription.findMany({
+    where: { user: { role: { in: roles as any[] }, isActive: true } },
+  });
+  await Promise.allSettled(subs.map((s) => deliver(s.id, s.endpoint, s.p256dh, s.auth, payload)));
 }
 
-export async function sendPushToRoles(roles: string[], payload: PushPayload) {
-  const users = await prisma.user.findMany({
-    where: { role: { in: roles as any[] }, isActive: true },
-    select: { id: true },
-  });
-  await Promise.allSettled(users.map((u) => sendPushToUser(u.id, payload)));
+export async function sendPushToUser(userId: string, payload: PushPayload) {
+  const subs = await prisma.pushSubscription.findMany({ where: { userId } });
+  await Promise.allSettled(subs.map((s) => deliver(s.id, s.endpoint, s.p256dh, s.auth, payload)));
 }

@@ -74,7 +74,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         }
 
         // Push al EJECUTOR: su plano está listo para recoger
-        sendPushToUser(request.userId, {
+        await sendPushToUser(request.userId, {
           title: "✅ Plano autorizado",
           body:  `El plano ${radicado} está listo para recoger.`,
           url:   `/dashboard/solicitudes`,
@@ -122,7 +122,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           });
         }
 
-        sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
+        await sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
           title: "📤 Plano retirado",
           body:  `${quien} firmó y retiró el plano ${radicado}.`,
           url:   `/dashboard/entregados`,
@@ -164,7 +164,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           });
         }
 
-        sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
+        await sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
           title: "↩️ Devolución solicitada",
           body:  `${quien} quiere devolver el plano ${radicado}.`,
           url:   `/dashboard/entregados`,
@@ -218,7 +218,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           });
         }
 
-        sendPushToRoles(["ADMINISTRADOR"], {
+        await sendPushToRoles(["ADMINISTRADOR"], {
           title: "📥 Plano devuelto",
           body:  `${quien} aceptó la devolución del plano ${radicado}. Disponible.`,
           url:   `/dashboard/buscar/${planId}`,

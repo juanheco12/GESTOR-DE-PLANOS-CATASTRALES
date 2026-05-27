@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       return solicitud;
     });
 
-    sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
+    await sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
       title: "🔔 Nueva solicitud de plano",
       body:  `${session.user.name ?? "Un ejecutor"} solicitó el radicado ${plan.radicado}.`,
       url:   "/dashboard/entregados",

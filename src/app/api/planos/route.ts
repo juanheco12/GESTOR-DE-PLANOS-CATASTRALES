@@ -79,15 +79,13 @@ const result = await prisma.$transaction(async (tx) => {
       return newPlan;
     });
 
-    // Push notification (fire-and-forget, doesn't block response)
-    if (session.user.role === "RADICADORA") {
-      sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
-        title: "📋 Plano registrado",
-        body:  `Radicado ${data.radicado} ingresado al sistema.`,
-        url:   `/dashboard/buscar/${result.id}`,
-        tag:   `plano-${result.id}`,
-      }).catch(() => {});
-    }
+    // Push notification — awaited so Vercel doesn't kill the function before it's sent
+    await sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
+      title: "📋 Plano registrado",
+      body:  `Radicado ${data.radicado} ingresado al sistema.`,
+      url:   `/dashboard/buscar/${result.id}`,
+      tag:   `plano-${result.id}`,
+    }).catch(() => {});
 
     return NextResponse.json(result, { status: 201 });
   } catch (error: any) {
