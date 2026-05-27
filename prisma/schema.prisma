@@ -23,7 +23,8 @@ model User {
   historyLogs     History[]
   auditLogs       AuditLog[]
   notifications   Notification[]
-  plansRegistered Plan[]         @relation("PlanoRegistradoPor")
+  plansRegistered Plan[]            @relation("PlanoRegistradoPor")
+  pushSubs        PushSubscription[]
 }
 
 enum Role {
@@ -136,4 +137,15 @@ model Notification {
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   plan      Plan?    @relation(fields: [planoId], references: [id], onDelete: SetNull)
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

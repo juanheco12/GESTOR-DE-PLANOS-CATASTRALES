@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendPushToRoles, sendPushToUser } from "@/lib/push";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -72,6 +73,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           });
         }
 
+        // Push al EJECUTOR: su plano está listo para recoger
+        sendPushToUser(request.userId, {
+          title: "✅ Plano autorizado",
+          body:  `El plano ${radicado} está listo para recoger.`,
+          url:   `/dashboard/solicitudes`,
+          tag:   `listo-${id}`,
+        }).catch(() => {});
+
         return reqUpdated;
       });
     }
@@ -113,6 +122,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           });
         }
 
+        sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
+          title: "📤 Plano retirado",
+          body:  `${quien} firmó y retiró el plano ${radicado}.`,
+          url:   `/dashboard/entregados`,
+          tag:   `firma-${id}`,
+        }).catch(() => {});
+
         return reqUpdated;
       });
     }
@@ -147,6 +163,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             })),
           });
         }
+
+        sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
+          title: "↩️ Devolución solicitada",
+          body:  `${quien} quiere devolver el plano ${radicado}.`,
+          url:   `/dashboard/entregados`,
+          tag:   `devolucion-${id}`,
+        }).catch(() => {});
 
         return reqUpdated;
       });
@@ -194,6 +217,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             })),
           });
         }
+
+        sendPushToRoles(["ADMINISTRADOR"], {
+          title: "📥 Plano devuelto",
+          body:  `${quien} aceptó la devolución del plano ${radicado}. Disponible.`,
+          url:   `/dashboard/buscar/${planId}`,
+          tag:   `archivado-${id}`,
+        }).catch(() => {});
 
         return reqUpdated;
       });

@@ -20,6 +20,7 @@ import { useState } from "react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import InactivityLogout from "@/components/InactivityLogout";
 import NotificationBell from "@/components/NotificationBell";
+import PushManager from "@/components/PushManager";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
@@ -143,6 +144,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
           <span className="text-sm font-bold text-slate-800 dark:text-white truncate max-w-[180px]">Catastro Montería</span>
           <div className="flex items-center gap-1">
+            <PushManager />
             {showNotifBell && <NotificationBell />}
             <ThemeToggle />
           </div>
@@ -150,6 +152,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Header desktop */}
         <header className="hidden lg:flex h-14 items-center justify-end gap-2 px-6 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+          <PushManager />
           {showNotifBell && <NotificationBell />}
           <ThemeToggle />
         </header>

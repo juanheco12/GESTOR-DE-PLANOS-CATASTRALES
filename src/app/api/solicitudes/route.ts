@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendPushToRoles } from "@/lib/push";
 
 export async function POST(req: NextRequest) {
   try {
@@ -74,6 +75,13 @@ export async function POST(req: NextRequest) {
 
       return solicitud;
     });
+
+    sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
+      title: "🔔 Nueva solicitud de plano",
+      body:  `${session.user.name ?? "Un ejecutor"} solicitó el radicado ${plan.radicado}.`,
+      url:   "/dashboard/entregados",
+      tag:   `solicitud-${result.id}`,
+    }).catch(() => {});
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

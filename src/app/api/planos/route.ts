@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sendPushToRoles } from "@/lib/push";
 
 const ROLES_REGISTRO = ["ADMINISTRADOR", "ENCARGADO", "RADICADORA"];
 
@@ -77,6 +78,16 @@ const result = await prisma.$transaction(async (tx) => {
 
       return newPlan;
     });
+
+    // Push notification (fire-and-forget, doesn't block response)
+    if (session.user.role === "RADICADORA") {
+      sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
+        title: "📋 Plano registrado",
+        body:  `Radicado ${data.radicado} ingresado al sistema.`,
+        url:   `/dashboard/buscar/${result.id}`,
+        tag:   `plano-${result.id}`,
+      }).catch(() => {});
+    }
 
     return NextResponse.json(result, { status: 201 });
   } catch (error: any) {
