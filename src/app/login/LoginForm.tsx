@@ -40,6 +40,7 @@ export default function LoginForm() {
       setError(result.error);
       setLoading(false);
     } else {
+      sessionStorage.setItem("nxa-alive", "1");
       window.location.href = getDestination();
     }
   };

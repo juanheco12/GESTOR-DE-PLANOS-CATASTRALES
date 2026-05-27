@@ -21,6 +21,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import InactivityLogout from "@/components/InactivityLogout";
 import NotificationBell from "@/components/NotificationBell";
 import PushManager from "@/components/PushManager";
+import SessionGuard from "@/components/SessionGuard";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
@@ -59,6 +60,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex">
+      <SessionGuard />
       <InactivityLogout />
 
       {sidebarOpen && (
