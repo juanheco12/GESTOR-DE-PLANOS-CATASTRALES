@@ -119,7 +119,7 @@ export default function RegistroPlanoPage() {
                 Número de Radicado <span className="text-red-500">*</span>
               </label>
               <input type="text" name="radicado" required value={formData.radicado} onChange={handleChange}
-                className={inputClass} placeholder="Ej. RAD-2025-001" />
+                className={inputClass} placeholder="" />
             </div>
 
             {/* Mutación */}
@@ -128,7 +128,7 @@ export default function RegistroPlanoPage() {
                 Tipo de Trámite / Mutación <span className="text-red-500">*</span>
               </label>
               <select name="mutacion" required value={formData.mutacion} onChange={handleChange} className={inputClass}>
-                <option value="">Seleccione una opción</option>
+                <option value="">Seleccione</option>
                 <option value="Mutación de Primera">Mutación de Primera</option>
                 <option value="Mutación de Segunda">Mutación de Segunda</option>
                 <option value="Mutación de Tercera">Mutación de Tercera</option>
@@ -157,7 +157,7 @@ export default function RegistroPlanoPage() {
                 Recibido por <span className="text-red-500">*</span>
               </label>
               <select name="receivedById" required value={formData.receivedById} onChange={handleChange} className={inputClass}>
-                <option value="">Seleccione...</option>
+                <option value="">Seleccione</option>
                 {receivers.map((r) => (
                   <option key={r.id} value={r.id}>{r.name}</option>
                 ))}
@@ -179,14 +179,8 @@ export default function RegistroPlanoPage() {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                 Número Predial Nacional
               </label>
-              <input
-                type="text"
-                name="predial"
-                value={formData.predial}
-                onChange={handleChange}
-                className={`${inputClass} font-mono`}
-                placeholder=""
-              />
+              <input type="text" name="predial" value={formData.predial} onChange={handleChange}
+                className={`${inputClass} font-mono`} placeholder="" />
             </div>
 
             {/* Propietario */}
@@ -195,7 +189,7 @@ export default function RegistroPlanoPage() {
                 Propietario / Interesado
               </label>
               <input type="text" name="propietario" value={formData.propietario} onChange={handleChange}
-                className={inputClass} placeholder="Nombre completo" />
+                className={inputClass} placeholder="" />
             </div>
 
             {/* Vereda / Barrio */}
@@ -204,7 +198,7 @@ export default function RegistroPlanoPage() {
                 Vereda / Barrio
               </label>
               <input type="text" name="veredaBarrio" value={formData.veredaBarrio} onChange={handleChange}
-                className={inputClass} placeholder="Ej. Vereda El Centro" />
+                className={inputClass} placeholder="" />
             </div>
 
             {/* Profesional Responsable */}
@@ -213,7 +207,7 @@ export default function RegistroPlanoPage() {
                 Profesional Responsable
               </label>
               <input type="text" name="profesionalResponsable" value={formData.profesionalResponsable} onChange={handleChange}
-                className={inputClass} placeholder="Topógrafo o ejecutor encargado" />
+                className={inputClass} placeholder="" />
             </div>
 
             {/* Ubicación física — próximamente */}
@@ -237,8 +231,7 @@ export default function RegistroPlanoPage() {
                 Observaciones
               </label>
               <textarea name="observaciones" rows={3} value={formData.observaciones} onChange={handleChange}
-                className={`${inputClass} resize-none`}
-                placeholder="Estado físico del plano, notas adicionales, etc." />
+                className={`${inputClass} resize-none`} placeholder="" />
             </div>
           </div>
 
