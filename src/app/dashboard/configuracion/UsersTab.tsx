@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck, KeyRound } from "lucide-react";
+import { UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck, KeyRound, Mail } from "lucide-react";
 
 const ROLE_OPTIONS = [
   { value: "ADMINISTRADOR", label: "Administrador" },
@@ -28,6 +28,9 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
   const [changingPwdFor, setChangingPwdFor] = useState<string | null>(null);
   const [newPwd, setNewPwd] = useState("");
   const [pwdError, setPwdError] = useState("");
+  const [changingEmailFor, setChangingEmailFor] = useState<string | null>(null);
+  const [newEmail, setNewEmail] = useState("");
+  const [emailError, setEmailError] = useState("");
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +75,34 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
       setUsers(users.map((u) => (u.id === userId ? { ...u, isActive: !currentStatus } : u)));
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleChangeEmail = async (userId: string) => {
+    const trimmed = newEmail.trim();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setEmailError("Correo electrónico no válido");
+      return;
+    }
+    setLoadingAction(`EMAIL_${userId}`);
+    setEmailError("");
+    try {
+      const res = await fetch(`/api/usuarios/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newEmail: trimmed }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error al cambiar correo");
+      }
+      setUsers(users.map((u) => (u.id === userId ? { ...u, email: trimmed.toLowerCase() } : u)));
+      setChangingEmailFor(null);
+      setNewEmail("");
+    } catch (err: any) {
+      setEmailError(err.message);
     } finally {
       setLoadingAction(null);
     }
@@ -251,7 +282,15 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
                     <div className="flex flex-col gap-2 items-end">
                       <div className="flex items-center gap-3">
                         <button
-                          onClick={() => { setChangingPwdFor(changingPwdFor === user.id ? null : user.id); setNewPwd(""); setPwdError(""); }}
+                          onClick={() => { setChangingEmailFor(changingEmailFor === user.id ? null : user.id); setNewEmail(user.email ?? ""); setEmailError(""); setChangingPwdFor(null); }}
+                          className="text-sm font-medium text-violet-600 dark:text-violet-400 hover:underline inline-flex items-center gap-1"
+                        >
+                          <Mail className="h-3.5 w-3.5" />
+                          Correo
+                        </button>
+                        <span className="text-slate-300 dark:text-slate-700">|</span>
+                        <button
+                          onClick={() => { setChangingPwdFor(changingPwdFor === user.id ? null : user.id); setNewPwd(""); setPwdError(""); setChangingEmailFor(null); }}
                           className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline inline-flex items-center gap-1"
                         >
                           <KeyRound className="h-3.5 w-3.5" />
@@ -275,6 +314,25 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
                           Eliminar
                         </button>
                       </div>
+                      {changingEmailFor === user.id && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <input
+                            type="email"
+                            placeholder="Nuevo correo"
+                            value={newEmail}
+                            onChange={(e) => setNewEmail(e.target.value)}
+                            className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 w-48"
+                          />
+                          <button
+                            onClick={() => handleChangeEmail(user.id)}
+                            disabled={loadingAction === `EMAIL_${user.id}`}
+                            className="px-2 py-1 text-xs bg-violet-600 hover:bg-violet-700 text-white rounded disabled:opacity-50"
+                          >
+                            {loadingAction === `EMAIL_${user.id}` ? "..." : "Guardar"}
+                          </button>
+                          {emailError && <span className="text-xs text-red-500">{emailError}</span>}
+                        </div>
+                      )}
                       {changingPwdFor === user.id && (
                         <div className="flex items-center gap-2 mt-1">
                           <input

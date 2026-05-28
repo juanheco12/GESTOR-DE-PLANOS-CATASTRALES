@@ -14,6 +14,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const body = await req.json();
 
+    // Cambio de correo
+    if (body.newEmail !== undefined) {
+      const email = body.newEmail?.trim().toLowerCase();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return NextResponse.json({ error: "Correo electrónico no válido" }, { status: 400 });
+      }
+      const existing = await prisma.user.findUnique({ where: { email } });
+      if (existing && existing.id !== resolvedParams.id) {
+        return NextResponse.json({ error: "Este correo ya está en uso por otro usuario" }, { status: 400 });
+      }
+      const updated = await prisma.user.update({
+        where: { id: resolvedParams.id },
+        data:  { email },
+        select: { id: true, name: true, email: true },
+      });
+      return NextResponse.json(updated, { status: 200 });
+    }
+
     // Cambio de contraseña
     if (body.newPassword !== undefined) {
       if (!body.newPassword || body.newPassword.length < 6) {
