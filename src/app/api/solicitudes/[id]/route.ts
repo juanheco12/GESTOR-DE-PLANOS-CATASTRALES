@@ -50,6 +50,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           },
         });
 
+        // Notificar al EJECUTOR que su plano está listo para recoger
+        await tx.notification.create({
+          data: {
+            message: `Tu plano ${radicado} está listo para recoger. Dirígete a la oficina para firmarlo.`,
+            userId:  request.userId,
+            planoId: planId,
+          },
+        });
+
         // Quitar alerta de solicitud del propio ENCARGADO
         if (session.user.role === "ENCARGADO") {
           await tx.notification.updateMany({

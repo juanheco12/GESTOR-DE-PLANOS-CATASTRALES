@@ -18,7 +18,7 @@ async function deliver(subId: string, endpoint: string, p256dh: string, auth: st
     await webpush.sendNotification(
       { endpoint, keys: { p256dh, auth } },
       JSON.stringify(payload),
-      { TTL: 60 }   // 60s time-to-live — drops stale notifications fast
+      { TTL: 4 * 60 * 60 }   // 4h — notifications survive while browser is closed
     );
   } catch (err: any) {
     if (err.statusCode === 410 || err.statusCode === 404) {

@@ -91,6 +91,7 @@ export default function EditForm({ plan }: { plan: any }) {
             <option value="Mutación de Cuarta">Mutación de Cuarta</option>
             <option value="Mutación de Quinta">Mutación de Quinta</option>
             <option value="Rectificación">Rectificación de Área</option>
+            <option value="Rectificación 1101">Rectificación 1101</option>
             <option value="Otro">Otro Trámite</option>
           </select>
         </div>

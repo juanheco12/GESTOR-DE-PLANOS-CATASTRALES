@@ -47,7 +47,13 @@ export default async function MisSolicitudesPage() {
                       <p className="font-medium text-slate-900 dark:text-slate-100">{req.plan.radicado}</p>
                       <p className="text-xs text-slate-500">{req.plan.predial}</p>
                     </td>
-                    <td className="px-6 py-4">{req.fechaSolicitud.toLocaleString()}</td>
+                    <td className="px-6 py-4">
+                      {new Date(req.fechaSolicitud).toLocaleString("es-CO", {
+                        timeZone: "America/Bogota",
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
+                    </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
                         ${req.estado === 'PENDIENTE' ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400' : 
