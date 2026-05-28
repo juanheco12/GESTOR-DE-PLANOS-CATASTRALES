@@ -212,6 +212,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           });
         }
 
+        // Notificar al EJECUTOR que su plano fue recibido y está disponible
+        await tx.notification.create({
+          data: {
+            message: `Tu devolución del plano ${radicado} fue confirmada. El plano ya está disponible en el sistema.`,
+            userId:  request.userId,
+            planoId: planId,
+          },
+        });
+
         // Notificar a ADMINISTRADOR sobre la acción
         const admins = await tx.user.findMany({
           where: { role: "ADMINISTRADOR", isActive: true },
@@ -232,6 +241,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           body:  `${quien} aceptó la devolución del plano ${radicado}. Disponible.`,
           url:   `/dashboard/buscar/${planId}`,
           tag:   `archivado-${id}`,
+        }).catch(() => {});
+
+        await sendPushToUser(request.userId, {
+          title: "✅ Devolución confirmada",
+          body:  `El plano ${radicado} fue recibido y archivado correctamente.`,
+          url:   `/dashboard/solicitudes`,
+          tag:   `devolucion-ok-${id}`,
         }).catch(() => {});
 
         return reqUpdated;

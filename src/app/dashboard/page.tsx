@@ -61,7 +61,7 @@ export default async function DashboardPage() {
   if (isEjecutor) {
     const userId = session!.user.id;
 
-    const [listosParaFirmar, misActivas, totalDevueltos, totalSolicitudes] = await Promise.all([
+    const [listosParaFirmar, misActivas, totalDevueltos, totalSolicitudes, totalSistema, disponiblesSistema] = await Promise.all([
       prisma.request.findMany({
         where: { userId, estado: "LISTO_PARA_ENTREGA" },
         include: { plan: { select: { radicado: true, mutacion: true } } },
@@ -75,6 +75,8 @@ export default async function DashboardPage() {
       }),
       prisma.request.count({ where: { userId, estado: "DEVUELTO" } }),
       prisma.request.count({ where: { userId } }),
+      prisma.plan.count(),
+      prisma.plan.count({ where: { estado: "DISPONIBLE" } }),
     ]);
 
     const ESTADO_REQ_LABELS: Record<string, string> = {
@@ -131,10 +133,19 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* Métricas */}
+        {/* Métricas propias */}
         <div className="grid grid-cols-2 gap-4">
           <StatCard label="Total solicitudes" value={totalSolicitudes} icon={FileText} colorBg="bg-blue-50 dark:bg-blue-900/30" colorText="text-blue-600 dark:text-blue-400" href="/dashboard/solicitudes" />
           <StatCard label="Planos devueltos" value={totalDevueltos} icon={CheckCircle2} colorBg="bg-emerald-50 dark:bg-emerald-900/30" colorText="text-emerald-600 dark:text-emerald-400" />
+        </div>
+
+        {/* Estado del sistema */}
+        <div>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-3">Estado del sistema</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <StatCard label="Total en sistema" value={totalSistema} icon={BookOpen} colorBg="bg-slate-100 dark:bg-slate-800" colorText="text-slate-600 dark:text-slate-300" href="/dashboard/buscar" />
+            <StatCard label="Disponibles" value={disponiblesSistema} icon={Archive} colorBg="bg-emerald-50 dark:bg-emerald-900/30" colorText="text-emerald-600 dark:text-emerald-400" href="/dashboard/buscar?estado=DISPONIBLE" />
+          </div>
         </div>
 
         {/* Mis solicitudes recientes */}
