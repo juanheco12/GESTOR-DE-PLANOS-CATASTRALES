@@ -12,11 +12,16 @@ export async function POST(req: NextRequest) {
   if (!endpoint || !keys?.p256dh || !keys?.auth)
     return NextResponse.json({ error: "Suscripción inválida" }, { status: 400 });
 
-  await prisma.pushSubscription.upsert({
-    where:  { endpoint },
-    create: { userId: session.user.id, endpoint, p256dh: keys.p256dh, auth: keys.auth },
-    update: { userId: session.user.id, p256dh: keys.p256dh, auth: keys.auth },
-  });
+  try {
+    await prisma.pushSubscription.upsert({
+      where:  { endpoint },
+      create: { userId: session.user.id, endpoint, p256dh: keys.p256dh, auth: keys.auth },
+      update: { userId: session.user.id, p256dh: keys.p256dh, auth: keys.auth },
+    });
+  } catch (err) {
+    console.error("[Push/subscribe] DB upsert failed:", err);
+    return NextResponse.json({ error: "Error al guardar la suscripción" }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }
@@ -28,9 +33,14 @@ export async function DELETE(req: NextRequest) {
   const { endpoint } = await req.json();
   if (!endpoint) return NextResponse.json({ error: "Endpoint requerido" }, { status: 400 });
 
-  await prisma.pushSubscription.deleteMany({
-    where: { endpoint, userId: session.user.id },
-  });
+  try {
+    await prisma.pushSubscription.deleteMany({
+      where: { endpoint, userId: session.user.id },
+    });
+  } catch (err) {
+    console.error("[Push/subscribe] DB delete failed:", err);
+    return NextResponse.json({ error: "Error al eliminar la suscripción" }, { status: 500 });
+  }
 
   return NextResponse.json({ ok: true });
 }

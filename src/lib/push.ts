@@ -23,6 +23,8 @@ async function deliver(subId: string, endpoint: string, p256dh: string, auth: st
   } catch (err: any) {
     if (err.statusCode === 410 || err.statusCode === 404) {
       await prisma.pushSubscription.delete({ where: { id: subId } }).catch(() => {});
+    } else {
+      console.error(`[Push] Delivery failed (status=${err.statusCode ?? "?"}):`, err.message ?? err);
     }
   }
 }

@@ -23,8 +23,17 @@ export default function PushManager() {
 
     navigator.serviceWorker
       .register("/sw.js")
-      .then((reg) => reg.pushManager.getSubscription())
-      .then((sub) => setSubscribed(!!sub))
+      .then(async (reg) => {
+        const sub = await reg.pushManager.getSubscription();
+        if (!sub) { setSubscribed(false); return; }
+        // Re-sync existing browser subscription with server in case it was lost from DB
+        const res = await fetch("/api/push/subscribe", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify(sub),
+        });
+        setSubscribed(res.ok);
+      })
       .catch(() => {});
   }, []);
 
@@ -40,11 +49,12 @@ export default function PushManager() {
         applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC),
       });
 
-      await fetch("/api/push/subscribe", {
+      const res = await fetch("/api/push/subscribe", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify(sub),
       });
+      if (!res.ok) throw new Error("Error al guardar la suscripción en el servidor");
 
       setSubscribed(true);
     } catch {
