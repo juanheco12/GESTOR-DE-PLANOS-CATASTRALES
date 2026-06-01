@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -30,7 +32,7 @@ export default async function MisSolicitudesPage() {
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto h-full flex flex-col">
       {/* Auto-refresh every 20 s so status changes appear without manual reload */}
-      <AutoRefresh intervalMs={20000} />
+      <AutoRefresh intervalMs={10000} />
 
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Mis Solicitudes</h1>

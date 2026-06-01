@@ -180,7 +180,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       });
 
       if (calledByEjecutor) {
-        // Push al ENCARGADO asignado
+        // Push al ENCARGADO asignado. Si no hay asignado, broadcast a todos los ENCARGADOs.
         if (request.adminEntregaId) {
           await sendPushToUser(request.adminEntregaId, {
             title: "📦 Plano recibido por ejecutor",
@@ -188,8 +188,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             url:   "/dashboard/entregados",
             tag:   `recibido-${id}`,
           }).catch(() => {});
+        } else {
+          await sendPushToRoles(["ENCARGADO"], {
+            title: "📦 Plano recibido por ejecutor",
+            body:  `${quien} confirmó la recepción del plano ${radicado}.`,
+            url:   "/dashboard/entregados",
+            tag:   `recibido-${id}`,
+          }).catch(() => {});
         }
-        // Push a ADMINISTRADOR
+        // Push a todos los ADMINISTRADOR
         await sendPushToRoles(["ADMINISTRADOR"], {
           title: "📦 Plano recibido",
           body:  `${quien} confirmó la recepción del plano ${radicado}.`,

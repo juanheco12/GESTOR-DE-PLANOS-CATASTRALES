@@ -90,7 +90,7 @@ export default async function DashboardPage() {
 
     return (
       <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
-        <AutoRefresh intervalMs={20000} />
+        <AutoRefresh intervalMs={10000} />
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Mi Panel</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
