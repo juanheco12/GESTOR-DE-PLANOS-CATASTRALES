@@ -54,13 +54,14 @@ function StatCard({
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
-  const isEjecutor = session?.user?.role === "EJECUTOR";
+  const role = session?.user?.role;
+  const isEjecutor = role === "EJECUTOR";
 
   /* ── DASHBOARD EJECUTOR ─────────────────────────────────── */
   if (isEjecutor) {
     const userId = session!.user.id;
 
-    const [listosParaFirmar, misActivas, totalDevueltos, totalSolicitudes] = await Promise.all([
+    const [listosParaFirmar, misActivas, totalDevueltos, totalSolicitudes, totalSistema, disponiblesSistema] = await Promise.all([
       prisma.request.findMany({
         where: { userId, estado: "LISTO_PARA_ENTREGA" },
         include: { plan: { select: { radicado: true, mutacion: true } } },
@@ -74,6 +75,8 @@ export default async function DashboardPage() {
       }),
       prisma.request.count({ where: { userId, estado: "DEVUELTO" } }),
       prisma.request.count({ where: { userId } }),
+      prisma.plan.count(),
+      prisma.plan.count({ where: { estado: "DISPONIBLE" } }),
     ]);
 
     const ESTADO_REQ_LABELS: Record<string, string> = {
@@ -130,10 +133,19 @@ export default async function DashboardPage() {
           </div>
         )}
 
-        {/* Métricas */}
+        {/* Métricas propias */}
         <div className="grid grid-cols-2 gap-4">
           <StatCard label="Total solicitudes" value={totalSolicitudes} icon={FileText} colorBg="bg-blue-50 dark:bg-blue-900/30" colorText="text-blue-600 dark:text-blue-400" href="/dashboard/solicitudes" />
           <StatCard label="Planos devueltos" value={totalDevueltos} icon={CheckCircle2} colorBg="bg-emerald-50 dark:bg-emerald-900/30" colorText="text-emerald-600 dark:text-emerald-400" />
+        </div>
+
+        {/* Estado del sistema */}
+        <div>
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-3">Estado del sistema</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <StatCard label="Total en sistema" value={totalSistema} icon={BookOpen} colorBg="bg-slate-100 dark:bg-slate-800" colorText="text-slate-600 dark:text-slate-300" href="/dashboard/buscar" />
+            <StatCard label="Disponibles" value={disponiblesSistema} icon={Archive} colorBg="bg-emerald-50 dark:bg-emerald-900/30" colorText="text-emerald-600 dark:text-emerald-400" href="/dashboard/buscar?estado=DISPONIBLE" />
+          </div>
         </div>
 
         {/* Mis solicitudes recientes */}
@@ -191,9 +203,9 @@ export default async function DashboardPage() {
     prisma.plan.count({ where: { createdAt: { gte: hoy } } }),
     prisma.history.findMany({
       orderBy: { createdAt: "desc" },
-      take: 8,
+      take:    60,
       include: {
-        plan: { select: { radicado: true } },
+        plan: { select: { radicado: true, id: true } },
         user: { select: { name: true, email: true } },
       },
     }),
@@ -210,6 +222,29 @@ export default async function DashboardPage() {
       take: 5,
     }),
   ]);
+
+  // ── Agrupar actividad reciente por día (zona Bogotá) ──
+  const COL_TZ = "America/Bogota";
+  function dayKey(d: Date) {
+    return d.toLocaleDateString("es-CO", { timeZone: COL_TZ, year: "numeric", month: "2-digit", day: "2-digit" });
+  }
+  function dayLabel(d: Date) {
+    const key  = dayKey(d);
+    const hoyK = dayKey(new Date());
+    const ayerK = dayKey(new Date(Date.now() - 86_400_000));
+    if (key === hoyK)  return "Hoy";
+    if (key === ayerK) return "Ayer";
+    return d.toLocaleDateString("es-CO", { timeZone: COL_TZ, weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  }
+  const actividadPorDia = new Map<string, { label: string; historialUrl: string; items: typeof actividadReciente }>();
+  for (const h of actividadReciente) {
+    const k = dayKey(h.createdAt);
+    if (!actividadPorDia.has(k)) {
+      const iso = h.createdAt.toISOString().slice(0, 10);
+      actividadPorDia.set(k, { label: dayLabel(h.createdAt), historialUrl: `/dashboard/historial?desde=${iso}&hasta=${iso}`, items: [] });
+    }
+    actividadPorDia.get(k)!.items.push(h);
+  }
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
@@ -302,33 +337,61 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* Actividad reciente */}
-      {actividadReciente.length > 0 && (
-        <div>
-          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200 mb-3">Actividad reciente</h2>
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-              {actividadReciente.map((h) => (
-                <li key={h.id} className="px-5 py-3 flex items-center gap-4">
-                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 shrink-0" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm text-slate-800 dark:text-slate-200 truncate">
-                      <span className="font-medium">{ACCION_LABELS[h.accion] ?? h.accion}</span>
-                      {" — "}
-                      <Link href={`/dashboard/buscar/${h.planId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                        {h.plan.radicado}
-                      </Link>
-                    </p>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                      {h.user.name || h.user.email} · {new Date(h.createdAt).toLocaleString("es-CO", { dateStyle: "short", timeStyle: "short" })}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </div>
+      {/* Actividad reciente agrupada por día */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">
+            Actividad reciente
+            {actividadReciente.length > 0 && (
+              <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                {actividadReciente.length}
+              </span>
+            )}
+          </h2>
+          <Link href="/dashboard/historial" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            Ver historial completo →
+          </Link>
         </div>
-      )}
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+          {actividadPorDia.size === 0 ? (
+            <p className="px-5 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+              Sin actividad registrada. Consulta el{" "}
+              <Link href="/dashboard/historial" className="text-blue-600 dark:text-blue-400 hover:underline">Historial</Link>.
+            </p>
+          ) : (
+            Array.from(actividadPorDia.entries()).map(([k, { label, historialUrl, items }]) => (
+              <div key={k}>
+                {/* Cabecera del día */}
+                <div className="px-5 py-2 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</span>
+                  <Link href={historialUrl} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+                    Ver día completo →
+                  </Link>
+                </div>
+                <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {items.map((h) => (
+                    <li key={h.id} className="px-5 py-3 flex items-center gap-4">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-slate-800 dark:text-slate-200 truncate">
+                          <span className="font-medium">{ACCION_LABELS[h.accion] ?? h.accion}</span>
+                          {" — "}
+                          <Link href={`/dashboard/buscar/${h.plan.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                            {h.plan.radicado}
+                          </Link>
+                        </p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                          {h.user.name || h.user.email} · {new Date(h.createdAt).toLocaleString("es-CO", { timeZone: COL_TZ, timeStyle: "short" })}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
     </div>
   );
 }

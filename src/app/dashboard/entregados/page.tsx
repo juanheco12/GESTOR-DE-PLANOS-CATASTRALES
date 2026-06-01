@@ -56,7 +56,7 @@ export default async function PlanosEntregadosPage() {
                       {sol.plan.radicado}
                     </td>
                     <td className="px-5 py-3 font-mono text-xs max-w-[160px]">
-                      <span title={sol.plan.predial} className="block truncate">
+                      <span title={sol.plan.predial ?? undefined} className="block truncate">
                         {sol.plan.predial}
                       </span>
                     </td>

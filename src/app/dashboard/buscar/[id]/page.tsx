@@ -3,7 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, FileText, Map, User, Calendar, FileType, CheckCircle2, AlertCircle, ClipboardList } from "lucide-react";
+import { ArrowLeft, FileText, Map, User, Calendar, FileType, CheckCircle2, AlertCircle, ClipboardList, MapPin } from "lucide-react";
 import SolicitarPlanoBoton from "./SolicitarPlanoBoton";
 import AdminActions from "./AdminActions";
 import Image from "next/image";
@@ -15,7 +15,8 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
   const plano = await prisma.plan.findUnique({
     where: { id },
     include: {
-      receivedBy: true,
+      receivedBy:    true,
+      registradoPor: { select: { name: true } },
       history: {
         include: { user: true },
         orderBy: { createdAt: "asc" },
@@ -32,8 +33,9 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
 
   const role = session?.user?.role;
   const isAdministrador = role === "ADMINISTRADOR";
-  const isEncargado = role === "ENCARGADO";
-  const isEjecutor = role === "EJECUTOR";
+  const isEncargado     = role === "ENCARGADO";
+  const isEjecutor      = role === "EJECUTOR";
+  const isRadicadora    = role === "RADICADORA";
 
   // Solicitud activa (para mostrar firma o gestionar devolución)
   const solicitudConFirma = plano.requests.find((r) => r.firma !== null);
@@ -87,7 +89,7 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
             </Link>
           )}
 
-          {/* ── ADMIN: editar / eliminar ── */}
+          {/* ── ADMINISTRADOR: editar / eliminar planos ── */}
           {isAdministrador && (
             <AdminActions planId={plano.id} />
           )}
@@ -141,13 +143,37 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                     {plano.receivedBy?.name || "No especificado"}
                   </dd>
                 </div>
+                {plano.registradoPor && (
+                  <div>
+                    <dt className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center">
+                      <User className="mr-2 h-4 w-4" /> Registrado por
+                    </dt>
+                    <dd className="mt-1 text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                      {plano.registradoPor.name}
+                      <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">Radicador</span>
+                    </dd>
+                  </div>
+                )}
                 <div>
                   <dt className="text-sm font-medium text-slate-500 dark:text-slate-400 flex items-center">
-                    <FileType className="mr-2 h-4 w-4" /> Formato del Plano
+                    <FileType className="mr-2 h-4 w-4" /> Soporte Físico
                   </dt>
                   <dd className="mt-1 text-base text-slate-900 dark:text-slate-100">{plano.formato}</dd>
                 </div>
               </dl>
+
+              {/* Ubicación física — destacada */}
+              {plano.ubicacionFisica && (
+                <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                    <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Ubicación física en oficina</p>
+                      <p className="text-base text-blue-900 dark:text-blue-100 mt-0.5">{plano.ubicacionFisica}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {plano.observaciones && (
                 <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
@@ -158,7 +184,7 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                 </div>
               )}
 
-              {/* Firma digital del ejecutor — visible para admin/encargado */}
+              {/* Firma digital del ejecutor — visible para superadmin/admin/encargado */}
               {(isAdministrador || isEncargado) && solicitudConFirma && (
                 <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
                   <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-4">Constancia de Entrega y Firma</h4>

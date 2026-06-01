@@ -90,7 +90,7 @@ export default async function BuscarPlanoPage({
             Explora y filtra los planos catastrales registrados en el sistema.
           </p>
         </div>
-        {(session?.user?.role === "ADMINISTRADOR" || session?.user?.role === "ENCARGADO") && (
+        {(session?.user?.role === "ADMINISTRADOR" || session?.user?.role === "ENCARGADO" || session?.user?.role === "RADICADORA") && (
           <Link
             href="/dashboard/registro"
             className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm"
@@ -133,7 +133,7 @@ export default async function BuscarPlanoPage({
                   <tr key={plano.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                     <td className="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100 whitespace-nowrap">{plano.radicado}</td>
                     <td className="px-4 py-3 font-mono text-xs max-w-[160px]">
-                      <span title={plano.predial} className="block truncate">
+                      <span title={plano.predial ?? undefined} className="block truncate">
                         {plano.predial}
                       </span>
                     </td>

@@ -19,39 +19,47 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  requests      Request[] // Solicitudes hechas por el usuario
-  historyLogs   History[] // Historial de acciones
-  auditLogs     AuditLog[] // Registros de auditoría
+  requests        Request[]
+  historyLogs     History[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  plansRegistered Plan[]            @relation("PlanoRegistradoPor")
+  pushSubs        PushSubscription[]
 }
 
 enum Role {
   ADMINISTRADOR
   ENCARGADO
   EJECUTOR
+  RADICADORA
 }
 
 model Plan {
-  id                  String      @id @default(cuid())
-  radicado            String      @unique
-  mutacion            String      // Tipo de trámite
-  fechaIngreso        DateTime    @default(now())
-  formato             String      // FISICO, DIGITAL, PDF, DWG, IMAGEN, OTRO
-  propietario         String
-  predial             String
-  veredaBarrio        String?
+  id                     String      @id @default(cuid())
+  radicado               String      @unique
+  mutacion               String
+  fechaIngreso           DateTime    @default(now())
+  formato                String
+  propietario            String?
+  predial                String?
+  veredaBarrio           String?
   profesionalResponsable String?
-  observaciones       String?
-  estado              PlanState   @default(DISPONIBLE)
-  inconsistencias     String?     // Novedades o errores
-  qrCode              String?     // Opcional para escanear
-  receivedById        String?     
-  receivedBy          Receiver?  @relation(fields: [receivedById], references: [id], onDelete: SetNull)
-  
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  observaciones          String?
+  ubicacionFisica        String?
+  estado                 PlanState   @default(DISPONIBLE)
+  inconsistencias        String?
+  qrCode                 String?
+  receivedById           String?
+  receivedBy             Receiver?   @relation(fields: [receivedById], references: [id], onDelete: SetNull)
+  registradoPorId        String?
+  registradoPor          User?       @relation("PlanoRegistradoPor", fields: [registradoPorId], references: [id], onDelete: SetNull)
 
-  requests            Request[]
-  history             History[]
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  requests               Request[]
+  history                History[]
+  notifications          Notification[]
 }
 
 model Receiver {
@@ -109,12 +117,35 @@ model History {
 model AuditLog {
   id          String   @id @default(cuid())
   userId      String
-  action      String   // EDIT, DELETE
-  entityId    String   // ID of the plan
-  entityType  String   // "Plan"
-  oldData     String?  // JSON string
-  newData     String?  // JSON string
+  action      String
+  entityId    String
+  entityType  String
+  oldData     String?
+  newData     String?
   createdAt   DateTime @default(now())
 
   user        User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  message   String
+  userId    String
+  planoId   String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan      Plan?    @relation(fields: [planoId], references: [id], onDelete: SetNull)
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

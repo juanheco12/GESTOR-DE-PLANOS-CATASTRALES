@@ -9,7 +9,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   try {
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== "ADMINISTRADOR") {
-      return NextResponse.json({ error: "No autorizado. Solo los administradores pueden eliminar registros." }, { status: 403 });
+      return NextResponse.json({ error: "No autorizado. Solo el Administrador puede eliminar registros." }, { status: 403 });
     }
 
     const resolvedParams = await params;
@@ -52,18 +52,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const session = await getServerSession(authOptions);
     if (session?.user?.role !== "ADMINISTRADOR") {
-      return NextResponse.json({ error: "No autorizado. Solo los administradores pueden editar registros." }, { status: 403 });
+      return NextResponse.json({ error: "No autorizado. Solo el Administrador puede editar registros." }, { status: 403 });
     }
 
     const resolvedParams = await params;
     const id = resolvedParams.id;
     const newData = await req.json();
 
-    if (!newData.predial || !/^\d{30}$/.test(newData.predial)) {
-      return NextResponse.json({ error: "El número predial nacional debe tener exactamente 30 dígitos numéricos." }, { status: 400 });
-    }
-
-    const oldPlan = await prisma.plan.findUnique({ where: { id } });
+const oldPlan = await prisma.plan.findUnique({ where: { id } });
     if (!oldPlan) {
       return NextResponse.json({ error: "Plano no encontrado" }, { status: 404 });
     }
@@ -82,12 +78,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           radicado: newData.radicado,
           mutacion: newData.mutacion,
           formato: newData.formato,
-          propietario: newData.propietario,
-          predial: newData.predial,
-          veredaBarrio: newData.veredaBarrio,
-          profesionalResponsable: newData.profesionalResponsable,
-          observaciones: newData.observaciones,
-          receivedById: newData.receivedById,
+          propietario: newData.propietario || null,
+          predial: newData.predial || null,
+          veredaBarrio: newData.veredaBarrio || null,
+          profesionalResponsable: newData.profesionalResponsable || null,
+          observaciones: newData.observaciones || null,
+          ubicacionFisica: newData.ubicacionFisica || null,
+          receivedById: newData.receivedById || null,
           estado: newData.estado,
         }
       });
