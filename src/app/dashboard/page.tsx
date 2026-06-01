@@ -13,6 +13,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+import AutoRefresh from "@/components/AutoRefresh";
 
 const ACCION_LABELS: Record<string, string> = {
   REGISTRO: "Plano registrado",
@@ -61,7 +62,7 @@ export default async function DashboardPage() {
   if (isEjecutor) {
     const userId = session!.user.id;
 
-    const [listosParaFirmar, misActivas, totalDevueltos, totalSolicitudes, totalSistema, disponiblesSistema] = await Promise.all([
+    const [listosParaRecoger, misActivas, totalDevueltos, totalSolicitudes, totalSistema, disponiblesSistema] = await Promise.all([
       prisma.request.findMany({
         where: { userId, estado: "LISTO_PARA_ENTREGA" },
         include: { plan: { select: { radicado: true, mutacion: true } } },
@@ -96,6 +97,7 @@ export default async function DashboardPage() {
 
     return (
       <div className="p-6 lg:p-8 max-w-5xl mx-auto space-y-8">
+        <AutoRefresh intervalMs={20000} />
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Mi Panel</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
@@ -103,13 +105,13 @@ export default async function DashboardPage() {
           </p>
         </div>
 
-        {/* Alerta urgente: listos para firmar */}
-        {listosParaFirmar.length > 0 && (
+        {/* Alerta urgente: listos para recoger */}
+        {listosParaRecoger.length > 0 && (
           <div className="space-y-3">
             <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
               <BellRing className="h-4 w-4 text-amber-500" /> Acción requerida
             </h2>
-            {listosParaFirmar.map((req) => (
+            {listosParaRecoger.map((req) => (
               <div
                 key={req.id}
                 className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 border-l-4 border-l-amber-500 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3"
@@ -119,14 +121,14 @@ export default async function DashboardPage() {
                     Plano listo para recoger
                   </p>
                   <p className="text-sm text-amber-700 dark:text-amber-400 mt-0.5">
-                    Radicado <strong>{req.plan.radicado}</strong> — {req.plan.mutacion}
+                    Radicado <strong>{req.plan.radicado}</strong> — {req.plan.mutacion}. Dirígete al receptor para recoger el plano.
                   </p>
                 </div>
                 <Link
-                  href={`/dashboard/solicitudes/firmar/${req.id}`}
+                  href="/dashboard/solicitudes"
                   className="shrink-0 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
                 >
-                  Firmar y recibir
+                  Ver mis solicitudes
                 </Link>
               </div>
             ))}

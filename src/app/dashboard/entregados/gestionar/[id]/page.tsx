@@ -6,36 +6,42 @@ import Link from "next/link";
 import { ArrowLeft, User, Calendar, FileText } from "lucide-react";
 import ActionButtons from "./ActionButtons";
 
-export default async function GestionarSolicitudPage({ params }: { params: { id: string } }) {
+export default async function GestionarSolicitudPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
-  
-  const resolvedParams = await params;
-  const id = resolvedParams.id;
+  const { id } = await params;
 
   const solicitud = await prisma.request.findUnique({
     where: { id },
-    include: {
-      plan: true,
-      user: true,
-    }
+    include: { plan: true, user: true },
   });
 
   if (!solicitud || (session?.user?.role !== "ADMINISTRADOR" && session?.user?.role !== "ENCARGADO")) {
     notFound();
   }
 
+  // Resolve name of the assigned receiver (if any)
+  let adminEntregaNombre: string | null = null;
+  if (solicitud.adminEntregaId) {
+    const admin = await prisma.user.findUnique({
+      where:  { id: solicitud.adminEntregaId },
+      select: { name: true },
+    });
+    adminEntregaNombre = admin?.name ?? null;
+  }
+
   return (
     <div className="p-6 lg:p-8 max-w-4xl mx-auto">
       <div className="mb-6 flex items-center">
-        <Link href="/dashboard" className="mr-4 p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+        <Link href="/dashboard/entregados" className="mr-4 p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
           <ArrowLeft size={20} />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Gestionar Solicitud
-          </h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Gestionar Solicitud</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-1">
-            Plano {solicitud.plan.radicado} - Estado actual: <span className="font-semibold text-blue-600 dark:text-blue-400">{solicitud.estado.replace(/_/g, ' ')}</span>
+            Plano {solicitud.plan.radicado} — Estado:{" "}
+            <span className="font-semibold text-blue-600 dark:text-blue-400">
+              {solicitud.estado.replace(/_/g, " ")}
+            </span>
           </p>
         </div>
       </div>
@@ -50,7 +56,13 @@ export default async function GestionarSolicitudPage({ params }: { params: { id:
             </div>
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center mb-1"><Calendar className="mr-2 h-4 w-4" /> Fecha Solicitud</p>
-              <p className="font-medium text-slate-900 dark:text-slate-100">{solicitud.fechaSolicitud.toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" })}</p>
+              <p className="font-medium text-slate-900 dark:text-slate-100">
+                {new Date(solicitud.fechaSolicitud).toLocaleString("es-CO", {
+                  timeZone: "America/Bogota",
+                  dateStyle: "short",
+                  timeStyle: "short",
+                })}
+              </p>
             </div>
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400 flex items-center mb-1"><FileText className="mr-2 h-4 w-4" /> Mutación</p>
@@ -64,9 +76,15 @@ export default async function GestionarSolicitudPage({ params }: { params: { id:
         </div>
       </div>
 
-      {/* Botones de Acción (Client Component) */}
       <div className="bg-slate-50 dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700">
-        <ActionButtons requestId={solicitud.id} estado={solicitud.estado} />
+        <ActionButtons
+          requestId={solicitud.id}
+          estado={solicitud.estado}
+          adminEntregaId={solicitud.adminEntregaId}
+          adminEntregaNombre={adminEntregaNombre}
+          currentUserId={session!.user.id}
+          currentUserRole={session!.user.role}
+        />
       </div>
     </div>
   );
