@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ArrowLeft, FileText, Map, User, Calendar, FileType, CheckCircle2, AlertCircle, ClipboardList, MapPin } from "lucide-react";
 import SolicitarPlanoBoton from "./SolicitarPlanoBoton";
 import AdminActions from "./AdminActions";
-import Image from "next/image";
 
 export default async function DetallePlanoPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -37,8 +36,7 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
   const isEjecutor      = role === "EJECUTOR";
   const isRadicadora    = role === "RADICADORA";
 
-  // Solicitud activa (para mostrar firma o gestionar devolución)
-  const solicitudConFirma = plano.requests.find((r) => r.firma !== null);
+  // Solicitud activa (para gestionar devolución o entrega)
   const solicitudActiva = plano.requests.find((r) =>
     ["PENDIENTE", "LISTO_PARA_ENTREGA", "ENTREGADO", "DEVOLUCION_SOLICITADA"].includes(r.estado)
   );
@@ -184,31 +182,6 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                 </div>
               )}
 
-              {/* Firma digital del ejecutor — visible para superadmin/admin/encargado */}
-              {(isAdministrador || isEncargado) && solicitudConFirma && (
-                <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-4">Constancia de Entrega y Firma</h4>
-                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-1">
-                      <strong>Recibido por:</strong> {solicitudConFirma.user.name || solicitudConFirma.user.email}
-                    </p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-                      <strong>Fecha y hora:</strong>{" "}
-                      {solicitudConFirma.fechaEntrega
-                        ? new Date(solicitudConFirma.fechaEntrega).toLocaleString("es-CO", { timeZone: "America/Bogota", dateStyle: "short", timeStyle: "short" })
-                        : "No registrada"}
-                    </p>
-                    <div className="bg-white border-2 border-slate-200 rounded-lg p-2 max-w-[300px] h-[150px] relative overflow-hidden">
-                      <Image
-                        src={solicitudConFirma.firma!}
-                        alt="Firma del ejecutor"
-                        fill
-                        className="object-contain"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>
