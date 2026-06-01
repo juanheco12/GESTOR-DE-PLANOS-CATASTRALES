@@ -97,9 +97,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       });
     }
 
-    // ── ENCARGADO (asignado) confirma entrega física — sin firma ──
-    else if (accion === "CONFIRMAR_ENTREGA" && isAdmin) {
-      if (!isOwner) {
+    // ── EJECUTOR confirma que recibió el plano  (o ENCARGADO asignado como respaldo) ──
+    else if (accion === "CONFIRMAR_ENTREGA" && (request.userId === session.user.id || isAdmin)) {
+      if (isAdmin && !isOwner) {
         return NextResponse.json(
           { error: "Este plano fue asignado a otro receptor. Solo ese receptor puede confirmar la entrega." },
           { status: 403 }

@@ -103,16 +103,16 @@ export default function ActionButtons({
         </div>
       )}
 
-      {/* ── LISTO_PARA_ENTREGA: ejecutor viene a recoger ── */}
+      {/* ── LISTO_PARA_ENTREGA: el ejecutor confirma desde su panel ── */}
       {estado === "LISTO_PARA_ENTREGA" && (
         isOwner ? (
           <div className="space-y-3">
             <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl">
               <PackageCheck className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Esperando al ejecutor</p>
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Esperando confirmación del ejecutor</p>
                 <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-                  Cuando el ejecutor llegue a la oficina y le entregues el plano físicamente, confirma la entrega aquí.
+                  El ejecutor debe confirmar la recepción desde su panel "Mis Solicitudes". Si el ejecutor no puede hacerlo online, usa el botón de respaldo.
                 </p>
               </div>
             </div>
@@ -120,14 +120,14 @@ export default function ActionButtons({
               onClick={() =>
                 handleAction(
                   "CONFIRMAR_ENTREGA",
-                  "¿Confirmas que entregaste físicamente el plano al ejecutor?"
+                  "¿Confirmas manualmente que el ejecutor recibió el plano físicamente?"
                 )
               }
               disabled={loading}
-              className="inline-flex items-center justify-center px-6 py-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white rounded-xl font-medium transition-colors shadow-sm"
+              className="inline-flex items-center justify-center px-4 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-60 text-slate-700 dark:text-slate-200 rounded-lg text-sm font-medium transition-colors"
             >
-              <PackageCheck className="mr-2 h-5 w-5" />
-              {loading ? "Registrando..." : "Confirmar entrega al ejecutor"}
+              <PackageCheck className="mr-2 h-4 w-4" />
+              {loading ? "Registrando..." : "Confirmar entrega (respaldo)"}
             </button>
           </div>
         ) : (

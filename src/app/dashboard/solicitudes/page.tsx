@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { FileText, CornerUpLeft } from "lucide-react";
 import SolicitarDevolucionBoton from "./SolicitarDevolucionBoton";
+import RecibirPlanoBoton from "./RecibirPlanoBoton";
 
 export default async function MisSolicitudesPage() {
   const session = await getServerSession(authOptions);
@@ -54,27 +55,28 @@ export default async function MisSolicitudesPage() {
                       })}
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
-                        ${req.estado === 'PENDIENTE' ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400' : 
-                          req.estado === 'LISTO_PARA_ENTREGA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 animate-pulse' : 
-                          req.estado === 'ENTREGADO' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' : 
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        ${req.estado === 'PENDIENTE' ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400' :
+                          req.estado === 'LISTO_PARA_ENTREGA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 animate-pulse' :
+                          req.estado === 'ENTREGADO' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
                           req.estado === 'DEVOLUCION_SOLICITADA' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
                           'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'}`
                       }>
-                        {req.estado.replace(/_/g, ' ')}
+                        {({ PENDIENTE: "Pendiente", LISTO_PARA_ENTREGA: "Listo para recoger", ENTREGADO: "En tu poder", DEVOLUCION_SOLICITADA: "Devolución en proceso", DEVUELTO: "Devuelto", RECHAZADO: "Rechazado" } as Record<string, string>)[req.estado] ?? req.estado}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
                       {req.estado === 'LISTO_PARA_ENTREGA' && (
-                        <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">
-                          Pasa por la oficina a recogerlo
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <RecibirPlanoBoton requestId={req.id} />
+                          <span className="text-xs text-slate-400 dark:text-slate-500">El receptor te entregará el plano</span>
+                        </div>
                       )}
                       {req.estado === 'ENTREGADO' && (
                         <SolicitarDevolucionBoton requestId={req.id} />
                       )}
                       {(req.estado === 'PENDIENTE' || req.estado === 'DEVUELTO' || req.estado === 'DEVOLUCION_SOLICITADA') && (
-                         <span className="text-slate-400 italic text-xs">Sin acciones</span>
+                        <span className="text-slate-400 italic text-xs">Sin acciones</span>
                       )}
                     </td>
                   </tr>
