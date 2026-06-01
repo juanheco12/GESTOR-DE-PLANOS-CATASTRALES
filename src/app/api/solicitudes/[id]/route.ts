@@ -57,7 +57,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         // Notificar al EJECUTOR
         await tx.notification.create({
           data: {
-            message: `Tu plano ${radicado} está listo para recoger. Dirígete a la oficina para retirarlo.`,
+            message: `Tu plano ${radicado} está listo. Dirígete al receptor para recoger el plano.`,
             userId:  request.userId,
             planoId: planId,
           },
@@ -88,7 +88,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
         await sendPushToUser(request.userId, {
           title: "✅ Plano listo para recoger",
-          body:  `El plano ${radicado} está listo. Pasa por la oficina a retirarlo.`,
+          body:  `El plano ${radicado} está listo. Dirígete al receptor para recogerlo.`,
           url:   `/dashboard/solicitudes`,
           tag:   `listo-${id}`,
         }).catch(() => {});
