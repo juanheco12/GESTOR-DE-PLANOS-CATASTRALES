@@ -3,6 +3,7 @@ import { NextRequest } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { RequestState } from "@prisma/client";
 
 // PATCH: restore plan to DISPONIBLE without deleting the request
 export async function PATCH(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -50,7 +51,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   // Restore plan to DISPONIBLE from any non-disponible state when the request is deleted
   const nonDisponibleStates = ["PRESTADO", "PENDIENTE_REVISION", "ARCHIVADO"];
-  const activeRequestStates = ["PENDIENTE", "LISTO_PARA_ENTREGA", "ENTREGADO", "DEVOLUCION_SOLICITADA"];
+  const activeRequestStates: RequestState[] = ["PENDIENTE", "LISTO_PARA_ENTREGA", "ENTREGADO", "DEVOLUCION_SOLICITADA"];
   const shouldRestorePlan = nonDisponibleStates.includes(request.plan.estado);
 
   await prisma.$transaction(async (tx) => {
