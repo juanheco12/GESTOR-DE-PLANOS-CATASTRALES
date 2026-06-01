@@ -87,9 +87,9 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
             </Link>
           )}
 
-          {/* ── ADMINISTRADOR: editar / eliminar planos ── */}
+          {/* ── ADMINISTRADOR: editar / eliminar / restaurar planos ── */}
           {isAdministrador && (
-            <AdminActions planId={plano.id} />
+            <AdminActions planId={plano.id} planEstado={plano.estado} />
           )}
         </div>
       </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Shield, ListChecks, ClipboardList, DatabaseBackup, BarChart3, Inbox, Bell } from "lucide-react";
+import { Users, Shield, ListChecks, ClipboardList, DatabaseBackup, BarChart3, Inbox, Bell, FolderOpen } from "lucide-react";
 import UsersTab          from "./UsersTab";
 import SecurityTab       from "./SecurityTab";
 import ReceiversTab      from "./ReceiversTab";
@@ -10,12 +10,14 @@ import BackupTab         from "./BackupTab";
 import ReporteTab        from "./ReporteTab";
 import SolicitudesTab    from "./SolicitudesTab";
 import NotificacionesTab from "./NotificacionesTab";
+import PlanosTab         from "./PlanosTab";
 
-type Tab = "users" | "receivers" | "security" | "audit" | "backup" | "reporte" | "solicitudes" | "notificaciones";
+type Tab = "users" | "receivers" | "planos" | "solicitudes" | "notificaciones" | "security" | "audit" | "backup" | "reporte";
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
   { id: "users",          label: "Usuarios",        icon: Users },
   { id: "receivers",      label: "Receptores",      icon: ListChecks },
+  { id: "planos",         label: "Planos",          icon: FolderOpen },
   { id: "solicitudes",    label: "Solicitudes",     icon: Inbox },
   { id: "notificaciones", label: "Notificaciones",  icon: Bell },
   { id: "security",       label: "Mi Cuenta",       icon: Shield },
@@ -51,6 +53,7 @@ export default function ConfigTabs({ initialUsers, initialReceivers }: { initial
       <div className="p-6 md:p-8">
         {activeTab === "users"          && <UsersTab          initialUsers={initialUsers} />}
         {activeTab === "receivers"      && <ReceiversTab      initialReceivers={initialReceivers} />}
+        {activeTab === "planos"         && <PlanosTab />}
         {activeTab === "solicitudes"    && <SolicitudesTab />}
         {activeTab === "notificaciones" && <NotificacionesTab />}
         {activeTab === "security"       && <SecurityTab />}
