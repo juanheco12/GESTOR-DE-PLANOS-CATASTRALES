@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Bell, BellOff, Send } from "lucide-react";
+import { Bell, BellOff, Send, AlertTriangle } from "lucide-react";
 
-const VAPID_PUBLIC = "BFGjUXqEPn9ncQLGzjOnt1QLC3i5Dmhx7Dg9lUyyBDbZjMvaJ4yFc8j-BkaPCklrX7XYAOYGqIa9Kf6bBhdfM2Y";
+// Read from env var so it stays consistent with the server (push.ts).
+// Falls back to the hardcoded key only if the env var is not set.
+const VAPID_PUBLIC =
+  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ??
+  "BFGjUXqEPn9ncQLGzjOnt1QLC3i5Dmhx7Dg9lUyyBDbZjMvaJ4yFc8j-BkaPCklrX7XYAOYGqIa9Kf6bBhdfM2Y";
 
 function urlBase64ToUint8Array(base64: string) {
   const pad = "=".repeat((4 - (base64.length % 4)) % 4);
@@ -25,28 +29,20 @@ export default function PushManager() {
   const [supported,  setSupported]  = useState(false);
   const [subscribed, setSubscribed] = useState(false);
   const [loading,    setLoading]    = useState(false);
-  const [testing,    setTesting]    = useState(false);
+  const [testMsg,    setTestMsg]    = useState("");
 
   useEffect(() => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
     setSupported(true);
 
     navigator.serviceWorker
-      // updateViaCache:"none" forces Edge/Chrome to always fetch the latest sw.js
-      // instead of serving a cached copy — critical for SW updates to propagate
       .register("/sw.js", { updateViaCache: "none" })
       .then(async (reg) => {
-        // Proactively check for a new SW version on every page load
         reg.update().catch(() => {});
-
         const sub = await reg.pushManager.getSubscription();
         if (!sub) { setSubscribed(false); return; }
-
-        // Re-sync existing browser subscription with DB (survives server restarts)
         const ok = await syncToServer(sub);
         setSubscribed(ok);
-
-        // If a new SW activates mid-session, re-sync the subscription
         navigator.serviceWorker.addEventListener("controllerchange", async () => {
           const updated = await reg.pushManager.getSubscription();
           if (updated) await syncToServer(updated);
@@ -57,14 +53,17 @@ export default function PushManager() {
 
   const subscribe = async () => {
     setLoading(true);
+    setTestMsg("");
     try {
       const permission = await Notification.requestPermission();
-      if (permission !== "granted") return;
+      if (permission !== "granted") {
+        setTestMsg("Permiso denegado en el navegador. Revisa la configuración de notificaciones.");
+        return;
+      }
 
       const reg = await navigator.serviceWorker.ready;
 
-      // Always unsubscribe first so we get a fresh endpoint.
-      // Stale endpoints are the #1 cause of silent push failures on Edge.
+      // Always unsubscribe first — stale endpoints are the #1 cause of silent failures on Edge
       const old = await reg.pushManager.getSubscription();
       if (old) {
         await fetch("/api/push/subscribe", {
@@ -81,10 +80,11 @@ export default function PushManager() {
       });
 
       const ok = await syncToServer(sub);
-      if (!ok) throw new Error();
+      if (!ok) throw new Error("No se pudo guardar en servidor");
       setSubscribed(true);
-    } catch {
-      alert("No se pudo activar las notificaciones. Verifica los permisos del navegador.");
+      setTestMsg("✅ Notificaciones activadas. Usa el botón de prueba para verificar.");
+    } catch (e: any) {
+      setTestMsg(`Error: ${e?.message ?? "No se pudo activar"}`);
     } finally {
       setLoading(false);
     }
@@ -92,12 +92,12 @@ export default function PushManager() {
 
   const unsubscribe = async () => {
     setLoading(true);
+    setTestMsg("");
     try {
       const reg = await navigator.serviceWorker.getRegistration("/sw.js");
       if (!reg) return;
       const sub = await reg.pushManager.getSubscription();
       if (!sub) return;
-
       await fetch("/api/push/subscribe", {
         method:  "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -113,45 +113,67 @@ export default function PushManager() {
   };
 
   const testPush = async () => {
-    setTesting(true);
+    setTestMsg("Enviando...");
     try {
-      const res = await fetch("/api/push/test");
+      const res  = await fetch("/api/push/test");
       const data = await res.json();
-      alert(data.message ?? "Notificación enviada. Espera unos segundos.");
+      setTestMsg(data.message ?? "Enviado");
+      // Clear message after 8s
+      setTimeout(() => setTestMsg(""), 8000);
     } catch {
-      alert("Error al enviar notificación de prueba.");
-    } finally {
-      setTesting(false);
+      setTestMsg("Error al enviar prueba.");
     }
   };
 
   if (!supported) return null;
 
   return (
-    <div className="flex items-center gap-1">
-      <button
-        onClick={subscribed ? unsubscribe : subscribe}
-        disabled={loading}
-        title={subscribed ? "Desactivar notificaciones push" : "Activar notificaciones push"}
-        className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
-          subscribed
-            ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100 dark:hover:bg-emerald-900/50"
-            : "text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-        }`}
-      >
-        {subscribed ? <Bell className="h-5 w-5" /> : <BellOff className="h-5 w-5" />}
-      </button>
-
-      {/* Test button only when subscribed — lets users verify delivery works */}
-      {subscribed && (
+    <div className="flex flex-col items-end gap-1">
+      <div className="flex items-center gap-1">
+        {/* Main subscribe/unsubscribe toggle */}
         <button
-          onClick={testPush}
-          disabled={testing}
-          title="Enviar notificación de prueba"
-          className="p-2 rounded-lg transition-colors text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 disabled:opacity-50"
+          onClick={subscribed ? unsubscribe : subscribe}
+          disabled={loading}
+          title={subscribed ? "Desactivar notificaciones push" : "Activar notificaciones push"}
+          className={`p-2 rounded-lg transition-colors disabled:opacity-50 ${
+            subscribed
+              ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 hover:bg-emerald-100"
+              : "text-slate-400 dark:text-slate-500 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800"
+          }`}
         >
-          <Send className="h-4 w-4" />
+          {loading ? (
+            <span className="h-5 w-5 block border-2 border-current border-t-transparent rounded-full animate-spin" />
+          ) : subscribed ? (
+            <Bell className="h-5 w-5" />
+          ) : (
+            <BellOff className="h-5 w-5" />
+          )}
         </button>
+
+        {/* Test button — only when subscribed */}
+        {subscribed && (
+          <button
+            onClick={testPush}
+            title="Enviar notificación de prueba a este dispositivo"
+            className="p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+          >
+            <Send className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {/* Feedback message */}
+      {testMsg && (
+        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-[220px] text-right leading-snug">
+          {testMsg}
+        </p>
+      )}
+
+      {/* Edge/Windows tip shown when subscribed */}
+      {subscribed && (
+        <p className="text-[10px] text-slate-400 dark:text-slate-500 max-w-[220px] text-right leading-snug hidden lg:block">
+          Edge: verifica Configuración de Windows → Sistema → Notificaciones → Microsoft Edge
+        </p>
       )}
     </div>
   );

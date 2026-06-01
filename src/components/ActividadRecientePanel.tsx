@@ -107,7 +107,7 @@ export default function ActividadRecientePanel({ groups, isAdmin, colTz }: Props
           </div>
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {items.map((h) => (
-              <li key={h.id} className="px-5 py-3 flex items-center gap-4 group">
+              <li key={h.id} className="px-5 py-3 flex items-center gap-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-slate-800 dark:text-slate-200 truncate">
@@ -132,10 +132,14 @@ export default function ActividadRecientePanel({ groups, isAdmin, colTz }: Props
                   <button
                     onClick={() => handleDelete(h.id)}
                     disabled={deleting === h.id}
-                    title="Eliminar registro"
-                    className="shrink-0 opacity-0 group-hover:opacity-100 focus:opacity-100 p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all disabled:opacity-40"
+                    title="Eliminar este registro de actividad"
+                    className="shrink-0 p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 dark:text-slate-600 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
                   >
-                    <Trash2 className="h-3.5 w-3.5" />
+                    {deleting === h.id ? (
+                      <span className="h-3.5 w-3.5 block border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Trash2 className="h-3.5 w-3.5" />
+                    )}
                   </button>
                 )}
               </li>
