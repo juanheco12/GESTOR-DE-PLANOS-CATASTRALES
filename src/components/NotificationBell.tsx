@@ -44,9 +44,9 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const markAllRead = async () => {
-    await fetch("/api/notifications", { method: "PATCH" });
+  const markAllRead = () => {
     setNotifs((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    fetch("/api/notifications", { method: "PATCH" }).catch(() => {});
   };
 
   return (
