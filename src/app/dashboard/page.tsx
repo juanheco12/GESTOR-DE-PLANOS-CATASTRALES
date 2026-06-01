@@ -14,14 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import AutoRefresh from "@/components/AutoRefresh";
-
-const ACCION_LABELS: Record<string, string> = {
-  REGISTRO: "Plano registrado",
-  SOLICITUD: "Solicitud creada",
-  ENTREGA: "Plano entregado",
-  DEVOLUCION: "Plano devuelto",
-  EDICION: "Plano editado",
-};
+import ActividadRecientePanel, { type DayGroup } from "@/components/ActividadRecientePanel";
 
 function StatCard({
   label,
@@ -238,15 +231,27 @@ export default async function DashboardPage() {
     if (key === ayerK) return "Ayer";
     return d.toLocaleDateString("es-CO", { timeZone: COL_TZ, weekday: "long", day: "numeric", month: "long", year: "numeric" });
   }
-  const actividadPorDia = new Map<string, { label: string; historialUrl: string; items: typeof actividadReciente }>();
+  const actividadPorDiaMap = new Map<string, DayGroup>();
   for (const h of actividadReciente) {
     const k = dayKey(h.createdAt);
-    if (!actividadPorDia.has(k)) {
+    if (!actividadPorDiaMap.has(k)) {
       const iso = h.createdAt.toISOString().slice(0, 10);
-      actividadPorDia.set(k, { label: dayLabel(h.createdAt), historialUrl: `/dashboard/historial?desde=${iso}&hasta=${iso}`, items: [] });
+      actividadPorDiaMap.set(k, {
+        key:         k,
+        label:       dayLabel(h.createdAt),
+        historialUrl: `/dashboard/historial?desde=${iso}&hasta=${iso}`,
+        items:       [],
+      });
     }
-    actividadPorDia.get(k)!.items.push(h);
+    actividadPorDiaMap.get(k)!.items.push({
+      id:        h.id,
+      accion:    h.accion,
+      createdAt: h.createdAt.toISOString(),
+      plan:      h.plan,
+      user:      h.user,
+    });
   }
+  const actividadGroups: DayGroup[] = Array.from(actividadPorDiaMap.values());
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
@@ -355,43 +360,11 @@ export default async function DashboardPage() {
           </Link>
         </div>
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-          {actividadPorDia.size === 0 ? (
-            <p className="px-5 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
-              Sin actividad registrada. Consulta el{" "}
-              <Link href="/dashboard/historial" className="text-blue-600 dark:text-blue-400 hover:underline">Historial</Link>.
-            </p>
-          ) : (
-            Array.from(actividadPorDia.entries()).map(([k, { label, historialUrl, items }]) => (
-              <div key={k}>
-                {/* Cabecera del día */}
-                <div className="px-5 py-2 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">{label}</span>
-                  <Link href={historialUrl} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
-                    Ver día completo →
-                  </Link>
-                </div>
-                <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {items.map((h) => (
-                    <li key={h.id} className="px-5 py-3 flex items-center gap-4">
-                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-slate-800 dark:text-slate-200 truncate">
-                          <span className="font-medium">{ACCION_LABELS[h.accion] ?? h.accion}</span>
-                          {" — "}
-                          <Link href={`/dashboard/buscar/${h.plan.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                            {h.plan.radicado}
-                          </Link>
-                        </p>
-                        <p className="text-xs text-slate-400 dark:text-slate-500 truncate">
-                          {h.user.name || h.user.email} · {new Date(h.createdAt).toLocaleString("es-CO", { timeZone: COL_TZ, timeStyle: "short" })}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))
-          )}
+          <ActividadRecientePanel
+            groups={actividadGroups}
+            isAdmin={role === "ADMINISTRADOR"}
+            colTz={COL_TZ}
+          />
         </div>
       </div>
     </div>
