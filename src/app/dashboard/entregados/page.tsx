@@ -16,7 +16,7 @@ export default async function PlanosEntregadosPage() {
   });
 
   const ESTADO_LABELS: Record<string, string> = {
-    LISTO_PARA_ENTREGA: "Pendiente de firma",
+    LISTO_PARA_ENTREGA: "Listo para entregar",
     ENTREGADO: "Entregado",
     DEVOLUCION_SOLICITADA: "Devolución solicitada",
   };

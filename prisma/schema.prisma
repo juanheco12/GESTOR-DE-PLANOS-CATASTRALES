@@ -84,7 +84,6 @@ model Request {
   adminEntregaId  String?      // Admin que autorizó y entregó
   estado          RequestState @default(PENDIENTE)
   observaciones    String?
-  firma           String?      // Imagen en base64 de la firma
   fechaSolicitud  DateTime   @default(now())
   fechaEntrega    DateTime?
   fechaDevolucion DateTime?

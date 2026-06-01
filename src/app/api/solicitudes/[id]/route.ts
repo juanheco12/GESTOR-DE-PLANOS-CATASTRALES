@@ -16,9 +16,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const id = resolvedParams.id;
 
     const data = await req.json();
-    const { accion, firma } = data;
+    const { accion } = data;
 
-    // Traer solicitud junto con el plano para usar el radicado en mensajes
     const request = await prisma.request.findUnique({
       where: { id },
       include: { plan: { select: { radicado: true, id: true } } },
@@ -27,14 +26,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "Solicitud no encontrada" }, { status: 404 });
     }
 
-    const isAdmin    = session.user.role === "ADMINISTRADOR" || session.user.role === "ENCARGADO";
-    const radicado   = request.plan.radicado;
-    const planId     = request.planId;
-    const quien      = session.user.name ?? session.user.email ?? "Encargado";
+    const isAdmin   = session.user.role === "ADMINISTRADOR" || session.user.role === "ENCARGADO";
+    const radicado  = request.plan.radicado;
+    const planId    = request.planId;
+    const quien     = session.user.name ?? session.user.email ?? "Encargado";
+
+    // Helper: is the current user the assigned receiver (or ADMINISTRADOR override)?
+    const isOwner = !request.adminEntregaId
+      || request.adminEntregaId === session.user.id
+      || session.user.role === "ADMINISTRADOR";
 
     let result;
 
-    // ── ENCARGADO autoriza entrega ──
+    // ── ENCARGADO acepta solicitud y queda asignado ──
     if (accion === "MARCAR_LISTO" && isAdmin) {
       result = await prisma.$transaction(async (tx) => {
         const reqUpdated = await tx.request.update({
@@ -46,14 +50,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             planId,
             userId:   session.user.id,
             accion:   "ENTREGA_AUTORIZADA",
-            detalles: `${quien} autorizó la entrega del plano. Pendiente de firma del ejecutor.`,
+            detalles: `${quien} aceptó la solicitud. Pendiente de entrega física al ejecutor.`,
           },
         });
 
-        // Notificar al EJECUTOR que su plano está listo para recoger
+        // Notificar al EJECUTOR
         await tx.notification.create({
           data: {
-            message: `Tu plano ${radicado} está listo para recoger. Dirígete a la oficina para firmarlo.`,
+            message: `Tu plano ${radicado} está listo para recoger. Dirígete a la oficina para retirarlo.`,
             userId:  request.userId,
             planoId: planId,
           },
@@ -67,7 +71,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           });
         }
 
-        // Notificar a todos los ADMINISTRADOR sobre la acción del encargado
+        // Notificar a ADMINISTRADOR
         const admins = await tx.user.findMany({
           where: { role: "ADMINISTRADOR", isActive: true },
           select: { id: true },
@@ -75,17 +79,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         if (admins.length > 0) {
           await tx.notification.createMany({
             data: admins.map((u) => ({
-              message: `${quien} autorizó la entrega del plano ${radicado} al ejecutor.`,
+              message: `${quien} aceptó la solicitud del plano ${radicado} y lo preparará para entrega.`,
               userId:  u.id,
               planoId: planId,
             })),
           });
         }
 
-        // Push al EJECUTOR: su plano está listo para recoger
         await sendPushToUser(request.userId, {
-          title: "✅ Plano autorizado",
-          body:  `El plano ${radicado} está listo para recoger.`,
+          title: "✅ Plano listo para recoger",
+          body:  `El plano ${radicado} está listo. Pasa por la oficina a retirarlo.`,
           url:   `/dashboard/solicitudes`,
           tag:   `listo-${id}`,
         }).catch(() => {});
@@ -94,14 +97,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       });
     }
 
-    // ── EJECUTOR firma y recibe el plano ──
-    else if (accion === "FIRMAR" && request.userId === session.user.id) {
-      if (!firma) return NextResponse.json({ error: "Firma requerida" }, { status: 400 });
+    // ── ENCARGADO (asignado) confirma entrega física — sin firma ──
+    else if (accion === "CONFIRMAR_ENTREGA" && isAdmin) {
+      if (!isOwner) {
+        return NextResponse.json(
+          { error: "Este plano fue asignado a otro receptor. Solo ese receptor puede confirmar la entrega." },
+          { status: 403 }
+        );
+      }
 
       result = await prisma.$transaction(async (tx) => {
         const reqUpdated = await tx.request.update({
           where: { id },
-          data: { estado: "ENTREGADO", firma, fechaEntrega: new Date() },
+          data: { estado: "ENTREGADO", fechaEntrega: new Date() },
         });
         await tx.plan.update({
           where: { id: planId },
@@ -112,30 +120,39 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             planId,
             userId:   session.user.id,
             accion:   "FIRMA_ENTREGA",
-            detalles: "El ejecutor firmó y recibió el plano físicamente.",
+            detalles: `${quien} confirmó la entrega física del plano ${radicado} al ejecutor.`,
           },
         });
 
-        // Notificar a ADMINISTRADOR y ENCARGADO que el ejecutor ya lo retiró
-        const destinatarios = await tx.user.findMany({
-          where: { role: { in: ["ADMINISTRADOR", "ENCARGADO"] }, isActive: true },
+        // Notificar al EJECUTOR
+        await tx.notification.create({
+          data: {
+            message: `El plano ${radicado} fue registrado como entregado. Ya está en tu poder.`,
+            userId:  request.userId,
+            planoId: planId,
+          },
+        });
+
+        // Notificar a ADMINISTRADOR
+        const admins = await tx.user.findMany({
+          where: { role: "ADMINISTRADOR", isActive: true },
           select: { id: true },
         });
-        if (destinatarios.length > 0) {
+        if (admins.length > 0) {
           await tx.notification.createMany({
-            data: destinatarios.map((u) => ({
-              message: `${quien} firmó y retiró físicamente el plano ${radicado}.`,
+            data: admins.map((u) => ({
+              message: `${quien} confirmó la entrega del plano ${radicado} al ejecutor.`,
               userId:  u.id,
               planoId: planId,
             })),
           });
         }
 
-        await sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
-          title: "📤 Plano retirado",
-          body:  `${quien} firmó y retiró el plano ${radicado}.`,
-          url:   `/dashboard/entregados`,
-          tag:   `firma-${id}`,
+        await sendPushToUser(request.userId, {
+          title: "📦 Plano entregado",
+          body:  `El plano ${radicado} fue confirmado como entregado.`,
+          url:   `/dashboard/solicitudes`,
+          tag:   `entregado-${id}`,
         }).catch(() => {});
 
         return reqUpdated;
@@ -158,7 +175,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           },
         });
 
-        // Notificar a ENCARGADO y ADMINISTRADOR
+        // Notificar solo al receptor asignado (y a admins)
         const destinatarios = await tx.user.findMany({
           where: { role: { in: ["ADMINISTRADOR", "ENCARGADO"] }, isActive: true },
           select: { id: true },
@@ -184,8 +201,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       });
     }
 
-    // ── ENCARGADO acepta devolución ──
+    // ── ENCARGADO (asignado) acepta devolución ──
     else if (accion === "ACEPTAR_DEVOLUCION" && isAdmin) {
+      if (!isOwner) {
+        return NextResponse.json(
+          { error: "Este plano fue asignado a otro receptor. Solo ese receptor puede aceptar la devolución." },
+          { status: 403 }
+        );
+      }
+
       result = await prisma.$transaction(async (tx) => {
         const reqUpdated = await tx.request.update({
           where: { id },
@@ -204,7 +228,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           },
         });
 
-        // Quitar alerta de devolución del propio ENCARGADO
         if (session.user.role === "ENCARGADO") {
           await tx.notification.updateMany({
             where: { userId: session.user.id, planoId: planId, isRead: false },
@@ -212,7 +235,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           });
         }
 
-        // Notificar al EJECUTOR que su plano fue recibido y está disponible
         await tx.notification.create({
           data: {
             message: `Tu devolución del plano ${radicado} fue confirmada. El plano ya está disponible en el sistema.`,
@@ -221,7 +243,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           },
         });
 
-        // Notificar a ADMINISTRADOR sobre la acción
         const admins = await tx.user.findMany({
           where: { role: "ADMINISTRADOR", isActive: true },
           select: { id: true },
@@ -254,8 +275,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       });
     }
 
-    // ── ADMIN fuerza devolución ──
+    // ── ADMIN/ENCARGADO (asignado) fuerza devolución sin solicitud del ejecutor ──
     else if (accion === "FORZAR_DEVOLUCION" && isAdmin && request.estado === "ENTREGADO") {
+      if (!isOwner) {
+        return NextResponse.json(
+          { error: "Este plano fue asignado a otro receptor. Solo ese receptor puede registrar la devolución." },
+          { status: 403 }
+        );
+      }
+
       result = await prisma.$transaction(async (tx) => {
         const reqUpdated = await tx.request.update({
           where: { id },

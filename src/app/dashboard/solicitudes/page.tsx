@@ -1,7 +1,6 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import Link from "next/link";
 import { FileText, CornerUpLeft } from "lucide-react";
 import SolicitarDevolucionBoton from "./SolicitarDevolucionBoton";
 
@@ -24,7 +23,7 @@ export default async function MisSolicitudesPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Mis Solicitudes</h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
-          Consulta el estado de tus solicitudes, firma la recepción y gestiona las devoluciones.
+          Consulta el estado de tus solicitudes y gestiona las devoluciones.
         </p>
       </div>
 
@@ -67,9 +66,9 @@ export default async function MisSolicitudesPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {req.estado === 'LISTO_PARA_ENTREGA' && (
-                        <Link href={`/dashboard/solicitudes/firmar/${req.id}`} className="inline-flex items-center text-amber-600 font-bold hover:underline">
-                          ¡Requiere Firma!
-                        </Link>
+                        <span className="text-amber-600 dark:text-amber-400 text-xs font-medium">
+                          Pasa por la oficina a recogerlo
+                        </span>
                       )}
                       {req.estado === 'ENTREGADO' && (
                         <SolicitarDevolucionBoton requestId={req.id} />

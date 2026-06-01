@@ -12,7 +12,7 @@ const ACCION_LABELS: Record<string, string> = {
   REGISTRO:           "Registro",
   SOLICITUD:          "Solicitud",
   ENTREGA_AUTORIZADA: "Entrega autorizada",
-  FIRMA_ENTREGA:      "Firma y entrega",
+  FIRMA_ENTREGA:      "Entrega confirmada",
   DEVOLUCION_SOLICITADA: "Dev. solicitada",
   PLANO_ARCHIVADO:    "Devolución",
   EDICION:            "Edición",
