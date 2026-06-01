@@ -1,23 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Shield, ListChecks, ClipboardList, DatabaseBackup, BarChart3 } from "lucide-react";
-import UsersTab    from "./UsersTab";
-import SecurityTab from "./SecurityTab";
-import ReceiversTab from "./ReceiversTab";
-import AuditTab    from "./AuditTab";
-import BackupTab   from "./BackupTab";
-import ReporteTab  from "./ReporteTab";
+import { Users, Shield, ListChecks, ClipboardList, DatabaseBackup, BarChart3, Inbox, Bell } from "lucide-react";
+import UsersTab          from "./UsersTab";
+import SecurityTab       from "./SecurityTab";
+import ReceiversTab      from "./ReceiversTab";
+import AuditTab          from "./AuditTab";
+import BackupTab         from "./BackupTab";
+import ReporteTab        from "./ReporteTab";
+import SolicitudesTab    from "./SolicitudesTab";
+import NotificacionesTab from "./NotificacionesTab";
 
-type Tab = "users" | "receivers" | "security" | "audit" | "backup" | "reporte";
+type Tab = "users" | "receivers" | "security" | "audit" | "backup" | "reporte" | "solicitudes" | "notificaciones";
 
 const TABS: { id: Tab; label: string; icon: React.ElementType }[] = [
-  { id: "users",     label: "Usuarios",     icon: Users },
-  { id: "receivers", label: "Receptores",   icon: ListChecks },
-  { id: "security",  label: "Mi Cuenta",    icon: Shield },
-  { id: "audit",     label: "Auditoría",    icon: ClipboardList },
-  { id: "backup",    label: "Respaldo",     icon: DatabaseBackup },
-  { id: "reporte",   label: "Reporte Mensual", icon: BarChart3 },
+  { id: "users",          label: "Usuarios",        icon: Users },
+  { id: "receivers",      label: "Receptores",      icon: ListChecks },
+  { id: "solicitudes",    label: "Solicitudes",     icon: Inbox },
+  { id: "notificaciones", label: "Notificaciones",  icon: Bell },
+  { id: "security",       label: "Mi Cuenta",       icon: Shield },
+  { id: "audit",          label: "Auditoría",       icon: ClipboardList },
+  { id: "backup",         label: "Respaldo",        icon: DatabaseBackup },
+  { id: "reporte",        label: "Reporte Mensual", icon: BarChart3 },
 ];
 
 export default function ConfigTabs({ initialUsers, initialReceivers }: { initialUsers: any[]; initialReceivers: any[] }) {
@@ -45,12 +49,14 @@ export default function ConfigTabs({ initialUsers, initialReceivers }: { initial
 
       {/* Tab Content */}
       <div className="p-6 md:p-8">
-        {activeTab === "users"     && <UsersTab    initialUsers={initialUsers} />}
-        {activeTab === "receivers" && <ReceiversTab initialReceivers={initialReceivers} />}
-        {activeTab === "security"  && <SecurityTab />}
-        {activeTab === "audit"     && <AuditTab />}
-        {activeTab === "backup"    && <BackupTab />}
-        {activeTab === "reporte"   && <ReporteTab />}
+        {activeTab === "users"          && <UsersTab          initialUsers={initialUsers} />}
+        {activeTab === "receivers"      && <ReceiversTab      initialReceivers={initialReceivers} />}
+        {activeTab === "solicitudes"    && <SolicitudesTab />}
+        {activeTab === "notificaciones" && <NotificacionesTab />}
+        {activeTab === "security"       && <SecurityTab />}
+        {activeTab === "audit"          && <AuditTab />}
+        {activeTab === "backup"         && <BackupTab />}
+        {activeTab === "reporte"        && <ReporteTab />}
       </div>
     </div>
   );
