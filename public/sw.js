@@ -1,4 +1,4 @@
-const CACHE = "catastro-v1";
+const CACHE = "catastro-v2";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(clients.claim()));
@@ -9,15 +9,19 @@ self.addEventListener("push", (event) => {
   let data;
   try { data = event.data.json(); } catch { return; }
 
-  const { title, body, url = "/dashboard", tag = "catastro" } = data;
+  const {
+    title = "Catastro Montería",
+    body  = "",
+    url   = "/dashboard",
+    tag   = "catastro",
+  } = data;
 
   event.waitUntil(
     self.registration.showNotification(title, {
       body,
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
       tag,
-      renotify: true,
+      renotify:  true,
+      requireInteraction: false,
       data: { url },
     })
   );
@@ -30,8 +34,8 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
-      .then((clientList) => {
-        for (const client of clientList) {
+      .then((list) => {
+        for (const client of list) {
           if (client.url.includes(self.location.origin) && "focus" in client) {
             client.navigate(url);
             return client.focus();
