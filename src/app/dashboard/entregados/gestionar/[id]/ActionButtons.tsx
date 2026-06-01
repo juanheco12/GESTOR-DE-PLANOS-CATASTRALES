@@ -25,7 +25,6 @@ export default function ActionButtons({
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState("");
 
-  // El receptor asignado es quien llamó MARCAR_LISTO; ADMINISTRADOR siempre puede actuar
   const isOwner =
     !adminEntregaId ||
     adminEntregaId === currentUserId ||
@@ -103,7 +102,7 @@ export default function ActionButtons({
         </div>
       )}
 
-      {/* ── LISTO_PARA_ENTREGA: el ejecutor confirma desde su panel ── */}
+      {/* ── LISTO_PARA_ENTREGA: esperando que el ejecutor confirme ── */}
       {estado === "LISTO_PARA_ENTREGA" && (
         isOwner ? (
           <div className="space-y-3">
@@ -112,7 +111,7 @@ export default function ActionButtons({
               <div>
                 <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Esperando confirmación del ejecutor</p>
                 <p className="text-xs text-amber-700 dark:text-amber-400 mt-1">
-                  El ejecutor debe confirmar la recepción desde su panel "Mis Solicitudes". Si el ejecutor no puede hacerlo online, usa el botón de respaldo.
+                  El ejecutor debe confirmar la recepción desde su panel "Mis Solicitudes". Si el ejecutor no puede hacerlo, usa el botón de respaldo.
                 </p>
               </div>
             </div>

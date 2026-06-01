@@ -1,26 +1,39 @@
+export const dynamic = "force-dynamic";
+
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { FileText, CornerUpLeft } from "lucide-react";
 import SolicitarDevolucionBoton from "./SolicitarDevolucionBoton";
 import RecibirPlanoBoton from "./RecibirPlanoBoton";
+import AutoRefresh from "@/components/AutoRefresh";
 
 export default async function MisSolicitudesPage() {
   const session = await getServerSession(authOptions);
-  
+
   if (session?.user?.role !== "EJECUTOR") {
     return <div className="p-8 text-center text-red-500">Acceso denegado. Solo para ejecutores.</div>;
   }
 
-  // Obtener todas las solicitudes del ejecutor actual
   const solicitudes = await prisma.request.findMany({
-    where: { userId: session.user.id },
+    where:   { userId: session.user.id },
     include: { plan: true },
-    orderBy: { fechaSolicitud: 'desc' }
+    orderBy: { fechaSolicitud: "desc" },
   });
+
+  const ESTADO_LABELS: Record<string, string> = {
+    PENDIENTE:            "Pendiente",
+    LISTO_PARA_ENTREGA:   "Listo para recoger",
+    ENTREGADO:            "En tu poder",
+    DEVOLUCION_SOLICITADA: "Devolución en proceso",
+    DEVUELTO:             "Devuelto",
+    RECHAZADO:            "Rechazado",
+  };
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto h-full flex flex-col">
+      {/* Auto-refresh every 20 s so status changes appear without manual reload */}
+      <AutoRefresh intervalMs={10000} />
+
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Mis Solicitudes</h1>
         <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">
@@ -56,26 +69,26 @@ export default async function MisSolicitudesPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                        ${req.estado === 'PENDIENTE' ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400' :
-                          req.estado === 'LISTO_PARA_ENTREGA' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 animate-pulse' :
-                          req.estado === 'ENTREGADO' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                          req.estado === 'DEVOLUCION_SOLICITADA' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400' :
-                          'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400'}`
-                      }>
-                        {({ PENDIENTE: "Pendiente", LISTO_PARA_ENTREGA: "Listo para recoger", ENTREGADO: "En tu poder", DEVOLUCION_SOLICITADA: "Devolución en proceso", DEVUELTO: "Devuelto", RECHAZADO: "Rechazado" } as Record<string, string>)[req.estado] ?? req.estado}
+                        ${req.estado === "PENDIENTE"            ? "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-400" :
+                          req.estado === "LISTO_PARA_ENTREGA"   ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 animate-pulse" :
+                          req.estado === "ENTREGADO"            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" :
+                          req.estado === "DEVOLUCION_SOLICITADA" ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" :
+                          "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"}`}
+                      >
+                        {ESTADO_LABELS[req.estado] ?? req.estado}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {req.estado === 'LISTO_PARA_ENTREGA' && (
+                      {req.estado === "LISTO_PARA_ENTREGA" && (
                         <div className="flex flex-col items-end gap-1">
                           <RecibirPlanoBoton requestId={req.id} />
                           <span className="text-xs text-slate-400 dark:text-slate-500">El receptor te entregará el plano</span>
                         </div>
                       )}
-                      {req.estado === 'ENTREGADO' && (
+                      {req.estado === "ENTREGADO" && (
                         <SolicitarDevolucionBoton requestId={req.id} />
                       )}
-                      {(req.estado === 'PENDIENTE' || req.estado === 'DEVUELTO' || req.estado === 'DEVOLUCION_SOLICITADA') && (
+                      {(req.estado === "PENDIENTE" || req.estado === "DEVUELTO" || req.estado === "DEVOLUCION_SOLICITADA") && (
                         <span className="text-slate-400 italic text-xs">Sin acciones</span>
                       )}
                     </td>
