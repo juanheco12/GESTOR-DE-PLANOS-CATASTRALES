@@ -5,15 +5,17 @@ import Link from "next/link";
 import { ChevronDown, ChevronUp, Trash2 } from "lucide-react";
 
 const ACCION_LABELS: Record<string, string> = {
-  REGISTRO:           "Plano registrado",
-  SOLICITUD:          "Solicitud creada",
-  ENTREGA:            "Plano entregado",
-  DEVOLUCION:         "Plano devuelto",
-  EDICION:            "Plano editado",
-  ENTREGA_AUTORIZADA: "Entrega autorizada",
-  FIRMA_ENTREGA:      "Entrega confirmada",
+  REGISTRO:              "Plano registrado",
+  SOLICITUD:             "Solicitud creada",
+  ENTREGA:               "Plano entregado",
+  DEVOLUCION:            "Plano devuelto",
+  EDICION:               "Plano editado",
+  ENTREGA_AUTORIZADA:    "Entrega autorizada",
+  FIRMA_ENTREGA:         "Entrega confirmada",
   DEVOLUCION_SOLICITADA: "Devolución solicitada",
-  PLANO_ARCHIVADO:    "Plano archivado",
+  PLANO_ARCHIVADO:       "Plano archivado",
+  PRESTAMO_EXTERNO:      "Préstamo externo",
+  DEVOLUCION_EXTERNA:    "Devolución externa",
 };
 
 export type HistoryItem = {

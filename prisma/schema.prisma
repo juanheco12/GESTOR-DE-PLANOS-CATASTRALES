@@ -19,12 +19,14 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  requests        Request[]
-  historyLogs     History[]
-  auditLogs       AuditLog[]
-  notifications   Notification[]
-  plansRegistered Plan[]            @relation("PlanoRegistradoPor")
-  pushSubs        PushSubscription[]
+  requests          Request[]
+  historyLogs       History[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  plansRegistered   Plan[]              @relation("PlanoRegistradoPor")
+  pushSubs          PushSubscription[]
+  prestamosEntregados Prestamo[]        @relation("PrestamoEntregadoPor")
+  prestamosRecibidos  Prestamo[]        @relation("PrestamoDevueltoPor")
 }
 
 enum Role {
@@ -60,6 +62,7 @@ model Plan {
   requests               Request[]
   history                History[]
   notifications          Notification[]
+  prestamos              Prestamo[]
 }
 
 model Receiver {
@@ -147,4 +150,25 @@ model PushSubscription {
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Prestamo {
+  id              String    @id @default(cuid())
+  planId          String
+  entregadoPorId  String
+  nombreReceptor  String
+  entidad         String    @default("Secretaría de Planeación")
+  cargo           String
+  motivo          String
+  telefono        String?
+  observaciones   String?
+  fechaEntrega    DateTime  @default(now())
+  fechaDevolucion DateTime?
+  devueltoPorId   String?
+
+  plan         Plan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  entregadoPor User  @relation("PrestamoEntregadoPor", fields: [entregadoPorId], references: [id])
+  devueltoPor  User? @relation("PrestamoDevueltoPor",  fields: [devueltoPorId],  references: [id])
+
+  @@index([planId])
 }
