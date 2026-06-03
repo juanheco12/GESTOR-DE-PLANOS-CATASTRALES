@@ -93,7 +93,7 @@ export default async function BuscarPlanoPage({
         {(session?.user?.role === "ADMINISTRADOR" || session?.user?.role === "ENCARGADO" || session?.user?.role === "RADICADORA") && (
           <Link
             href="/dashboard/registro"
-            className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm"
+            className="inline-flex items-center justify-center px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg font-medium transition-colors shadow-sm"
           >
             <Plus className="mr-2 h-4 w-4" />
             Registrar Plano
@@ -155,7 +155,7 @@ export default async function BuscarPlanoPage({
                     <td className="px-4 py-3 text-center whitespace-nowrap">
                       <Link
                         href={`/dashboard/buscar/${plano.id}`}
-                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 font-medium text-xs transition-colors border border-blue-200 dark:border-blue-800"
+                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:hover:bg-teal-900/50 text-teal-800 dark:text-teal-400 font-medium text-xs transition-colors border border-teal-200 dark:border-teal-800"
                       >
                         Ver detalle
                       </Link>

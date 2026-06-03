@@ -63,7 +63,7 @@ export default function ReporteTab() {
             <select
               value={month}
               onChange={(e) => setMonth(Number(e.target.value))}
-              className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
+              className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none"
             >
               {MESES.map((m, i) => (
                 <option key={i + 1} value={i + 1}>{m}</option>
@@ -75,7 +75,7 @@ export default function ReporteTab() {
             <select
               value={year}
               onChange={(e) => setYear(Number(e.target.value))}
-              className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
+              className="px-3 py-2 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 outline-none"
             >
               {years.map((y) => (
                 <option key={y} value={y}>{y}</option>

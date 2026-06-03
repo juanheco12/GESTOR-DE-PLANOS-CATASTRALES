@@ -73,7 +73,7 @@ export default async function MisSolicitudesPage() {
                           req.estado === "LISTO_PARA_ENTREGA"   ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 animate-pulse" :
                           req.estado === "ENTREGADO"            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" :
                           req.estado === "DEVOLUCION_SOLICITADA" ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" :
-                          "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"}`}
+                          "bg-teal-100 text-teal-900 dark:bg-teal-900/30 dark:text-teal-400"}`}
                       >
                         {ESTADO_LABELS[req.estado] ?? req.estado}
                       </span>

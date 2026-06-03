@@ -87,7 +87,7 @@ export default async function PlanosEntregadosPage() {
                     <td className="px-5 py-3 text-center whitespace-nowrap">
                       <Link
                         href={`/dashboard/entregados/gestionar/${sol.id}`}
-                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 font-medium text-xs transition-colors border border-blue-200 dark:border-blue-800"
+                        className="inline-flex items-center justify-center px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 dark:bg-teal-900/30 dark:hover:bg-teal-900/50 text-teal-800 dark:text-teal-400 font-medium text-xs transition-colors border border-teal-200 dark:border-teal-800"
                       >
                         Gestionar
                       </Link>

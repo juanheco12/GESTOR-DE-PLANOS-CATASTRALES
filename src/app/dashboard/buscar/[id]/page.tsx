@@ -192,11 +192,11 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
 
               {plano.ubicacionFisica && (
                 <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex items-start gap-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
-                    <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl p-4">
+                    <MapPin className="h-5 w-5 text-teal-700 dark:text-teal-400 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">Ubicación física en oficina</p>
-                      <p className="text-base text-blue-900 dark:text-blue-100 mt-0.5">{plano.ubicacionFisica}</p>
+                      <p className="text-sm font-semibold text-teal-900 dark:text-teal-300">Ubicación física en oficina</p>
+                      <p className="text-base text-teal-900 dark:text-teal-100 mt-0.5">{plano.ubicacionFisica}</p>
                     </div>
                   </div>
                 </div>
@@ -256,7 +256,7 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                           <span
                             className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-slate-900 shrink-0
                               ${evento.accion === "REGISTRO"          ? "bg-emerald-500" :
-                                evento.accion === "SOLICITUD"         ? "bg-blue-500" :
+                                evento.accion === "SOLICITUD"         ? "bg-teal-600" :
                                 evento.accion === "PRESTAMO_EXTERNO"  ? "bg-violet-500" :
                                 evento.accion === "DEVOLUCION_EXTERNA"? "bg-teal-500" :
                                 evento.accion === "DEVOLUCION" || evento.accion === "PLANO_ARCHIVADO" ? "bg-purple-500" :

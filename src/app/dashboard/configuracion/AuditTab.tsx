@@ -103,7 +103,7 @@ export default function AuditTab() {
                           {diff.length > 0 ? (
                             <button
                               onClick={() => setExpanded(isOpen ? null : log.id)}
-                              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                              className="text-xs text-teal-700 dark:text-teal-400 hover:underline"
                             >
                               {isOpen ? "Ocultar" : `Ver ${diff.length} cambio${diff.length !== 1 ? "s" : ""}`}
                             </button>

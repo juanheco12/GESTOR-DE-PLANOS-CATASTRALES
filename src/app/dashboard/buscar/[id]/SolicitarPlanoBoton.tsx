@@ -43,7 +43,7 @@ export default function SolicitarPlanoBoton({ planId, radicado }: { planId: stri
     <button
       onClick={handleSolicitar}
       disabled={loading}
-      className="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-70 shadow-sm"
+      className="inline-flex items-center justify-center px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg font-medium transition-colors disabled:opacity-70 shadow-sm"
     >
       <Send className="mr-2 h-4 w-4" />
       {loading ? "Solicitando..." : "Solicitar Plano"}

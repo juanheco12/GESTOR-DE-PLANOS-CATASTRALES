@@ -87,7 +87,7 @@ export default function ActividadRecientePanel({ groups, isAdmin, colTz }: Props
     return (
       <p className="px-5 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
         Sin actividad registrada. Consulta el{" "}
-        <Link href="/dashboard/historial" className="text-blue-600 dark:text-blue-400 hover:underline">
+        <Link href="/dashboard/historial" className="text-teal-700 dark:text-teal-400 hover:underline">
           Historial
         </Link>.
       </p>
@@ -103,21 +103,21 @@ export default function ActividadRecientePanel({ groups, isAdmin, colTz }: Props
             <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
               {label}
             </span>
-            <Link href={historialUrl} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            <Link href={historialUrl} className="text-xs text-teal-700 dark:text-teal-400 hover:underline">
               Ver día completo →
             </Link>
           </div>
           <ul className="divide-y divide-slate-100 dark:divide-slate-800">
             {items.map((h) => (
               <li key={h.id} className="px-5 py-3 flex items-center gap-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-500 shrink-0" />
+                <div className="w-1.5 h-1.5 rounded-full bg-teal-500 dark:bg-teal-600 shrink-0" />
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-slate-800 dark:text-slate-200 truncate">
                     <span className="font-medium">{ACCION_LABELS[h.accion] ?? h.accion}</span>
                     {" — "}
                     <Link
                       href={`/dashboard/buscar/${h.plan.id}`}
-                      className="text-blue-600 dark:text-blue-400 hover:underline"
+                      className="text-teal-700 dark:text-teal-400 hover:underline"
                     >
                       {h.plan.radicado}
                     </Link>
@@ -155,7 +155,7 @@ export default function ActividadRecientePanel({ groups, isAdmin, colTz }: Props
         <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800">
           <button
             onClick={() => setExpanded((e) => !e)}
-            className="flex items-center gap-1.5 text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+            className="flex items-center gap-1.5 text-xs font-medium text-teal-700 dark:text-teal-400 hover:underline"
           >
             {expanded ? (
               <>

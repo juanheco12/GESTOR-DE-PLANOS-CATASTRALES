@@ -17,7 +17,7 @@ const ESTADO_COLORS: Record<string, string> = {
   LISTO_PARA_ENTREGA:    "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
   ENTREGADO:             "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400",
   DEVOLUCION_SOLICITADA: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
-  DEVUELTO:              "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  DEVUELTO:              "bg-teal-100 text-teal-900 dark:bg-teal-900/30 dark:text-teal-400",
   RECHAZADO:             "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
 };
 
@@ -134,14 +134,14 @@ export default function SolicitudesTab() {
           placeholder="Buscar por radicado, predial o ejecutor…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
         />
       </div>
 
       {/* Legend */}
       <div className="flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
         <span className="flex items-center gap-1">
-          <RotateCcw className="h-3 w-3 text-blue-500" />
+          <RotateCcw className="h-3 w-3 text-teal-600" />
           Restaurar = el plano vuelve a disponible (solicitud permanece)
         </span>
         <span className="flex items-center gap-1">
@@ -208,7 +208,7 @@ export default function SolicitudesTab() {
                             onClick={() => handleRestore(s)}
                             disabled={isBusy}
                             title="Restaurar plano a disponible (mantiene la solicitud)"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-40"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-teal-50 dark:hover:text-teal-400 dark:hover:bg-teal-900/20 transition-colors disabled:opacity-40"
                           >
                             {restoringId === s.id ? (
                               <span className="h-4 w-4 block border-2 border-current border-t-transparent rounded-full animate-spin" />

@@ -129,7 +129,7 @@ export default function PlanosTab() {
               onClick={() => setEstadoFiltro(opt.value)}
               className={`px-3 py-2 font-medium transition-colors ${
                 estadoFiltro === opt.value
-                  ? "bg-blue-600 text-white"
+                  ? "bg-teal-700 text-white"
                   : "text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
@@ -146,7 +146,7 @@ export default function PlanosTab() {
             placeholder="Buscar por radicado, predial o propietario…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500"
           />
         </div>
       </div>
@@ -200,7 +200,7 @@ export default function PlanosTab() {
                           href={`/dashboard/buscar/${plan.id}`}
                           title="Ver detalle"
                           target="_blank"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-900/20 transition-colors"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-teal-700 hover:bg-teal-50 dark:hover:text-teal-400 dark:hover:bg-teal-900/20 transition-colors"
                         >
                           <ExternalLink className="h-4 w-4" />
                         </Link>

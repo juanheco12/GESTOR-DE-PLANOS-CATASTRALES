@@ -130,7 +130,7 @@ export default async function DashboardPage() {
 
         {/* Métricas propias */}
         <div className="grid grid-cols-2 gap-4">
-          <StatCard label="Total solicitudes" value={totalSolicitudes} icon={FileText} colorBg="bg-blue-50 dark:bg-blue-900/30" colorText="text-blue-600 dark:text-blue-400" href="/dashboard/solicitudes" />
+          <StatCard label="Total solicitudes" value={totalSolicitudes} icon={FileText} colorBg="bg-teal-50 dark:bg-teal-900/30" colorText="text-teal-700 dark:text-teal-400" href="/dashboard/solicitudes" />
           <StatCard label="Planos devueltos" value={totalDevueltos} icon={CheckCircle2} colorBg="bg-emerald-50 dark:bg-emerald-900/30" colorText="text-emerald-600 dark:text-emerald-400" />
         </div>
 
@@ -148,7 +148,7 @@ export default async function DashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">Mis solicitudes activas</h2>
-              <Link href="/dashboard/solicitudes" className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+              <Link href="/dashboard/solicitudes" className="text-sm text-teal-700 dark:text-teal-400 hover:underline">
                 Ver todas
               </Link>
             </div>
@@ -263,7 +263,7 @@ export default async function DashboardPage() {
           </p>
         </div>
         {ingresadosHoy > 0 && (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-full border border-blue-200 dark:border-blue-800">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-teal-50 dark:bg-teal-900/30 text-teal-800 dark:text-teal-400 text-sm font-medium rounded-full border border-teal-200 dark:border-teal-800">
             <CheckCircle2 className="h-3.5 w-3.5" />
             {ingresadosHoy} plano{ingresadosHoy !== 1 ? "s" : ""} ingresado{ingresadosHoy !== 1 ? "s" : ""} hoy
           </span>
@@ -272,7 +272,7 @@ export default async function DashboardPage() {
 
       {/* Métricas principales */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <StatCard label="Total en sistema" value={totalPlanos}         icon={FileText}       colorBg="bg-blue-50 dark:bg-blue-900/30"     colorText="text-blue-600 dark:text-blue-400"    href="/dashboard/buscar" />
+        <StatCard label="Total en sistema" value={totalPlanos}         icon={FileText}       colorBg="bg-teal-50 dark:bg-teal-900/30"     colorText="text-teal-700 dark:text-teal-400"    href="/dashboard/buscar" />
         <StatCard label="Disponibles"       value={disponibles}        icon={BookOpen}       colorBg="bg-emerald-50 dark:bg-emerald-900/30" colorText="text-emerald-600 dark:text-emerald-400" href="/dashboard/buscar?estado=DISPONIBLE" />
         <StatCard label="Prestados"         value={prestados}          icon={Clock}          colorBg="bg-amber-50 dark:bg-amber-900/30"    colorText="text-amber-600 dark:text-amber-400"   href="/dashboard/buscar?estado=PRESTADO" />
         <StatCard label="Pend. revisión"    value={pendientesRevision} icon={AlertTriangle}  colorBg="bg-orange-50 dark:bg-orange-900/30"  colorText="text-orange-600 dark:text-orange-400" href="/dashboard/buscar?estado=PENDIENTE_REVISION" />
@@ -350,12 +350,12 @@ export default async function DashboardPage() {
           <h2 className="text-base font-semibold text-slate-800 dark:text-slate-200">
             Actividad reciente
             {actividadReciente.length > 0 && (
-              <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+              <span className="ml-2 text-xs font-medium px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/40 text-teal-800 dark:text-teal-300">
                 {actividadReciente.length}
               </span>
             )}
           </h2>
-          <Link href="/dashboard/historial" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+          <Link href="/dashboard/historial" className="text-xs text-teal-700 dark:text-teal-400 hover:underline">
             Ver historial completo →
           </Link>
         </div>
