@@ -25,13 +25,23 @@ function ThemeBtn() {
   );
 }
 
-/* ── Animated feature card icons ── */
+/* ── Animated feature card icons (pure SMIL — no CSS required) ── */
 function FolderDocIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" overflow="visible">
+      {/* Static folder */}
       <path d="M3 9a2 2 0 012-2h3l2 2h10a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
         fill="rgba(52,211,153,.18)" stroke="rgba(52,211,153,.85)" strokeWidth="1.5" strokeLinejoin="round"/>
-      <g className="fd-doc">
+      {/* Document that slides from above into the folder */}
+      <g>
+        <animateTransform attributeName="transform" type="translate"
+          values="0,-7; 0,-7; 0,0; 0,0; 0,4; 0,-7"
+          keyTimes="0; 0.08; 0.28; 0.52; 0.68; 0.69"
+          dur="2.6s" repeatCount="indefinite"/>
+        <animate attributeName="opacity"
+          values="0; 0; 1; 1; 0; 0"
+          keyTimes="0; 0.08; 0.24; 0.52; 0.68; 1"
+          dur="2.6s" repeatCount="indefinite"/>
         <rect x="9" y="6" width="6" height="7.5" rx="1"
           fill="rgba(255,255,255,.88)" stroke="rgba(52,211,153,.9)" strokeWidth="1.2"/>
         <line x1="10.5" y1="8.3"  x2="13.5" y2="8.3"  stroke="rgba(52,211,153,.65)" strokeWidth=".8"/>
@@ -45,9 +55,38 @@ function FolderDocIcon() {
 function TraceNetworkIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
-      <line x1="5"  y1="19" x2="12" y2="5"  className="tnL1" stroke="rgba(52,211,153,.75)" strokeWidth="1.3"/>
-      <line x1="12" y1="5"  x2="19" y2="19" className="tnL2" stroke="rgba(52,211,153,.75)" strokeWidth="1.3"/>
-      <line x1="5"  y1="19" x2="19" y2="19" className="tnL3" stroke="rgba(52,211,153,.55)" strokeWidth="1.3"/>
+      {/* Lines draw themselves one by one, then all erase together */}
+      <line x1="5" y1="19" x2="12" y2="5" strokeDasharray="20" stroke="rgba(52,211,153,.75)" strokeWidth="1.3">
+        <animate attributeName="stroke-dashoffset"
+          values="20; 20; 0; 0; 20"
+          keyTimes="0; 0.05; 0.28; 0.7; 0.9"
+          dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="opacity"
+          values="0; 0; 1; 1; 0"
+          keyTimes="0; 0.05; 0.15; 0.7; 0.9"
+          dur="3s" repeatCount="indefinite"/>
+      </line>
+      <line x1="12" y1="5" x2="19" y2="19" strokeDasharray="20" stroke="rgba(52,211,153,.75)" strokeWidth="1.3">
+        <animate attributeName="stroke-dashoffset"
+          values="20; 20; 0; 0; 20"
+          keyTimes="0; 0.22; 0.44; 0.7; 0.9"
+          dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="opacity"
+          values="0; 0; 1; 1; 0"
+          keyTimes="0; 0.22; 0.32; 0.7; 0.9"
+          dur="3s" repeatCount="indefinite"/>
+      </line>
+      <line x1="5" y1="19" x2="19" y2="19" strokeDasharray="20" stroke="rgba(52,211,153,.55)" strokeWidth="1.3">
+        <animate attributeName="stroke-dashoffset"
+          values="20; 20; 0; 0; 20"
+          keyTimes="0; 0.38; 0.58; 0.7; 0.9"
+          dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="opacity"
+          values="0; 0; 1; 1; 0"
+          keyTimes="0; 0.38; 0.48; 0.7; 0.9"
+          dur="3s" repeatCount="indefinite"/>
+      </line>
+      {/* Static nodes */}
       <circle cx="12" cy="5"  r="2.5" fill="rgba(52,211,153,.9)"/>
       <circle cx="5"  cy="19" r="2.5" fill="rgba(52,211,153,.9)"/>
       <circle cx="19" cy="19" r="2.5" fill="rgba(52,211,153,.9)"/>
@@ -56,12 +95,25 @@ function TraceNetworkIcon() {
 }
 
 function BarsAnimIcon() {
+  /* Animate y + height on each rect so bars grow from the baseline up */
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
       <line x1="3" y1="21" x2="21" y2="21" stroke="rgba(52,211,153,.4)" strokeWidth="1.2"/>
-      <rect className="bgBar1" x="4"    y="14" width="4.5" height="7"  rx=".8" fill="rgba(52,211,153,.9)"/>
-      <rect className="bgBar2" x="9.75" y="9"  width="4.5" height="12" rx=".8" fill="rgba(52,211,153,.7)"/>
-      <rect className="bgBar3" x="15.5" y="11" width="4.5" height="10" rx=".8" fill="rgba(52,211,153,.8)"/>
+      {/* Bar 1 — full: y=14 h=7 */}
+      <rect x="4" width="4.5" rx=".8" fill="rgba(52,211,153,.9)">
+        <animate attributeName="y"      values="21;21;14;14;21" keyTimes="0;0.08;0.35;0.68;0.88" dur="2.8s" repeatCount="indefinite"/>
+        <animate attributeName="height" values="0; 0; 7; 7; 0"  keyTimes="0;0.08;0.35;0.68;0.88" dur="2.8s" repeatCount="indefinite"/>
+      </rect>
+      {/* Bar 2 — full: y=9 h=12 */}
+      <rect x="9.75" width="4.5" rx=".8" fill="rgba(52,211,153,.7)">
+        <animate attributeName="y"      values="21;21;9; 9; 21" keyTimes="0;0.20;0.47;0.68;0.88" dur="2.8s" repeatCount="indefinite"/>
+        <animate attributeName="height" values="0; 0; 12;12;0"  keyTimes="0;0.20;0.47;0.68;0.88" dur="2.8s" repeatCount="indefinite"/>
+      </rect>
+      {/* Bar 3 — full: y=11 h=10 */}
+      <rect x="15.5" width="4.5" rx=".8" fill="rgba(52,211,153,.8)">
+        <animate attributeName="y"      values="21;21;11;11;21" keyTimes="0;0.32;0.58;0.68;0.88" dur="2.8s" repeatCount="indefinite"/>
+        <animate attributeName="height" values="0; 0; 10;10;0"  keyTimes="0;0.32;0.58;0.68;0.88" dur="2.8s" repeatCount="indefinite"/>
+      </rect>
     </svg>
   );
 }
@@ -69,12 +121,26 @@ function BarsAnimIcon() {
 function ShieldCheckAnimIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
-      <path className="scShield"
-        d="M12 2L4 6v6c0 5.25 3.5 9.74 8 10.93C16.5 21.74 20 17.25 20 12V6L12 2z"
-        fill="rgba(52,211,153,.2)" stroke="rgba(52,211,153,.85)" strokeWidth="1.5" strokeLinejoin="round"/>
-      <path className="scCheck"
-        d="M8.5 12.5l2.5 2.5 4.5-5"
-        stroke="rgba(52,211,153,.95)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+      {/* Shield fades in, then checkmark draws itself, then both fade out */}
+      <path d="M12 2L4 6v6c0 5.25 3.5 9.74 8 10.93C16.5 21.74 20 17.25 20 12V6L12 2z"
+        fill="rgba(52,211,153,.2)" stroke="rgba(52,211,153,.85)" strokeWidth="1.5" strokeLinejoin="round">
+        <animate attributeName="opacity"
+          values="0; 0; 1; 1; 0"
+          keyTimes="0; 0.05; 0.22; 0.76; 0.9"
+          dur="3s" repeatCount="indefinite"/>
+      </path>
+      <path d="M8.5 12.5l2.5 2.5 4.5-5" fill="none"
+        strokeDasharray="12"
+        stroke="rgba(52,211,153,.95)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <animate attributeName="stroke-dashoffset"
+          values="12; 12; 0; 0; 12"
+          keyTimes="0; 0.28; 0.52; 0.76; 0.9"
+          dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="opacity"
+          values="0; 0; 1; 1; 0"
+          keyTimes="0; 0.28; 0.38; 0.76; 0.9"
+          dur="3s" repeatCount="indefinite"/>
+      </path>
     </svg>
   );
 }
