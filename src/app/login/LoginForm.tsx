@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import {
-  Eye, EyeOff, MapPin, FolderOpen, GitBranch,
-  BarChart3, ShieldCheck, Mail, Lock, User, Sun, Moon,
+  Eye, EyeOff, MapPin, Mail, Lock, User, Sun, Moon,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 
@@ -26,11 +25,108 @@ function ThemeBtn() {
   );
 }
 
-const FEATURES = [
-  { icon: FolderOpen,  label: "Control de Planos",         desc: "Registro y consulta" },
-  { icon: GitBranch,   label: "Trazabilidad Completa",     desc: "Historial de cada plano" },
-  { icon: BarChart3,   label: "Reportes e Indicadores",    desc: "Análisis en tiempo real" },
-  { icon: ShieldCheck, label: "Accesos por Roles",         desc: "Seguridad granular" },
+/* ── Animated feature card icons ── */
+function FolderDocIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" overflow="visible">
+      <style>{`
+        @keyframes fdEnter {
+          0%,8%   { transform:translateY(-7px); opacity:0  }
+          24%,50% { transform:translateY(0px);  opacity:1  }
+          65%     { transform:translateY(4px);  opacity:0  }
+          66%,100%{ transform:translateY(-7px); opacity:0  }
+        }
+        .fd-doc { animation: fdEnter 2.6s ease-in-out infinite }
+      `}</style>
+      <path d="M3 9a2 2 0 012-2h3l2 2h10a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+        fill="rgba(52,211,153,.18)" stroke="rgba(52,211,153,.85)" strokeWidth="1.5" strokeLinejoin="round"/>
+      <g className="fd-doc">
+        <rect x="9" y="6" width="6" height="7.5" rx="1"
+          fill="rgba(255,255,255,.88)" stroke="rgba(52,211,153,.9)" strokeWidth="1.2"/>
+        <line x1="10.5" y1="8.3"  x2="13.5" y2="8.3"  stroke="rgba(52,211,153,.65)" strokeWidth=".8"/>
+        <line x1="10.5" y1="9.9"  x2="13.5" y2="9.9"  stroke="rgba(52,211,153,.45)" strokeWidth=".8"/>
+        <line x1="10.5" y1="11.5" x2="12.5" y2="11.5" stroke="rgba(52,211,153,.35)" strokeWidth=".8"/>
+      </g>
+    </svg>
+  );
+}
+
+function TraceNetworkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
+      <style>{`
+        @keyframes tnL1 {
+          0%,5%   { stroke-dashoffset:20; opacity:0 }
+          28%,68% { stroke-dashoffset:0;  opacity:1 }
+          88%,100%{ stroke-dashoffset:20; opacity:0 }
+        }
+        @keyframes tnL2 {
+          0%,22%  { stroke-dashoffset:20; opacity:0 }
+          44%,68% { stroke-dashoffset:0;  opacity:1 }
+          88%,100%{ stroke-dashoffset:20; opacity:0 }
+        }
+        @keyframes tnL3 {
+          0%,37%  { stroke-dashoffset:20; opacity:0 }
+          58%,68% { stroke-dashoffset:0;  opacity:1 }
+          88%,100%{ stroke-dashoffset:20; opacity:0 }
+        }
+        .tnL1 { stroke-dasharray:20; animation: tnL1 3s ease-in-out infinite }
+        .tnL2 { stroke-dasharray:20; animation: tnL2 3s ease-in-out infinite }
+        .tnL3 { stroke-dasharray:20; animation: tnL3 3s ease-in-out infinite }
+      `}</style>
+      <line x1="5"  y1="19" x2="12" y2="5"  className="tnL1" stroke="rgba(52,211,153,.75)" strokeWidth="1.3"/>
+      <line x1="12" y1="5"  x2="19" y2="19" className="tnL2" stroke="rgba(52,211,153,.75)" strokeWidth="1.3"/>
+      <line x1="5"  y1="19" x2="19" y2="19" className="tnL3" stroke="rgba(52,211,153,.55)" strokeWidth="1.3"/>
+      <circle cx="12" cy="5"  r="2.5" fill="rgba(52,211,153,.9)"/>
+      <circle cx="5"  cy="19" r="2.5" fill="rgba(52,211,153,.9)"/>
+      <circle cx="19" cy="19" r="2.5" fill="rgba(52,211,153,.9)"/>
+    </svg>
+  );
+}
+
+function BarsAnimIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
+      <style>{`
+        @keyframes bgrow1 { 0%,8%   {transform:scaleY(0)} 35%,68%{transform:scaleY(1)} 88%,100%{transform:scaleY(0)} }
+        @keyframes bgrow2 { 0%,20%  {transform:scaleY(0)} 47%,68%{transform:scaleY(1)} 88%,100%{transform:scaleY(0)} }
+        @keyframes bgrow3 { 0%,32%  {transform:scaleY(0)} 58%,68%{transform:scaleY(1)} 88%,100%{transform:scaleY(0)} }
+        .bgBar1 { transform-box:fill-box; transform-origin:center bottom; animation:bgrow1 2.8s ease-in-out infinite }
+        .bgBar2 { transform-box:fill-box; transform-origin:center bottom; animation:bgrow2 2.8s ease-in-out infinite }
+        .bgBar3 { transform-box:fill-box; transform-origin:center bottom; animation:bgrow3 2.8s ease-in-out infinite }
+      `}</style>
+      <line x1="3" y1="21" x2="21" y2="21" stroke="rgba(52,211,153,.4)" strokeWidth="1.2"/>
+      <rect className="bgBar1" x="4"    y="14" width="4.5" height="7"  rx=".8" fill="rgba(52,211,153,.9)"/>
+      <rect className="bgBar2" x="9.75" y="9"  width="4.5" height="12" rx=".8" fill="rgba(52,211,153,.7)"/>
+      <rect className="bgBar3" x="15.5" y="11" width="4.5" height="10" rx=".8" fill="rgba(52,211,153,.8)"/>
+    </svg>
+  );
+}
+
+function ShieldCheckAnimIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
+      <style>{`
+        @keyframes scFade { 0%,5%  {opacity:0} 22%,75%{opacity:1} 90%,100%{opacity:0} }
+        @keyframes scDraw { 0%,28% {stroke-dashoffset:12;opacity:0} 33%{opacity:1} 52%,75%{stroke-dashoffset:0;opacity:1} 90%,100%{stroke-dashoffset:12;opacity:0} }
+        .scShield { animation: scFade 3s ease-in-out infinite }
+        .scCheck  { stroke-dasharray:12; animation: scDraw 3s ease-in-out infinite }
+      `}</style>
+      <path className="scShield"
+        d="M12 2L4 6v6c0 5.25 3.5 9.74 8 10.93C16.5 21.74 20 17.25 20 12V6L12 2z"
+        fill="rgba(52,211,153,.2)" stroke="rgba(52,211,153,.85)" strokeWidth="1.5" strokeLinejoin="round"/>
+      <path className="scCheck"
+        d="M8.5 12.5l2.5 2.5 4.5-5"
+        stroke="rgba(52,211,153,.95)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+const FEATURE_CARDS = [
+  { Icon: FolderDocIcon,       label: "Control de Planos",      desc: "Registro y consulta" },
+  { Icon: TraceNetworkIcon,    label: "Trazabilidad Completa",  desc: "Historial de cada plano" },
+  { Icon: BarsAnimIcon,        label: "Reportes e Indicadores", desc: "Análisis en tiempo real" },
+  { Icon: ShieldCheckAnimIcon, label: "Accesos por Roles",      desc: "Seguridad granular" },
 ];
 
 export default function LoginForm() {
@@ -125,13 +221,13 @@ export default function LoginForm() {
 
           {/* Feature cards */}
           <div className="grid grid-cols-2 gap-3 mb-10">
-            {FEATURES.map(({ icon: Icon, label, desc }) => (
+            {FEATURE_CARDS.map(({ Icon, label, desc }) => (
               <div
                 key={label}
                 className="flex items-start gap-3 p-4 rounded-2xl bg-white/8 border border-white/10 backdrop-blur-sm hover:bg-white/12 transition-colors"
               >
                 <div className="w-8 h-8 rounded-lg bg-emerald-400/20 flex items-center justify-center shrink-0 mt-0.5">
-                  <Icon className="h-4 w-4 text-emerald-300" />
+                  <Icon />
                 </div>
                 <div>
                   <p className="text-white text-xs font-semibold leading-tight">{label}</p>
