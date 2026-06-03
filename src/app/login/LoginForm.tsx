@@ -34,7 +34,7 @@ function _eio(t: number) { return t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2; }
 function FolderDocIcon() {
   const gRef = useRef<SVGGElement>(null);
   useEffect(() => {
-    const DUR = 2600;
+    const DUR = 2200;
     const t0 = performance.now();
     let id: number;
     const tick = (now: number) => {
@@ -42,11 +42,11 @@ function FolderDocIcon() {
       const g = gRef.current;
       if (g) {
         let ty: number, op: number;
-        if      (t < 0.08) { ty = -7; op = 0; }
-        else if (t < 0.24) { const p = _eio(_ph(t, 0.08, 0.24)); ty = -7 + 7*p; op = p; }
-        else if (t < 0.52) { ty = 0; op = 1; }
-        else if (t < 0.68) { const p = _eio(_ph(t, 0.52, 0.68)); ty = 4*p; op = 1-p; }
-        else               { ty = -7; op = 0; }
+        if      (t < 0.08) { ty = -10; op = 0; }
+        else if (t < 0.28) { const p = _eio(_ph(t, 0.08, 0.28)); ty = -10 + 10*p; op = p; }
+        else if (t < 0.55) { ty = 0; op = 1; }
+        else if (t < 0.72) { const p = _eio(_ph(t, 0.55, 0.72)); ty = 5*p; op = 1-p; }
+        else               { ty = -10; op = 0; }
         g.setAttribute("transform", `translate(0,${ty.toFixed(2)})`);
         g.setAttribute("opacity", op.toFixed(3));
       }
@@ -56,15 +56,15 @@ function FolderDocIcon() {
     return () => cancelAnimationFrame(id);
   }, []);
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" overflow="visible">
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" overflow="visible">
       <path d="M3 9a2 2 0 012-2h3l2 2h10a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-        fill="rgba(52,211,153,.18)" stroke="rgba(52,211,153,.85)" strokeWidth="1.5" strokeLinejoin="round"/>
+        fill="rgba(52,211,153,.2)" stroke="rgba(52,211,153,.9)" strokeWidth="1.5" strokeLinejoin="round"/>
       <g ref={gRef} opacity="0">
-        <rect x="9" y="6" width="6" height="7.5" rx="1"
-          fill="rgba(255,255,255,.88)" stroke="rgba(52,211,153,.9)" strokeWidth="1.2"/>
-        <line x1="10.5" y1="8.3"  x2="13.5" y2="8.3"  stroke="rgba(52,211,153,.65)" strokeWidth=".8"/>
-        <line x1="10.5" y1="9.9"  x2="13.5" y2="9.9"  stroke="rgba(52,211,153,.45)" strokeWidth=".8"/>
-        <line x1="10.5" y1="11.5" x2="12.5" y2="11.5" stroke="rgba(52,211,153,.35)" strokeWidth=".8"/>
+        <rect x="8.5" y="5" width="7" height="8.5" rx="1"
+          fill="rgba(255,255,255,.92)" stroke="rgba(52,211,153,.95)" strokeWidth="1.3"/>
+        <line x1="10.2" y1="7.5"  x2="14"   y2="7.5"  stroke="rgba(52,211,153,.7)" strokeWidth="1"/>
+        <line x1="10.2" y1="9.3"  x2="14"   y2="9.3"  stroke="rgba(52,211,153,.5)" strokeWidth="1"/>
+        <line x1="10.2" y1="11.1" x2="13"   y2="11.1" stroke="rgba(52,211,153,.4)" strokeWidth="1"/>
       </g>
     </svg>
   );
@@ -75,7 +75,7 @@ function TraceNetworkIcon() {
   const r2 = useRef<SVGLineElement>(null);
   const r3 = useRef<SVGLineElement>(null);
   useEffect(() => {
-    const DUR = 3000, DASH = 20;
+    const DUR = 2400, DASH = 22;
     const t0 = performance.now();
     let id: number;
     const anim = (el: SVGLineElement | null, t: number, ds: number, de: number, he: number, fe: number) => {
@@ -91,22 +91,22 @@ function TraceNetworkIcon() {
     };
     const tick = (now: number) => {
       const t = ((now - t0) % DUR) / DUR;
-      anim(r1.current, t, 0.05, 0.28, 0.70, 0.88);
-      anim(r2.current, t, 0.22, 0.44, 0.70, 0.88);
-      anim(r3.current, t, 0.38, 0.58, 0.70, 0.88);
+      anim(r1.current, t, 0.05, 0.28, 0.68, 0.85);
+      anim(r2.current, t, 0.22, 0.44, 0.68, 0.85);
+      anim(r3.current, t, 0.36, 0.56, 0.68, 0.85);
       id = requestAnimationFrame(tick);
     };
     id = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(id);
   }, []);
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
-      <line ref={r1} x1="5"  y1="19" x2="12" y2="5"  strokeDasharray="20" opacity="0" stroke="rgba(52,211,153,.75)" strokeWidth="1.3"/>
-      <line ref={r2} x1="12" y1="5"  x2="19" y2="19" strokeDasharray="20" opacity="0" stroke="rgba(52,211,153,.75)" strokeWidth="1.3"/>
-      <line ref={r3} x1="5"  y1="19" x2="19" y2="19" strokeDasharray="20" opacity="0" stroke="rgba(52,211,153,.55)" strokeWidth="1.3"/>
-      <circle cx="12" cy="5"  r="2.5" fill="rgba(52,211,153,.9)"/>
-      <circle cx="5"  cy="19" r="2.5" fill="rgba(52,211,153,.9)"/>
-      <circle cx="19" cy="19" r="2.5" fill="rgba(52,211,153,.9)"/>
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
+      <line ref={r1} x1="5"  y1="19" x2="12" y2="5"  strokeDasharray="22" opacity="0" stroke="rgba(52,211,153,.85)" strokeWidth="1.8"/>
+      <line ref={r2} x1="12" y1="5"  x2="19" y2="19" strokeDasharray="22" opacity="0" stroke="rgba(52,211,153,.85)" strokeWidth="1.8"/>
+      <line ref={r3} x1="5"  y1="19" x2="19" y2="19" strokeDasharray="22" opacity="0" stroke="rgba(52,211,153,.65)" strokeWidth="1.8"/>
+      <circle cx="12" cy="5"  r="3" fill="rgba(52,211,153,.95)"/>
+      <circle cx="5"  cy="19" r="3" fill="rgba(52,211,153,.95)"/>
+      <circle cx="19" cy="19" r="3" fill="rgba(52,211,153,.95)"/>
     </svg>
   );
 }
@@ -116,14 +116,14 @@ function BarsAnimIcon() {
   const r2 = useRef<SVGRectElement>(null);
   const r3 = useRef<SVGRectElement>(null);
   useEffect(() => {
-    const DUR = 2800;
+    const DUR = 2200;
     const t0 = performance.now();
     let id: number;
     // [fullHeight, growStart, growEnd, shrinkStart, shrinkEnd]
     const bars: [number, number, number, number, number][] = [
-      [7,  0.08, 0.35, 0.68, 0.88],
-      [12, 0.20, 0.47, 0.68, 0.88],
-      [10, 0.32, 0.58, 0.68, 0.88],
+      [8,  0.06, 0.30, 0.65, 0.85],
+      [14, 0.18, 0.42, 0.65, 0.85],
+      [11, 0.30, 0.54, 0.65, 0.85],
     ];
     const refs = [r1, r2, r3];
     const tick = (now: number) => {
@@ -145,11 +145,11 @@ function BarsAnimIcon() {
     return () => cancelAnimationFrame(id);
   }, []);
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
-      <line x1="3" y1="21" x2="21" y2="21" stroke="rgba(52,211,153,.4)" strokeWidth="1.2"/>
-      <rect ref={r1} x="4"    y="21" width="4.5" height="0" rx=".8" fill="rgba(52,211,153,.9)"/>
-      <rect ref={r2} x="9.75" y="21" width="4.5" height="0" rx=".8" fill="rgba(52,211,153,.7)"/>
-      <rect ref={r3} x="15.5" y="21" width="4.5" height="0" rx=".8" fill="rgba(52,211,153,.8)"/>
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
+      <line x1="2" y1="21" x2="22" y2="21" stroke="rgba(52,211,153,.5)" strokeWidth="1.3"/>
+      <rect ref={r1} x="3"    y="21" width="5" height="0" rx="1" fill="rgba(52,211,153,.95)"/>
+      <rect ref={r2} x="9.5"  y="21" width="5" height="0" rx="1" fill="rgba(52,211,153,.75)"/>
+      <rect ref={r3} x="16"   y="21" width="5" height="0" rx="1" fill="rgba(52,211,153,.85)"/>
     </svg>
   );
 }
@@ -158,7 +158,7 @@ function ShieldCheckAnimIcon() {
   const sr = useRef<SVGPathElement>(null);
   const cr = useRef<SVGPathElement>(null);
   useEffect(() => {
-    const DUR = 3000, DASH = 12;
+    const DUR = 2400, DASH = 12;
     const t0 = performance.now();
     let id: number;
     const tick = (now: number) => {
@@ -167,18 +167,18 @@ function ShieldCheckAnimIcon() {
       if (s) {
         let sop: number;
         if      (t < 0.05) sop = 0;
-        else if (t < 0.22) sop = _eio(_ph(t, 0.05, 0.22));
-        else if (t < 0.75) sop = 1;
-        else if (t < 0.90) sop = 1 - _eio(_ph(t, 0.75, 0.90));
+        else if (t < 0.20) sop = _eio(_ph(t, 0.05, 0.20));
+        else if (t < 0.72) sop = 1;
+        else if (t < 0.88) sop = 1 - _eio(_ph(t, 0.72, 0.88));
         else               sop = 0;
         s.setAttribute("opacity", sop.toFixed(3));
       }
       if (c) {
         let cop: number, cd: number;
-        if      (t < 0.28) { cop = 0; cd = DASH; }
-        else if (t < 0.52) { const p = _eio(_ph(t, 0.28, 0.52)); cop = p; cd = DASH*(1-p); }
-        else if (t < 0.75) { cop = 1; cd = 0; }
-        else if (t < 0.90) { cop = 1 - _eio(_ph(t, 0.75, 0.90)); cd = 0; }
+        if      (t < 0.24) { cop = 0; cd = DASH; }
+        else if (t < 0.48) { const p = _eio(_ph(t, 0.24, 0.48)); cop = p; cd = DASH*(1-p); }
+        else if (t < 0.72) { cop = 1; cd = 0; }
+        else if (t < 0.88) { cop = 1 - _eio(_ph(t, 0.72, 0.88)); cd = 0; }
         else               { cop = 0; cd = DASH; }
         c.setAttribute("opacity", cop.toFixed(3));
         c.setAttribute("stroke-dashoffset", cd.toFixed(2));
@@ -189,14 +189,14 @@ function ShieldCheckAnimIcon() {
     return () => cancelAnimationFrame(id);
   }, []);
   return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
       <path ref={sr} opacity="0"
         d="M12 2L4 6v6c0 5.25 3.5 9.74 8 10.93C16.5 21.74 20 17.25 20 12V6L12 2z"
-        fill="rgba(52,211,153,.2)" stroke="rgba(52,211,153,.85)" strokeWidth="1.5" strokeLinejoin="round"/>
+        fill="rgba(52,211,153,.25)" stroke="rgba(52,211,153,.9)" strokeWidth="1.6" strokeLinejoin="round"/>
       <path ref={cr} opacity="0" fill="none"
         d="M8.5 12.5l2.5 2.5 4.5-5"
         strokeDasharray="12" strokeDashoffset="12"
-        stroke="rgba(52,211,153,.95)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+        stroke="rgba(52,211,153,1)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -305,7 +305,7 @@ export default function LoginForm() {
                 key={label}
                 className="flex items-start gap-3 p-4 rounded-2xl bg-white/8 border border-white/10 backdrop-blur-sm hover:bg-white/12 transition-colors"
               >
-                <div className="w-8 h-8 rounded-lg bg-emerald-400/20 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-400/20 flex items-center justify-center shrink-0 mt-0.5">
                   <Icon />
                 </div>
                 <div>
