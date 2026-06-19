@@ -428,8 +428,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           },
         });
 
+        // Siempre se notifica a todos los ADMINISTRADOR, asignados o no
+        const admins = await tx.user.findMany({
+          where: { role: "ADMINISTRADOR", isActive: true },
+          select: { id: true },
+        });
+        if (admins.length > 0) {
+          await tx.notification.createMany({
+            data: admins.map((u) => ({
+              message: `${quien} te recuerda que su solicitud del plano ${radicado} sigue pendiente de tu respuesta.`,
+              userId:  u.id,
+              planoId: planId,
+            })),
+          });
+        }
+
         if (request.adminEntregaId) {
-          // Ya hay un receptor asignado (p. ej. devolución solicitada): solo se le recuerda a él + administradores
+          // Ya hay un receptor asignado (p. ej. devolución solicitada): se le recuerda también a él
           await tx.notification.create({
             data: {
               message: `${quien} te recuerda que su solicitud del plano ${radicado} sigue pendiente de tu respuesta.`,
@@ -438,14 +453,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             },
           });
         } else {
-          // Aún no hay receptor asignado: se recuerda a todo ENCARGADO + ADMIN
-          const destinatarios = await tx.user.findMany({
-            where: { role: { in: ["ADMINISTRADOR", "ENCARGADO"] }, isActive: true },
+          // Aún no hay receptor asignado: se recuerda también a todo ENCARGADO
+          const encargados = await tx.user.findMany({
+            where: { role: "ENCARGADO", isActive: true },
             select: { id: true },
           });
-          if (destinatarios.length > 0) {
+          if (encargados.length > 0) {
             await tx.notification.createMany({
-              data: destinatarios.map((u) => ({
+              data: encargados.map((u) => ({
                 message: `${quien} te recuerda que su solicitud del plano ${radicado} sigue pendiente de tu respuesta.`,
                 userId:  u.id,
                 planoId: planId,
@@ -457,6 +472,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         return updated;
       });
 
+      // Push siempre a ADMINISTRADOR
+      await sendPushToRoles(["ADMINISTRADOR"], {
+        title: "🔔 Recordatorio de solicitud",
+        body:  `${quien} recuerda que su solicitud del plano ${radicado} sigue pendiente.`,
+        url:   "/dashboard/entregados",
+        tag:   `recordatorio-${id}`,
+      }).catch(() => {});
+
       if (request.adminEntregaId) {
         await sendPushToUser(request.adminEntregaId, {
           title: "🔔 Recordatorio de solicitud",
@@ -465,7 +488,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           tag:   `recordatorio-${id}`,
         }).catch(() => {});
       } else {
-        await sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
+        await sendPushToRoles(["ENCARGADO"], {
           title: "🔔 Recordatorio de solicitud",
           body:  `${quien} recuerda que su solicitud del plano ${radicado} sigue pendiente.`,
           url:   "/dashboard/entregados",
