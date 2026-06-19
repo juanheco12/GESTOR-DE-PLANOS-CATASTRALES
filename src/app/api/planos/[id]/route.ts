@@ -67,16 +67,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!plan) {
       return NextResponse.json({ error: "Plano no encontrado" }, { status: 404 });
     }
-    if (plan.estado !== "PENDIENTE_REVISION") {
-      return NextResponse.json({ error: "Este plano no tiene una inconsistencia pendiente por subsanar." }, { status: 400 });
-    }
 
     const quien = session.user.name ?? session.user.email ?? "Receptor";
+    const estabaPendienteRevision = plan.estado === "PENDIENTE_REVISION";
 
     const updatedPlan = await prisma.$transaction(async (tx) => {
       const updated = await tx.plan.update({
         where: { id },
-        data: { estado: "DISPONIBLE", inconsistencias: null },
+        data: estabaPendienteRevision
+          ? { estado: "DISPONIBLE", inconsistencias: null }
+          : { inconsistencias: null },
       });
 
       await tx.history.create({

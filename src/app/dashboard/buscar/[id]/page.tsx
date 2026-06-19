@@ -118,8 +118,8 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
             />
           )}
 
-          {/* ENCARGADO/ADMIN: subsanar inconsistencia (trajeron un nuevo plano) */}
-          {canManage && plano.estado === "PENDIENTE_REVISION" && (
+          {/* ENCARGADO/ADMIN: editar plano (trajeron un nuevo plano para subsanar) */}
+          {(isAdministrador || isEncargado) && (
             <SubsanarInconsistenciaBoton
               planId={plano.id}
               radicado={plano.radicado}
