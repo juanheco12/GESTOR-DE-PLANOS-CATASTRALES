@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
 
-const COOLDOWN_MS = 15 * 60 * 1000;
+const COOLDOWN_MS = 60 * 1000;
 
 function formatRemaining(ms: number) {
   const totalSeconds = Math.ceil(ms / 1000);
