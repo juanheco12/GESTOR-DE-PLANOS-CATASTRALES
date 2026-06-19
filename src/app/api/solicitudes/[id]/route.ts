@@ -391,6 +391,89 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }).catch(() => {});
     }
 
+    // ── 6. EJECUTOR vuelve a llamar (recordatorio) una solicitud que sigue en manos del receptor ──
+    else if (accion === "RECORDAR" && request.userId === session.user.id) {
+      if (request.estado !== "PENDIENTE" && request.estado !== "DEVOLUCION_SOLICITADA") {
+        return NextResponse.json(
+          { error: "Solo puedes recordar una solicitud que esté pendiente de respuesta del receptor." },
+          { status: 400 }
+        );
+      }
+
+      const COOLDOWN_MS = 15 * 60 * 1000;
+      if (request.ultimoRecordatorio) {
+        const elapsed = Date.now() - request.ultimoRecordatorio.getTime();
+        if (elapsed < COOLDOWN_MS) {
+          const segundosRestantes = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+          return NextResponse.json(
+            { error: "Debes esperar antes de volver a recordar esta solicitud.", segundosRestantes },
+            { status: 429 }
+          );
+        }
+      }
+
+      const ahora = new Date();
+
+      result = await prisma.$transaction(async (tx) => {
+        const updated = await tx.request.update({
+          where: { id },
+          data: { ultimoRecordatorio: ahora },
+        });
+        await tx.history.create({
+          data: {
+            planId,
+            userId:   session.user.id,
+            accion:   "RECORDATORIO",
+            detalles: `${quien} envió un recordatorio porque la solicitud del plano ${radicado} sigue sin respuesta del receptor.`,
+          },
+        });
+
+        if (request.adminEntregaId) {
+          // Ya hay un receptor asignado (p. ej. devolución solicitada): solo se le recuerda a él + administradores
+          await tx.notification.create({
+            data: {
+              message: `${quien} te recuerda que su solicitud del plano ${radicado} sigue pendiente de tu respuesta.`,
+              userId:  request.adminEntregaId,
+              planoId: planId,
+            },
+          });
+        } else {
+          // Aún no hay receptor asignado: se recuerda a todo ENCARGADO + ADMIN
+          const destinatarios = await tx.user.findMany({
+            where: { role: { in: ["ADMINISTRADOR", "ENCARGADO"] }, isActive: true },
+            select: { id: true },
+          });
+          if (destinatarios.length > 0) {
+            await tx.notification.createMany({
+              data: destinatarios.map((u) => ({
+                message: `${quien} te recuerda que su solicitud del plano ${radicado} sigue pendiente de tu respuesta.`,
+                userId:  u.id,
+                planoId: planId,
+              })),
+            });
+          }
+        }
+
+        return updated;
+      });
+
+      if (request.adminEntregaId) {
+        await sendPushToUser(request.adminEntregaId, {
+          title: "🔔 Recordatorio de solicitud",
+          body:  `${quien} recuerda que su solicitud del plano ${radicado} sigue pendiente.`,
+          url:   "/dashboard/entregados",
+          tag:   `recordatorio-${id}`,
+        }).catch(() => {});
+      } else {
+        await sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
+          title: "🔔 Recordatorio de solicitud",
+          body:  `${quien} recuerda que su solicitud del plano ${radicado} sigue pendiente.`,
+          url:   "/dashboard/entregados",
+          tag:   `recordatorio-${id}`,
+        }).catch(() => {});
+      }
+    }
+
     else {
       return NextResponse.json({ error: "Acción no válida o sin permisos" }, { status: 400 });
     }

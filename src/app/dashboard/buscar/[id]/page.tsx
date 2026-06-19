@@ -5,12 +5,13 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, FileText, Map, User, Calendar, FileType,
-  CheckCircle2, AlertCircle, ClipboardList, MapPin, BookOpen,
+  CheckCircle2, AlertCircle, ClipboardList, MapPin, BookOpen, Bell, Wrench,
 } from "lucide-react";
-import SolicitarPlanoBoton    from "./SolicitarPlanoBoton";
-import AdminActions           from "./AdminActions";
-import RegistrarPrestamoModal from "./RegistrarPrestamoModal";
-import HistorialPrestamos     from "./HistorialPrestamos";
+import SolicitarPlanoBoton          from "./SolicitarPlanoBoton";
+import AdminActions                 from "./AdminActions";
+import RegistrarPrestamoModal       from "./RegistrarPrestamoModal";
+import HistorialPrestamos           from "./HistorialPrestamos";
+import SubsanarInconsistenciaBoton  from "./SubsanarInconsistenciaBoton";
 
 export default async function DetallePlanoPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
@@ -117,6 +118,15 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
             />
           )}
 
+          {/* ENCARGADO/ADMIN: editar plano (trajeron un nuevo plano para subsanar) */}
+          {(isAdministrador || isEncargado) && (
+            <SubsanarInconsistenciaBoton
+              planId={plano.id}
+              radicado={plano.radicado}
+              inconsistencias={plano.inconsistencias}
+            />
+          )}
+
           {/* ADMIN: editar / eliminar / restaurar */}
           {isAdministrador && (
             <AdminActions planId={plano.id} planEstado={plano.estado} />
@@ -210,6 +220,18 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                   </dd>
                 </div>
               )}
+
+              {plano.inconsistencias && (
+                <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
+                    <Wrench className="h-5 w-5 text-amber-700 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="text-sm font-semibold text-amber-900 dark:text-amber-300">Inconsistencia pendiente</p>
+                      <p className="text-sm text-amber-900 dark:text-amber-100 mt-0.5">{plano.inconsistencias}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -260,11 +282,15 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                                 evento.accion === "PRESTAMO_EXTERNO"  ? "bg-violet-500" :
                                 evento.accion === "DEVOLUCION_EXTERNA"? "bg-teal-500" :
                                 evento.accion === "DEVOLUCION" || evento.accion === "PLANO_ARCHIVADO" ? "bg-purple-500" :
+                                evento.accion === "RECORDATORIO"      ? "bg-amber-500" :
+                                evento.accion === "INCONSISTENCIA_SUBSANADA" ? "bg-orange-500" :
                                 "bg-slate-400"} text-white`}
                           >
                             {evento.accion === "REGISTRO"          ? <CheckCircle2 className="h-4 w-4" /> :
                              evento.accion === "SOLICITUD"         ? <AlertCircle className="h-4 w-4" /> :
                              evento.accion === "PRESTAMO_EXTERNO"  ? <BookOpen className="h-4 w-4" /> :
+                             evento.accion === "RECORDATORIO"      ? <Bell className="h-4 w-4" /> :
+                             evento.accion === "INCONSISTENCIA_SUBSANADA" ? <Wrench className="h-4 w-4" /> :
                              <Calendar className="h-4 w-4" />}
                           </span>
                           <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">

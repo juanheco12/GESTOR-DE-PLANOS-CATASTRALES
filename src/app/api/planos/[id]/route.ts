@@ -47,6 +47,71 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   }
 }
 
+// SUBSANAR INCONSISTENCIA (Receptor: Encargado o Administrador)
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (session?.user?.role !== "ADMINISTRADOR" && session?.user?.role !== "ENCARGADO") {
+      return NextResponse.json({ error: "No autorizado. Solo un receptor puede subsanar inconsistencias." }, { status: 403 });
+    }
+
+    const resolvedParams = await params;
+    const id = resolvedParams.id;
+    const { novedad } = await req.json();
+
+    if (!novedad || !novedad.trim()) {
+      return NextResponse.json({ error: "Describe la novedad antes de continuar." }, { status: 400 });
+    }
+
+    const plan = await prisma.plan.findUnique({ where: { id } });
+    if (!plan) {
+      return NextResponse.json({ error: "Plano no encontrado" }, { status: 404 });
+    }
+
+    const quien = session.user.name ?? session.user.email ?? "Receptor";
+    const estabaPendienteRevision = plan.estado === "PENDIENTE_REVISION";
+
+    const updatedPlan = await prisma.$transaction(async (tx) => {
+      const updated = await tx.plan.update({
+        where: { id },
+        data: estabaPendienteRevision
+          ? { estado: "DISPONIBLE", inconsistencias: null }
+          : { inconsistencias: null },
+      });
+
+      await tx.history.create({
+        data: {
+          planId: id,
+          userId: session.user.id,
+          accion: "INCONSISTENCIA_SUBSANADA",
+          detalles: `${quien} registró que se trajo un nuevo plano para subsanar la inconsistencia: ${novedad.trim()}`,
+        },
+      });
+
+      const admins = await tx.user.findMany({
+        where: { role: "ADMINISTRADOR", isActive: true },
+        select: { id: true },
+      });
+      if (admins.length > 0) {
+        await tx.notification.createMany({
+          data: admins.map((u) => ({
+            message: `${quien} subsanó la inconsistencia del plano ${plan.radicado}.`,
+            userId:  u.id,
+            planoId: id,
+          })),
+        });
+      }
+
+      return updated;
+    });
+
+    return NextResponse.json(updatedPlan, { status: 200 });
+  } catch (error) {
+    console.error("Error al subsanar inconsistencia:", error);
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  }
+}
+
 // EDITAR PLANO (Solo Admin)
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

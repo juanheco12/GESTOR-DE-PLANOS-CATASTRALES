@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import SolicitarDevolucionBoton from "./SolicitarDevolucionBoton";
 import RecibirPlanoBoton from "./RecibirPlanoBoton";
+import RecordarBoton from "./RecordarBoton";
 import AutoRefresh from "@/components/AutoRefresh";
 
 export default async function MisSolicitudesPage() {
@@ -88,7 +89,13 @@ export default async function MisSolicitudesPage() {
                       {req.estado === "ENTREGADO" && (
                         <SolicitarDevolucionBoton requestId={req.id} />
                       )}
-                      {(req.estado === "PENDIENTE" || req.estado === "DEVUELTO" || req.estado === "DEVOLUCION_SOLICITADA") && (
+                      {(req.estado === "PENDIENTE" || req.estado === "DEVOLUCION_SOLICITADA") && (
+                        <RecordarBoton
+                          requestId={req.id}
+                          ultimoRecordatorio={req.ultimoRecordatorio ? req.ultimoRecordatorio.toISOString() : null}
+                        />
+                      )}
+                      {req.estado === "DEVUELTO" && (
                         <span className="text-slate-400 italic text-xs">Sin acciones</span>
                       )}
                     </td>

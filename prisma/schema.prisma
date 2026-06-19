@@ -90,6 +90,7 @@ model Request {
   fechaSolicitud  DateTime   @default(now())
   fechaEntrega    DateTime?
   fechaDevolucion DateTime?
+  ultimoRecordatorio DateTime? // Último "volver a llamar" enviado por el ejecutor
 
   plan         Plan         @relation(fields: [planId], references: [id])
   user         User         @relation(fields: [userId], references: [id])
