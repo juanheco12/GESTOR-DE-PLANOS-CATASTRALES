@@ -400,7 +400,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         );
       }
 
-      const COOLDOWN_MS = 15 * 60 * 1000;
+      const COOLDOWN_MS = 60 * 1000;
       if (request.ultimoRecordatorio) {
         const elapsed = Date.now() - request.ultimoRecordatorio.getTime();
         if (elapsed < COOLDOWN_MS) {
