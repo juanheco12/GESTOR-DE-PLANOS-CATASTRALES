@@ -497,6 +497,75 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
+    // ── 7. EJECUTOR cancela su propia solicitud (p. ej. se equivocó de plano) ──
+    else if (accion === "CANCELAR_SOLICITUD" && request.userId === session.user.id) {
+      if (request.estado !== "PENDIENTE" && request.estado !== "LISTO_PARA_ENTREGA") {
+        return NextResponse.json(
+          { error: "Solo puedes cancelar una solicitud que aún no tengas en tu poder. Si ya recibiste el plano, debes solicitar su devolución." },
+          { status: 400 }
+        );
+      }
+
+      result = await prisma.$transaction(async (tx) => {
+        const updated = await tx.request.update({
+          where: { id },
+          data: { estado: "CANCELADO" },
+        });
+        await tx.plan.update({
+          where: { id: planId },
+          data:  { estado: "DISPONIBLE" },
+        });
+        await tx.history.create({
+          data: {
+            planId,
+            userId:   session.user.id,
+            accion:   "SOLICITUD_CANCELADA",
+            detalles: `${quien} canceló su solicitud del plano ${radicado}.`,
+          },
+        });
+
+        // Notificar al receptor asignado (si lo hay) + todos los ADMIN/ENCARGADO
+        const destinatarios = await tx.user.findMany({
+          where: { role: { in: ["ADMINISTRADOR", "ENCARGADO"] }, isActive: true },
+          select: { id: true },
+        });
+        if (destinatarios.length > 0) {
+          await tx.notification.createMany({
+            data: destinatarios.map((u) => ({
+              message: `${quien} canceló su solicitud del plano ${radicado}.`,
+              userId:  u.id,
+              planoId: planId,
+            })),
+          });
+        }
+
+        return updated;
+      });
+
+      // Push al receptor asignado y a ADMINISTRADOR
+      if (request.adminEntregaId) {
+        await sendPushToUser(request.adminEntregaId, {
+          title: "🚫 Solicitud cancelada",
+          body:  `${quien} canceló su solicitud del plano ${radicado}.`,
+          url:   "/dashboard/entregados",
+          tag:   `cancelada-${id}`,
+        }).catch(() => {});
+      } else {
+        await sendPushToRoles(["ENCARGADO"], {
+          title: "🚫 Solicitud cancelada",
+          body:  `${quien} canceló su solicitud del plano ${radicado}.`,
+          url:   "/dashboard/entregados",
+          tag:   `cancelada-${id}`,
+        }).catch(() => {});
+      }
+      await sendPushToRoles(["ADMINISTRADOR"], {
+        title: "🚫 Solicitud cancelada",
+        body:  `${quien} canceló su solicitud del plano ${radicado}.`,
+        url:   "/dashboard/entregados",
+        tag:   `cancelada-${id}`,
+      }).catch(() => {});
+    }
+
     else {
       return NextResponse.json({ error: "Acción no válida o sin permisos" }, { status: 400 });
     }

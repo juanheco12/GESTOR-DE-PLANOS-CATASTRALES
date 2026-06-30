@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import SolicitarDevolucionBoton from "./SolicitarDevolucionBoton";
 import RecibirPlanoBoton from "./RecibirPlanoBoton";
 import RecordarBoton from "./RecordarBoton";
+import CancelarSolicitudBoton from "./CancelarSolicitudBoton";
 import AutoRefresh from "@/components/AutoRefresh";
 
 export default async function MisSolicitudesPage() {
@@ -28,6 +29,7 @@ export default async function MisSolicitudesPage() {
     DEVOLUCION_SOLICITADA: "Devolución en proceso",
     DEVUELTO:             "Devuelto",
     RECHAZADO:            "Rechazado",
+    CANCELADO:            "Cancelada",
   };
 
   return (
@@ -74,6 +76,7 @@ export default async function MisSolicitudesPage() {
                           req.estado === "LISTO_PARA_ENTREGA"   ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 animate-pulse" :
                           req.estado === "ENTREGADO"            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" :
                           req.estado === "DEVOLUCION_SOLICITADA" ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" :
+                          req.estado === "CANCELADO"             ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" :
                           "bg-teal-100 text-teal-900 dark:bg-teal-900/30 dark:text-teal-400"}`}
                       >
                         {ESTADO_LABELS[req.estado] ?? req.estado}
@@ -81,21 +84,25 @@ export default async function MisSolicitudesPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {req.estado === "LISTO_PARA_ENTREGA" && (
-                        <div className="flex flex-col items-end gap-1">
+                        <div className="flex flex-col items-end gap-2">
                           <RecibirPlanoBoton requestId={req.id} />
                           <span className="text-xs text-slate-400 dark:text-slate-500">El receptor te entregará el plano</span>
+                          <CancelarSolicitudBoton requestId={req.id} />
                         </div>
                       )}
                       {req.estado === "ENTREGADO" && (
                         <SolicitarDevolucionBoton requestId={req.id} />
                       )}
                       {(req.estado === "PENDIENTE" || req.estado === "DEVOLUCION_SOLICITADA") && (
-                        <RecordarBoton
-                          requestId={req.id}
-                          ultimoRecordatorio={req.ultimoRecordatorio ? req.ultimoRecordatorio.toISOString() : null}
-                        />
+                        <div className="flex flex-col items-end gap-2">
+                          <RecordarBoton
+                            requestId={req.id}
+                            ultimoRecordatorio={req.ultimoRecordatorio ? req.ultimoRecordatorio.toISOString() : null}
+                          />
+                          {req.estado === "PENDIENTE" && <CancelarSolicitudBoton requestId={req.id} />}
+                        </div>
                       )}
-                      {req.estado === "DEVUELTO" && (
+                      {(req.estado === "DEVUELTO" || req.estado === "CANCELADO") && (
                         <span className="text-slate-400 italic text-xs">Sin acciones</span>
                       )}
                     </td>

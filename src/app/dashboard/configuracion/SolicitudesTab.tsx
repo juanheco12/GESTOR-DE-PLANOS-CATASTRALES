@@ -10,6 +10,7 @@ const ESTADO_LABELS: Record<string, string> = {
   DEVOLUCION_SOLICITADA: "Devolución en proceso",
   DEVUELTO:              "Devuelto",
   RECHAZADO:             "Rechazado",
+  CANCELADO:             "Cancelada por el ejecutor",
 };
 
 const ESTADO_COLORS: Record<string, string> = {
@@ -19,6 +20,7 @@ const ESTADO_COLORS: Record<string, string> = {
   DEVOLUCION_SOLICITADA: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
   DEVUELTO:              "bg-teal-100 text-teal-900 dark:bg-teal-900/30 dark:text-teal-400",
   RECHAZADO:             "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  CANCELADO:             "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
 };
 
 const PLAN_ESTADO_LABELS: Record<string, string> = {

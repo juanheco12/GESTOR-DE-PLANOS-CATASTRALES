@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "RequestState" ADD VALUE IF NOT EXISTS 'CANCELADO';

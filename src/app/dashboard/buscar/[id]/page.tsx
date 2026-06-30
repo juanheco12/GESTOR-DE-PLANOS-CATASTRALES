@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, FileText, Map, User, Calendar, FileType,
-  CheckCircle2, AlertCircle, ClipboardList, MapPin, BookOpen, Bell, Wrench,
+  CheckCircle2, AlertCircle, ClipboardList, MapPin, BookOpen, Bell, Wrench, XCircle,
 } from "lucide-react";
 import SolicitarPlanoBoton          from "./SolicitarPlanoBoton";
 import AdminActions                 from "./AdminActions";
@@ -284,6 +284,7 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                                 evento.accion === "DEVOLUCION" || evento.accion === "PLANO_ARCHIVADO" ? "bg-purple-500" :
                                 evento.accion === "RECORDATORIO"      ? "bg-amber-500" :
                                 evento.accion === "INCONSISTENCIA_SUBSANADA" ? "bg-orange-500" :
+                                evento.accion === "SOLICITUD_CANCELADA" ? "bg-red-500" :
                                 "bg-slate-400"} text-white`}
                           >
                             {evento.accion === "REGISTRO"          ? <CheckCircle2 className="h-4 w-4" /> :
@@ -291,6 +292,7 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                              evento.accion === "PRESTAMO_EXTERNO"  ? <BookOpen className="h-4 w-4" /> :
                              evento.accion === "RECORDATORIO"      ? <Bell className="h-4 w-4" /> :
                              evento.accion === "INCONSISTENCIA_SUBSANADA" ? <Wrench className="h-4 w-4" /> :
+                             evento.accion === "SOLICITUD_CANCELADA" ? <XCircle className="h-4 w-4" /> :
                              <Calendar className="h-4 w-4" />}
                           </span>
                           <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">

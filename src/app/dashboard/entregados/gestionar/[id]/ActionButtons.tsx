@@ -200,6 +200,12 @@ export default function ActionButtons({
           Este plano ya fue devuelto y archivado correctamente.
         </p>
       )}
+
+      {estado === "CANCELADO" && (
+        <p className="text-slate-500 dark:text-slate-400 italic text-sm p-2">
+          El ejecutor canceló esta solicitud. El plano ya está disponible nuevamente.
+        </p>
+      )}
     </div>
   );
 }

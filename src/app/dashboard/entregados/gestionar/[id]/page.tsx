@@ -36,6 +36,7 @@ const SOLICITUD_ESTADO_LABELS: Record<string, string> = {
   DEVOLUCION_SOLICITADA: "Devolución solicitada",
   DEVUELTO:              "Devuelto",
   RECHAZADO:             "Rechazado",
+  CANCELADO:             "Cancelada por el ejecutor",
 };
 
 export default async function GestionarSolicitudPage({ params }: { params: Promise<{ id: string }> }) {
