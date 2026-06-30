@@ -17,6 +17,7 @@ const ACCIONES = [
   { value: "PLANO_ARCHIVADO",       label: "Devolución aceptada" },
   { value: "EDICION",               label: "Edición" },
   { value: "DEVOLUCION",            label: "Devolución forzada" },
+  { value: "SOLICITUD_CANCELADA",   label: "Solicitud cancelada" },
 ];
 
 export default function HistorialFilters({ usuarios }: { usuarios: { id: string; name: string | null; email: string | null; role: string }[] }) {

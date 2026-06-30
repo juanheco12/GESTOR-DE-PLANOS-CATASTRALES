@@ -16,6 +16,7 @@ const ACCION_LABELS: Record<string, string> = {
   PLANO_ARCHIVADO:       "Plano archivado",
   PRESTAMO_EXTERNO:      "Préstamo externo",
   DEVOLUCION_EXTERNA:    "Devolución externa",
+  SOLICITUD_CANCELADA:   "Solicitud cancelada",
 };
 
 export type HistoryItem = {

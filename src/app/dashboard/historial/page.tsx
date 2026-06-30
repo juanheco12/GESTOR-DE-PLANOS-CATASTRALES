@@ -17,6 +17,7 @@ const ACCION_LABELS: Record<string, string> = {
   PLANO_ARCHIVADO:    "Devolución",
   EDICION:            "Edición",
   DEVOLUCION:         "Devolución forzada",
+  SOLICITUD_CANCELADA: "Solicitud cancelada",
 };
 
 const ACCION_COLORS: Record<string, string> = {
@@ -28,6 +29,7 @@ const ACCION_COLORS: Record<string, string> = {
   PLANO_ARCHIVADO:    "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
   EDICION:            "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
   DEVOLUCION:         "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+  SOLICITUD_CANCELADA: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
 };
 
 export default async function HistorialPage({

@@ -103,6 +103,7 @@ enum RequestState {
   DEVOLUCION_SOLICITADA
   DEVUELTO
   RECHAZADO
+  CANCELADO
 }
 
 model History {
