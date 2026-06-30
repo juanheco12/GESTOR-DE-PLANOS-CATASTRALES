@@ -84,17 +84,19 @@ export default async function MisSolicitudesPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {req.estado === "LISTO_PARA_ENTREGA" && (
-                        <div className="flex flex-col items-end gap-2">
+                        <div className="flex flex-col items-end gap-1.5">
                           <RecibirPlanoBoton requestId={req.id} />
-                          <span className="text-xs text-slate-400 dark:text-slate-500">El receptor te entregará el plano</span>
-                          <CancelarSolicitudBoton requestId={req.id} />
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs text-slate-400 dark:text-slate-500">El receptor te entregará el plano</span>
+                            <CancelarSolicitudBoton requestId={req.id} />
+                          </div>
                         </div>
                       )}
                       {req.estado === "ENTREGADO" && (
                         <SolicitarDevolucionBoton requestId={req.id} />
                       )}
                       {(req.estado === "PENDIENTE" || req.estado === "DEVOLUCION_SOLICITADA") && (
-                        <div className="flex flex-col items-end gap-2">
+                        <div className="flex items-center justify-end gap-3">
                           <RecordarBoton
                             requestId={req.id}
                             ultimoRecordatorio={req.ultimoRecordatorio ? req.ultimoRecordatorio.toISOString() : null}

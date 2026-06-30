@@ -35,10 +35,11 @@ export default function CancelarSolicitudBoton({ requestId }: { requestId: strin
     <button
       onClick={handleCancelar}
       disabled={loading}
-      className="inline-flex items-center px-3 py-1.5 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+      title="Cancelar esta solicitud si te equivocaste"
+      className="inline-flex items-center gap-1 text-xs text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors disabled:opacity-40"
     >
-      <XCircle className="mr-1.5 h-4 w-4" />
-      {loading ? "Cancelando..." : "Cancelar solicitud"}
+      <XCircle className="h-3.5 w-3.5 shrink-0" />
+      {loading ? "Cancelando…" : "Cancelar"}
     </button>
   );
 }
