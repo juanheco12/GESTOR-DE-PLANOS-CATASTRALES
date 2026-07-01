@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck, KeyRound, Mail } from "lucide-react";
+import { UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck, KeyRound, Mail, Pencil } from "lucide-react";
 
 const ROLE_OPTIONS = [
   { value: "ADMINISTRADOR", label: "Administrador" },
@@ -31,6 +31,9 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
   const [changingEmailFor, setChangingEmailFor] = useState<string | null>(null);
   const [newEmail, setNewEmail] = useState("");
   const [emailError, setEmailError] = useState("");
+  const [changingNameFor, setChangingNameFor] = useState<string | null>(null);
+  const [newName, setNewName] = useState("");
+  const [nameError, setNameError] = useState("");
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,6 +78,34 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
       setUsers(users.map((u) => (u.id === userId ? { ...u, isActive: !currentStatus } : u)));
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleChangeName = async (userId: string) => {
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      setNameError("El nombre no puede estar vacío");
+      return;
+    }
+    setLoadingAction(`NAME_${userId}`);
+    setNameError("");
+    try {
+      const res = await fetch(`/api/usuarios/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newName: trimmed }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error al cambiar nombre");
+      }
+      setUsers(users.map((u) => (u.id === userId ? { ...u, name: trimmed } : u)));
+      setChangingNameFor(null);
+      setNewName("");
+    } catch (err: any) {
+      setNameError(err.message);
     } finally {
       setLoadingAction(null);
     }
@@ -282,7 +313,15 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
                     <div className="flex flex-col gap-2 items-end">
                       <div className="flex items-center gap-3">
                         <button
-                          onClick={() => { setChangingEmailFor(changingEmailFor === user.id ? null : user.id); setNewEmail(user.email ?? ""); setEmailError(""); setChangingPwdFor(null); }}
+                          onClick={() => { setChangingNameFor(changingNameFor === user.id ? null : user.id); setNewName(user.name ?? ""); setNameError(""); setChangingEmailFor(null); setChangingPwdFor(null); }}
+                          className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:underline inline-flex items-center gap-1"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                          Nombre
+                        </button>
+                        <span className="text-slate-300 dark:text-slate-700">|</span>
+                        <button
+                          onClick={() => { setChangingEmailFor(changingEmailFor === user.id ? null : user.id); setNewEmail(user.email ?? ""); setEmailError(""); setChangingPwdFor(null); setChangingNameFor(null); }}
                           className="text-sm font-medium text-violet-600 dark:text-violet-400 hover:underline inline-flex items-center gap-1"
                         >
                           <Mail className="h-3.5 w-3.5" />
@@ -290,7 +329,7 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
                         </button>
                         <span className="text-slate-300 dark:text-slate-700">|</span>
                         <button
-                          onClick={() => { setChangingPwdFor(changingPwdFor === user.id ? null : user.id); setNewPwd(""); setPwdError(""); setChangingEmailFor(null); }}
+                          onClick={() => { setChangingPwdFor(changingPwdFor === user.id ? null : user.id); setNewPwd(""); setPwdError(""); setChangingEmailFor(null); setChangingNameFor(null); }}
                           className="text-sm font-medium text-teal-700 dark:text-teal-400 hover:underline inline-flex items-center gap-1"
                         >
                           <KeyRound className="h-3.5 w-3.5" />
@@ -314,6 +353,26 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
                           Eliminar
                         </button>
                       </div>
+                      {changingNameFor === user.id && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <input
+                            type="text"
+                            placeholder="Nuevo nombre"
+                            value={newName}
+                            onChange={(e) => setNewName(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleChangeName(user.id)}
+                            className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 w-48"
+                          />
+                          <button
+                            onClick={() => handleChangeName(user.id)}
+                            disabled={loadingAction === `NAME_${user.id}`}
+                            className="px-2 py-1 text-xs bg-slate-700 hover:bg-slate-800 text-white rounded disabled:opacity-50"
+                          >
+                            {loadingAction === `NAME_${user.id}` ? "..." : "Guardar"}
+                          </button>
+                          {nameError && <span className="text-xs text-red-500">{nameError}</span>}
+                        </div>
+                      )}
                       {changingEmailFor === user.id && (
                         <div className="flex items-center gap-2 mt-1">
                           <input
