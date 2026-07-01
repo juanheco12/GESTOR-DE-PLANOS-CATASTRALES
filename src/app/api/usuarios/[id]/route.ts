@@ -14,6 +14,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const body = await req.json();
 
+    // Cambio de nombre
+    if (body.newName !== undefined) {
+      const name = body.newName?.trim();
+      if (!name) {
+        return NextResponse.json({ error: "El nombre no puede estar vacío" }, { status: 400 });
+      }
+      const updated = await prisma.user.update({
+        where: { id: resolvedParams.id },
+        data:  { name },
+        select: { id: true, name: true, email: true },
+      });
+      return NextResponse.json(updated, { status: 200 });
+    }
+
     // Cambio de correo
     if (body.newEmail !== undefined) {
       const email = body.newEmail?.trim().toLowerCase();
