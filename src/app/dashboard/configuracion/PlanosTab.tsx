@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Trash2, RefreshCw, Search, RotateCcw, ExternalLink } from "lucide-react";
+import { Trash2, RefreshCw, Search, RotateCcw, ExternalLink, Wrench } from "lucide-react";
 import Link from "next/link";
 
 const ESTADO_LABELS: Record<string, string> = {
@@ -43,6 +43,8 @@ export default function PlanosTab() {
   const [estadoFiltro, setEstadoFiltro] = useState("PENDIENTE_REVISION");
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [deletingId,  setDeletingId]  = useState<string | null>(null);
+  const [migrating,   setMigrating]   = useState(false);
+  const [migrateMsg,  setMigrateMsg]  = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -88,6 +90,22 @@ export default function PlanosTab() {
       alert("No se pudo eliminar el plano.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleMigrateMutaciones = async () => {
+    if (!confirm('¿Cambiar todos los planos con trámite "Otro Trámite" a "Derecho de Petición"?')) return;
+    setMigrating(true);
+    setMigrateMsg("");
+    try {
+      const res = await fetch("/api/admin/migrate-mutaciones", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Error");
+      setMigrateMsg(`✓ ${data.updated} plano${data.updated !== 1 ? "s" : ""} actualizado${data.updated !== 1 ? "s" : ""}.`);
+    } catch (err: any) {
+      setMigrateMsg(`Error: ${err.message}`);
+    } finally {
+      setMigrating(false);
     }
   };
 
@@ -247,6 +265,28 @@ export default function PlanosTab() {
       <p className="text-xs text-slate-400 dark:text-slate-500">
         Total: {planes.length} plano{planes.length !== 1 ? "s" : ""} · Mostrando: {filtered.length}
       </p>
+
+      {/* Maintenance tools */}
+      <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+        <h3 className="text-sm font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1.5 mb-3">
+          <Wrench className="h-4 w-4" /> Herramientas de mantenimiento
+        </h3>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={handleMigrateMutaciones}
+            disabled={migrating}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 hover:bg-amber-100 dark:hover:bg-amber-900/40 disabled:opacity-50 transition-colors"
+          >
+            {migrating ? <span className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" /> : <RefreshCw className="h-4 w-4" />}
+            Cambiar "Otro Trámite" → "Derecho de Petición"
+          </button>
+          {migrateMsg && (
+            <span className={`text-xs ${migrateMsg.startsWith("Error") ? "text-red-500" : "text-emerald-600 dark:text-emerald-400"}`}>
+              {migrateMsg}
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
