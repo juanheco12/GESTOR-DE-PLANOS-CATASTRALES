@@ -7,15 +7,24 @@ import {
 } from "lucide-react";
 
 interface Llamado {
-  id:        string;
-  radicado:  string;
-  fmi:       string | null;
-  nota:      string | null;
-  estado:    "PENDIENTE" | "EN_PROCESO" | "COMPLETADO" | "CANCELADO";
-  createdAt: string;
-  tomadoEn:  string | null;
+  id:                string;
+  radicado:          string | null;
+  fmi:               string | null;
+  nota:              string | null;
+  formato:           string | null;
+  esDerechoPeticion: boolean;
+  estado:            "PENDIENTE" | "EN_PROCESO" | "COMPLETADO" | "CANCELADO";
+  createdAt:         string;
+  tomadoEn:          string | null;
   solicitante: { name: string | null; email: string | null } | null;
 }
+
+const FORMATO_LABEL: Record<string, string> = {
+  FISICO: "Físico (Plano impreso)",
+  CD:     "CD",
+  USB:    "USB",
+  OTRO:   "Otro Formato",
+};
 
 interface Verificacion {
   id:            string;
@@ -26,12 +35,43 @@ interface Verificacion {
   imagenNombre:  string | null;
   createdAt:     string;
   imagenData?:   string | null;
+  llamado?: {
+    id:                string;
+    tomadoEn:          string | null;
+    finalizadoEn:      string | null;
+    esDerechoPeticion: boolean;
+    formato:           string | null;
+    solicitante:       { name: string | null; email: string | null } | null;
+  } | null;
+}
+
+// Duración entre que el digitalizador toma el plano y lo cierra
+function duracion(v: Verificacion): string {
+  const ini = v.llamado?.tomadoEn;
+  const fin = v.llamado?.finalizadoEn;
+  if (!ini || !fin) return "—";
+
+  const ms = new Date(fin).getTime() - new Date(ini).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return "—";
+
+  const min = Math.round(ms / 60000);
+  if (min < 1)  return "< 1 min";
+  if (min < 60) return `${min} min`;
+
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
 }
 
 // ────────────────────────────────────────────────────────────
 // PDF Report generation (opens new window, triggers print)
 // ────────────────────────────────────────────────────────────
-function buildReportHTML(verifs: Verificacion[], userName: string, conAnexos = false): string {
+function buildReportHTML(
+  verifs: Verificacion[],
+  userName: string,
+  conAnexos = false,
+  derechos: Llamado[] = []
+): string {
   const now = new Date().toLocaleDateString("es-CO", {
     timeZone: "America/Bogota",
     day: "2-digit", month: "long", year: "numeric",
@@ -42,6 +82,23 @@ function buildReportHTML(verifs: Verificacion[], userName: string, conAnexos = f
   const proceden   = verifs.filter((v) => v.cumple).length;
   const noProceden = total - proceden;
 
+  // Promedio de duración sobre los que tienen tiempos registrados
+  const medidos = verifs.filter((v) => v.llamado?.tomadoEn && v.llamado?.finalizadoEn);
+  const promedioMin = medidos.length
+    ? Math.round(
+        medidos.reduce(
+          (acc, v) =>
+            acc + (new Date(v.llamado!.finalizadoEn!).getTime() - new Date(v.llamado!.tomadoEn!).getTime()),
+          0
+        ) / medidos.length / 60000
+      )
+    : null;
+  const promedioTxt =
+    promedioMin === null ? "—"
+      : promedioMin < 1  ? "< 1 min"
+      : promedioMin < 60 ? `${promedioMin} min`
+      : `${Math.floor(promedioMin / 60)} h ${promedioMin % 60} min`;
+
   const rows = verifs.map((v) => `
     <tr>
       <td>${new Date(v.createdAt).toLocaleDateString("es-CO", {
@@ -50,9 +107,37 @@ function buildReportHTML(verifs: Verificacion[], userName: string, conAnexos = f
       <td>${escHtml(v.fmi)}</td>
       <td>${escHtml(v.radicado)}</td>
       <td class="${v.cumple ? "cumple" : "nocumple"}">${v.cumple ? "✔ PROCEDE" : "✘ NO PROCEDE"}</td>
+      <td>${duracion(v)}</td>
+      <td>${escHtml(v.llamado?.formato ?? "—")}</td>
       <td>${escHtml(v.observaciones ?? "—")}</td>
       <td>${v.imagenNombre ? `📎 ${escHtml(v.imagenNombre)}` : "—"}</td>
     </tr>`).join("");
+
+  // Derechos de petición registrados por ventanilla vía check-in (sin revisión)
+  const filasDerechos = derechos.map((d) => `
+    <tr>
+      <td>${new Date(d.createdAt).toLocaleDateString("es-CO", {
+        timeZone: "America/Bogota", day: "2-digit", month: "2-digit", year: "numeric",
+      })}</td>
+      <td>${escHtml(d.fmi ?? "—")}</td>
+      <td>${escHtml(d.radicado ?? "—")}</td>
+      <td>${escHtml(d.formato ? (FORMATO_LABEL[d.formato] ?? d.formato) : "—")}</td>
+      <td>${escHtml(d.solicitante?.name ?? d.solicitante?.email ?? "—")}</td>
+      <td>${escHtml(d.nota ?? "—")}</td>
+    </tr>`).join("");
+
+  const seccionDerechos = derechos.length === 0 ? "" : `
+  <h2 class="seccion">Derechos de Petición registrados en ventanilla (${derechos.length})</h2>
+  <p class="subnota">Radicados por ventanilla mediante check-in mientras el digitalizador no estaba en la oficina.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th><th>FMI</th><th>Radicado</th>
+        <th>Formato</th><th>Registró</th><th>Nota</th>
+      </tr>
+    </thead>
+    <tbody>${filasDerechos}</tbody>
+  </table>`;
 
   // Sección de anexos: una página por plano con archivo adjunto
   const conArchivo = verifs.filter((v) => v.imagenData);
@@ -73,6 +158,9 @@ function buildReportHTML(verifs: Verificacion[], userName: string, conAnexos = f
             timeZone: "America/Bogota", day: "2-digit", month: "long", year: "numeric",
           })}</td></tr>
           <tr><th>Resultado</th><td class="${v.cumple ? "cumple" : "nocumple"}">${v.cumple ? "✔ PROCEDE" : "✘ NO PROCEDE"}</td></tr>
+          <tr><th>Tiempo</th><td>${duracion(v)}</td></tr>
+          <tr><th>Formato</th><td>${escHtml(v.llamado?.formato ?? "—")}</td></tr>
+          <tr><th>Solicitó</th><td>${escHtml(v.llamado?.solicitante?.name ?? "—")}</td></tr>
           <tr><th>Observaciones</th><td>${escHtml(v.observaciones ?? "—")}</td></tr>
           <tr><th>Archivo</th><td>${escHtml(v.imagenNombre ?? "—")}</td></tr>
         </table>
@@ -97,6 +185,8 @@ function buildReportHTML(verifs: Verificacion[], userName: string, conAnexos = f
     .stat.total{background:#f1f5f9}
     .stat.si{background:#dcfce7;color:#15803d}
     .stat.no{background:#fee2e2;color:#b91c1c}
+    .stat.tiempo{background:#e0f2fe;color:#0369a1}
+    .stat.tiempo .num{font-size:15px;padding-top:5px}
     .stat .num{font-size:22px;font-weight:700;line-height:1.1}
     .stat .lbl{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
     table{width:100%;border-collapse:collapse;margin-top:4px}
@@ -106,6 +196,8 @@ function buildReportHTML(verifs: Verificacion[], userName: string, conAnexos = f
     .cumple{color:#15803d;font-weight:700}
     .nocumple{color:#b91c1c;font-weight:700}
     footer{margin-top:14px;font-size:9px;color:#94a3b8;text-align:center}
+    h2.seccion{font-size:12px;color:#6b21a8;margin-top:18px;border-bottom:1px solid #d8b4fe;padding-bottom:4px}
+    .subnota{font-size:8.5px;color:#94a3b8;margin:3px 0 5px}
     .anexo{page-break-before:always;padding-top:6px}
     .anexo h2{font-size:13px;color:#0f766e;border-bottom:1px solid #0f766e;padding-bottom:5px;margin-bottom:10px}
     table.ficha{width:100%;margin-bottom:12px;border-collapse:collapse}
@@ -130,19 +222,22 @@ function buildReportHTML(verifs: Verificacion[], userName: string, conAnexos = f
     <div class="stat total"><div class="num">${total}</div><div class="lbl">Total</div></div>
     <div class="stat si"><div class="num">${proceden}</div><div class="lbl">Proceden</div></div>
     <div class="stat no"><div class="num">${noProceden}</div><div class="lbl">No proceden</div></div>
+    <div class="stat tiempo"><div class="num">${promedioTxt}</div><div class="lbl">Tiempo promedio</div></div>
   </div>
 
   <table>
     <thead>
       <tr>
         <th>Fecha</th><th>FMI</th><th>Radicado</th>
-        <th>Resultado</th><th>Observaciones</th><th>Adjunto</th>
+        <th>Resultado</th><th>Tiempo</th><th>Formato</th><th>Observaciones</th><th>Adjunto</th>
       </tr>
     </thead>
     <tbody>
-      ${rows || '<tr><td colspan="6" style="text-align:center;color:#94a3b8;padding:12px">Sin registros</td></tr>'}
+      ${rows || '<tr><td colspan="8" style="text-align:center;color:#94a3b8;padding:12px">Sin registros</td></tr>'}
     </tbody>
   </table>
+
+  ${seccionDerechos}
 
   <footer>Sistema de Gestión de Planos Catastrales — Municipio de Montería</footer>
   ${anexos}
@@ -234,7 +329,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
       if (!res.ok) { alert(data.error ?? "No se pudo tomar el llamado"); loadLlamados(); return; }
 
       setLlamadoActivo({ ...l, estado: "EN_PROCESO" });
-      setRadicado(l.radicado);
+      setRadicado(l.radicado ?? "");
       setFmi(l.fmi ?? "");
       setCumple(null);
       setObservaciones("");
@@ -385,9 +480,19 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
         );
       }
 
+      // Los check-in de ventanilla no generan verificación, pero deben salir en el reporte
+      let derechos: Llamado[] = [];
+      try {
+        const res  = await fetch("/api/llamados");
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          derechos = data.filter((l: Llamado) => l.esDerechoPeticion);
+        }
+      } catch { /* el reporte se genera igual, solo sin esta sección */ }
+
       const w = window.open("", "_blank");
       if (!w) { alert("Permite las ventanas emergentes para generar el reporte."); return; }
-      w.document.write(buildReportHTML(datos, userName, conAnexos));
+      w.document.write(buildReportHTML(datos, userName, conAnexos, derechos));
       w.document.close();
     } finally {
       setGenerando(false);
@@ -521,6 +626,11 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                             : l.estado === "EN_PROCESO" ? "EN REVISIÓN"
                             : l.estado === "COMPLETADO" ? "VERIFICADO" : "CANCELADO"}
                         </span>
+                        {l.esDerechoPeticion && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300 shrink-0">
+                            DERECHO DE PETICIÓN
+                          </span>
+                        )}
                         <span className="text-[11px] text-slate-400 shrink-0 flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {new Date(l.createdAt).toLocaleString("es-CO", {
@@ -532,10 +642,15 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                       </div>
 
                       <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                        Radicado: {l.radicado}
+                        {l.radicado ? `Radicado: ${l.radicado}` : l.fmi ? `FMI: ${l.fmi}` : "Sin identificar"}
                       </p>
-                      {l.fmi && (
+                      {l.radicado && l.fmi && (
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">FMI: {l.fmi}</p>
+                      )}
+                      {l.formato && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          Formato: {FORMATO_LABEL[l.formato] ?? l.formato}
+                        </p>
                       )}
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                         Solicita: {l.solicitante?.name ?? l.solicitante?.email ?? "Ventanilla"}
@@ -561,7 +676,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                         <button
                           onClick={() => {
                             setLlamadoActivo(l);
-                            setRadicado(l.radicado);
+                            setRadicado(l.radicado ?? "");
                             setFmi(l.fmi ?? "");
                             setCumple(null); setObservaciones(""); setImagen(null);
                             setFormError(""); setSuccess(false);

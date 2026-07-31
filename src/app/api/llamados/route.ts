@@ -8,34 +8,36 @@ import { sendPushToRoles } from "@/lib/push";
 const ROLES_SOLICITANTES = ["RADICADORA", "ENCARGADO", "ADMINISTRADOR"];
 
 const SELECT_LLAMADO = {
-  id:           true,
-  radicado:     true,
-  fmi:          true,
-  nota:         true,
-  estado:       true,
-  createdAt:    true,
-  tomadoEn:     true,
-  finalizadoEn: true,
+  id:                true,
+  radicado:          true,
+  fmi:               true,
+  nota:              true,
+  formato:           true,
+  esDerechoPeticion: true,
+  estado:            true,
+  createdAt:         true,
+  tomadoEn:          true,
+  finalizadoEn:      true,
   solicitante:   { select: { name: true, email: true } },
   digitalizador: { select: { name: true, email: true } },
   verificacion:  { select: { id: true, cumple: true, observaciones: true } },
 } as const;
 
-// GET — el digitalizador ve todos los llamados; ventanilla ve solo los suyos
+// GET — digitalizador y administrador ven todos; el resto solo los suyos
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const role = session.user.role;
-  const esDigitalizador = role === "DIGITALIZADOR";
+  const veTodos = role === "DIGITALIZADOR" || role === "ADMINISTRADOR";
 
-  if (!esDigitalizador && !ROLES_SOLICITANTES.includes(role)) {
+  if (!veTodos && !ROLES_SOLICITANTES.includes(role)) {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
   try {
     const llamados = await prisma.llamadoVerificacion.findMany({
-      where: esDigitalizador ? {} : { solicitanteId: session.user.id },
+      where: veTodos ? {} : { solicitanteId: session.user.id },
       orderBy: [{ estado: "asc" }, { createdAt: "desc" }],
       take: 100,
       select: SELECT_LLAMADO,
@@ -60,41 +62,57 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { radicado, fmi, nota } = await req.json();
+    const { radicado, fmi, nota, formato, esDerechoPeticion } = await req.json();
 
-    if (!radicado?.trim()) {
-      return NextResponse.json({ error: "El número de radicado es requerido" }, { status: 400 });
-    }
+    const rad = radicado?.trim() || null;
+    const folio = fmi?.trim() || null;
 
-    // Evita llamados duplicados para el mismo radicado que aún estén sin atender
-    const abierto = await prisma.llamadoVerificacion.findFirst({
-      where: {
-        radicado: radicado.trim(),
-        estado:   { in: ["PENDIENTE", "EN_PROCESO"] },
-      },
-      select: { id: true, estado: true },
-    });
-    if (abierto) {
+    // El radicado ya no es obligatorio, pero hace falta algo que identifique el plano
+    if (!rad && !folio) {
       return NextResponse.json(
-        {
-          error:
-            abierto.estado === "PENDIENTE"
-              ? "Ya hay un llamado pendiente para este radicado."
-              : "El digitalizador ya está revisando este radicado.",
-        },
-        { status: 409 }
+        { error: "Indica al menos el número de radicado o el FMI" },
+        { status: 400 }
       );
     }
 
+    const esCheckIn = esDerechoPeticion === true;
+
+    // Evita llamados duplicados sin atender para el mismo radicado
+    if (rad && !esCheckIn) {
+      const abierto = await prisma.llamadoVerificacion.findFirst({
+        where: { radicado: rad, estado: { in: ["PENDIENTE", "EN_PROCESO"] } },
+        select: { id: true, estado: true },
+      });
+      if (abierto) {
+        return NextResponse.json(
+          {
+            error:
+              abierto.estado === "PENDIENTE"
+                ? "Ya hay un llamado pendiente para este radicado."
+                : "El digitalizador ya está revisando este radicado.",
+          },
+          { status: 409 }
+        );
+      }
+    }
+
     const nombre = session.user.name ?? session.user.email ?? "Ventanilla";
+    const ident  = rad ? `radicado ${rad}` : `FMI ${folio}`;
+    const ahora  = new Date();
 
     const llamado = await prisma.$transaction(async (tx) => {
       const creado = await tx.llamadoVerificacion.create({
         data: {
-          radicado:      radicado.trim(),
-          fmi:           fmi?.trim()  || null,
-          nota:          nota?.trim() || null,
-          solicitanteId: session.user.id,
+          radicado:          rad,
+          fmi:               folio,
+          nota:              nota?.trim() || null,
+          formato:           formato?.trim() || null,
+          esDerechoPeticion: esCheckIn,
+          solicitanteId:     session.user.id,
+          // El check-in queda registrado y cerrado de inmediato: no espera
+          // al digitalizador porque no está en la oficina.
+          estado:            esCheckIn ? "COMPLETADO" : "PENDIENTE",
+          finalizadoEn:      esCheckIn ? ahora : null,
         },
         select: SELECT_LLAMADO,
       });
@@ -107,8 +125,10 @@ export async function POST(req: Request) {
       if (digitalizadores.length > 0) {
         await tx.notification.createMany({
           data: digitalizadores.map((d) => ({
-            message: `${nombre} solicita verificar el plano con radicado ${radicado.trim()}.`,
-            userId:  d.id,
+            message: esCheckIn
+              ? `${nombre} registró un derecho de petición (${ident}) mientras no estabas.`
+              : `${nombre} solicita verificar el plano con ${ident}.`,
+            userId: d.id,
           })),
         });
       }
@@ -118,8 +138,10 @@ export async function POST(req: Request) {
 
     // Push fuera de la transacción — que un fallo de red no revierta el llamado
     sendPushToRoles(["DIGITALIZADOR"], {
-      title: "Verificación solicitada",
-      body:  `${nombre} necesita revisar el radicado ${radicado.trim()}.`,
+      title: esCheckIn ? "Derecho de petición registrado" : "Verificación solicitada",
+      body:  esCheckIn
+        ? `${nombre} dejó registrado un derecho de petición (${ident}).`
+        : `${nombre} necesita revisar el ${ident}.`,
       url:   "/dashboard",
       tag:   "llamado-verificacion",
     }).catch((err) => console.error("[Push] llamado:", err));

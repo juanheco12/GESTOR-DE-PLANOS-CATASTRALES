@@ -175,8 +175,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <VerificacionPanel userName={session?.user?.name ?? session?.user?.email ?? "Usuario"} />
       )}
 
-      {/* Call-the-digitalizador FAB — ventanilla */}
-      {isVentanilla && <LlamarDigitalizadorPanel />}
+      {/* Plan-verification request FAB — ventanilla */}
+      {isVentanilla && <LlamarDigitalizadorPanel isAdmin={isAdministrador} />}
     </div>
   );
 }

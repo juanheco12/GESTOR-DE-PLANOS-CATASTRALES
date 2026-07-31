@@ -85,6 +85,17 @@ export async function POST() {
       `CREATE INDEX IF NOT EXISTS "LlamadoVerificacion_solicitanteId_idx" ON "LlamadoVerificacion"("solicitanteId")`
     );
 
+    // 6. LlamadoVerificacion: radicado opcional + check-in de derecho de petición
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "LlamadoVerificacion" ALTER COLUMN "radicado" DROP NOT NULL`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "LlamadoVerificacion" ADD COLUMN IF NOT EXISTS "formato" TEXT`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "LlamadoVerificacion" ADD COLUMN IF NOT EXISTS "esDerechoPeticion" BOOLEAN NOT NULL DEFAULT false`
+    );
+
     return NextResponse.json({ ok: true, message: "Migraciones aplicadas correctamente." });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
