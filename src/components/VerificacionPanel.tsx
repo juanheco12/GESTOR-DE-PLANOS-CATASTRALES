@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ClipboardCheck, X, Plus, FileText, Check, XCircle,
-  Trash2, Download, Upload, ImageIcon,
+  Trash2, Download, Upload, ImageIcon, Eye,
 } from "lucide-react";
 
 interface Verificacion {
@@ -14,12 +14,13 @@ interface Verificacion {
   observaciones: string | null;
   imagenNombre:  string | null;
   createdAt:     string;
+  imagenData?:   string | null;
 }
 
 // ────────────────────────────────────────────────────────────
 // PDF Report generation (opens new window, triggers print)
 // ────────────────────────────────────────────────────────────
-function buildReportHTML(verifs: Verificacion[], userName: string): string {
+function buildReportHTML(verifs: Verificacion[], userName: string, conAnexos = false): string {
   const now = new Date().toLocaleDateString("es-CO", {
     timeZone: "America/Bogota",
     day: "2-digit", month: "long", year: "numeric",
@@ -41,6 +42,33 @@ function buildReportHTML(verifs: Verificacion[], userName: string): string {
       <td>${escHtml(v.observaciones ?? "—")}</td>
       <td>${v.imagenNombre ? `📎 ${escHtml(v.imagenNombre)}` : "—"}</td>
     </tr>`).join("");
+
+  // Sección de anexos: una página por plano con archivo adjunto
+  const conArchivo = verifs.filter((v) => v.imagenData);
+  const anexos = !conAnexos || conArchivo.length === 0 ? "" : `
+  <div class="anexos">
+    ${conArchivo.map((v, i) => {
+      const esPdf = (v.imagenData ?? "").startsWith("data:application/pdf");
+      const visor = esPdf
+        ? `<embed src="${v.imagenData}" type="application/pdf" class="doc"/>
+           <p class="nota">Documento PDF adjunto. Si no se visualiza al imprimir, ábrelo desde el historial con el botón "Ver".</p>`
+        : `<img src="${v.imagenData}" alt="Plano ${escHtml(v.fmi)}" class="doc"/>`;
+      return `
+      <section class="anexo">
+        <h2>Anexo ${i + 1} — FMI ${escHtml(v.fmi)}</h2>
+        <table class="ficha">
+          <tr><th>Radicado</th><td>${escHtml(v.radicado)}</td></tr>
+          <tr><th>Fecha</th><td>${new Date(v.createdAt).toLocaleDateString("es-CO", {
+            timeZone: "America/Bogota", day: "2-digit", month: "long", year: "numeric",
+          })}</td></tr>
+          <tr><th>Resultado</th><td class="${v.cumple ? "cumple" : "nocumple"}">${v.cumple ? "✔ PROCEDE" : "✘ NO PROCEDE"}</td></tr>
+          <tr><th>Observaciones</th><td>${escHtml(v.observaciones ?? "—")}</td></tr>
+          <tr><th>Archivo</th><td>${escHtml(v.imagenNombre ?? "—")}</td></tr>
+        </table>
+        ${visor}
+      </section>`;
+    }).join("")}
+  </div>`;
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -67,6 +95,14 @@ function buildReportHTML(verifs: Verificacion[], userName: string): string {
     .cumple{color:#15803d;font-weight:700}
     .nocumple{color:#b91c1c;font-weight:700}
     footer{margin-top:14px;font-size:9px;color:#94a3b8;text-align:center}
+    .anexo{page-break-before:always;padding-top:6px}
+    .anexo h2{font-size:13px;color:#0f766e;border-bottom:1px solid #0f766e;padding-bottom:5px;margin-bottom:10px}
+    table.ficha{width:100%;margin-bottom:12px;border-collapse:collapse}
+    table.ficha th{background:#f1f5f9;color:#334155;width:110px;padding:5px 8px;text-align:left;font-size:9.5px;border-bottom:1px solid #e2e8f0}
+    table.ficha td{padding:5px 8px;font-size:10px;border-bottom:1px solid #e2e8f0}
+    .doc{display:block;width:100%;max-height:195mm;object-fit:contain;border:1px solid #e2e8f0;border-radius:4px}
+    embed.doc{height:195mm}
+    .nota{font-size:8.5px;color:#94a3b8;margin-top:5px;text-align:center}
     @media print{@page{margin:15mm}body{padding:0}}
   </style>
 </head>
@@ -98,7 +134,8 @@ function buildReportHTML(verifs: Verificacion[], userName: string): string {
   </table>
 
   <footer>Sistema de Gestión de Planos Catastrales — Municipio de Montería</footer>
-  <script>window.onload=()=>{window.print()}</script>
+  ${anexos}
+  <script>window.onload=()=>{setTimeout(()=>window.print(),${conAnexos ? 900 : 100})}</script>
 </body>
 </html>`;
 }
@@ -115,6 +152,8 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   const [tab,         setTab]         = useState<"nueva" | "historial">("nueva");
   const [verifs,      setVerifs]      = useState<Verificacion[]>([]);
   const [loadingList, setLoadingList] = useState(false);
+  const [loadingImg,  setLoadingImg]  = useState<string | null>(null);
+  const [generando,   setGenerando]   = useState(false);
 
   // form
   const [fmi,          setFmi]          = useState("");
@@ -201,12 +240,79 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
     setVerifs((prev) => prev.filter((v) => v.id !== id));
   };
 
-  const generarReporte = () => {
-    const html = buildReportHTML(verifs, userName);
-    const w = window.open("", "_blank");
-    if (!w) { alert("Permite las ventanas emergentes para generar el reporte."); return; }
-    w.document.write(html);
-    w.document.close();
+  // Abre el archivo adjunto de una verificación en una pestaña nueva
+  const verArchivo = async (v: Verificacion) => {
+    setLoadingImg(v.id);
+    try {
+      const res  = await fetch(`/api/verificaciones/${v.id}`);
+      const data = await res.json();
+      if (!data.imagenData) { alert("Este registro no tiene archivo adjunto."); return; }
+
+      const w = window.open("", "_blank");
+      if (!w) { alert("Permite las ventanas emergentes para ver el archivo."); return; }
+
+      const esPdf  = String(data.imagenData).startsWith("data:application/pdf");
+      const nombre = escHtml(data.imagenNombre ?? "archivo");
+      w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
+<title>${nombre}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column}
+  header{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 18px;background:#0f766e;flex-wrap:wrap}
+  h1{font-size:14px;font-weight:600}
+  .sub{font-size:11px;opacity:.85;margin-top:2px}
+  a.dl{background:#fff;color:#0f766e;padding:7px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600}
+  main{flex:1;display:flex;align-items:center;justify-content:center;padding:16px}
+  img{max-width:100%;max-height:88vh;object-fit:contain;border-radius:6px;box-shadow:0 4px 24px rgba(0,0,0,.4)}
+  embed{width:100%;height:88vh;border-radius:6px;background:#fff}
+</style></head><body>
+<header>
+  <div>
+    <h1>${nombre}</h1>
+    <p class="sub">FMI ${escHtml(data.fmi)} &nbsp;·&nbsp; Radicado ${escHtml(data.radicado)} &nbsp;·&nbsp; ${data.cumple ? "PROCEDE" : "NO PROCEDE"}</p>
+  </div>
+  <a class="dl" href="${data.imagenData}" download="${nombre}">Descargar</a>
+</header>
+<main>${esPdf
+  ? `<embed src="${data.imagenData}" type="application/pdf"/>`
+  : `<img src="${data.imagenData}" alt="${nombre}"/>`}</main>
+</body></html>`);
+      w.document.close();
+    } catch {
+      alert("No se pudo cargar el archivo.");
+    } finally {
+      setLoadingImg(null);
+    }
+  };
+
+  const generarReporte = async (conAnexos: boolean) => {
+    setGenerando(true);
+    try {
+      let datos = verifs;
+
+      // Para el reporte con anexos hay que traer el contenido de cada archivo
+      if (conAnexos) {
+        datos = await Promise.all(
+          verifs.map(async (v) => {
+            if (!v.imagenNombre) return v;
+            try {
+              const res = await fetch(`/api/verificaciones/${v.id}`);
+              const d   = await res.json();
+              return { ...v, imagenData: d.imagenData ?? null };
+            } catch {
+              return v;
+            }
+          })
+        );
+      }
+
+      const w = window.open("", "_blank");
+      if (!w) { alert("Permite las ventanas emergentes para generar el reporte."); return; }
+      w.document.write(buildReportHTML(datos, userName, conAnexos));
+      w.document.close();
+    } finally {
+      setGenerando(false);
+    }
   };
 
   const inputClass =
@@ -419,17 +525,33 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
             {tab === "historial" && (
               <div className="flex-1 overflow-y-auto p-5 space-y-4">
                 {/* Toolbar */}
-                <div className="flex items-center justify-between gap-3">
+                <div className="space-y-2.5">
                   <p className="text-sm text-slate-500 dark:text-slate-400">
                     {verifs.length} registro{verifs.length !== 1 ? "s" : ""}
                   </p>
-                  <button
-                    onClick={generarReporte}
-                    disabled={verifs.length === 0}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-40"
-                  >
-                    <Download className="h-3.5 w-3.5" /> Generar Reporte PDF
-                  </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => generarReporte(false)}
+                      disabled={verifs.length === 0 || generando}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-40"
+                    >
+                      <Download className="h-3.5 w-3.5 shrink-0" /> Reporte resumen
+                    </button>
+                    <button
+                      onClick={() => generarReporte(true)}
+                      disabled={verifs.length === 0 || generando}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-40"
+                    >
+                      {generando
+                        ? <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
+                        : <ImageIcon className="h-3.5 w-3.5 shrink-0" />}
+                      {generando ? "Preparando…" : "Reporte con planos"}
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-snug">
+                    El <strong>resumen</strong> lleva solo la tabla. El <strong>reporte con planos</strong> agrega
+                    una página por cada plano con su imagen adjunta.
+                  </p>
                 </div>
 
                 {loadingList ? (
@@ -481,10 +603,20 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                               </p>
                             )}
                             {v.imagenNombre && (
-                              <p className="text-xs text-teal-600 dark:text-teal-400 mt-1 flex items-center gap-1">
-                                <ImageIcon className="h-3 w-3 shrink-0" />
-                                {v.imagenNombre}
-                              </p>
+                              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                                <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 min-w-0">
+                                  <ImageIcon className="h-3 w-3 shrink-0" />
+                                  <span className="truncate max-w-[150px]">{v.imagenNombre}</span>
+                                </span>
+                                <button
+                                  onClick={() => verArchivo(v)}
+                                  disabled={loadingImg === v.id}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-[11px] font-medium transition-colors disabled:opacity-50 shrink-0"
+                                >
+                                  <Eye className="h-3 w-3" />
+                                  {loadingImg === v.id ? "Abriendo…" : "Ver"}
+                                </button>
+                              </div>
                             )}
                           </div>
                           <button
