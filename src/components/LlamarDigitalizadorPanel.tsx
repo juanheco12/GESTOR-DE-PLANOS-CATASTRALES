@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import {
   ClipboardCheck, X, Plus, FileText, Check, XCircle,
-  Clock, Loader2, UserCheck, Trash2, Pencil, LogIn,
+  Clock, Loader2, UserCheck, Trash2, Pencil, LogIn, FilePlus2,
 } from "lucide-react";
+
+interface Receptor { id: string; name: string }
 
 interface Llamado {
   id:                string;
@@ -85,9 +87,12 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
   const [nota,     setNota]     = useState("");
   const [formato,  setFormato]  = useState("");
   const [checkIn,  setCheckIn]  = useState(false);
+  const [receptor, setReceptor] = useState("");
+  const [receptores, setReceptores] = useState<Receptor[]>([]);
   const [saving,   setSaving]   = useState(false);
   const [error,    setError]    = useState("");
   const [success,  setSuccess]  = useState(false);
+  const [yaExistia, setYaExistia] = useState(false);
 
   // edición del administrador
   const [editando, setEditando] = useState<string | null>(null);
@@ -132,6 +137,15 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
     if (open && tab === "historial") cargar();
   }, [open, tab]);
 
+  // El derecho de petición registra un plano, que lleva receptor físico
+  useEffect(() => {
+    if (!checkIn || receptores.length > 0) return;
+    fetch("/api/receivers")
+      .then((r) => r.json())
+      .then((d) => { if (Array.isArray(d)) setReceptores(d); })
+      .catch(() => { /* el receptor es opcional; el registro no depende de esto */ });
+  }, [checkIn, receptores.length]);
+
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
     // El derecho de petición sí exige radicado: es el número con el que se responde
@@ -160,17 +174,20 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
           nota:     nota.trim(),
           formato,
           esDerechoPeticion: checkIn,
+          receivedById: checkIn ? receptor || null : null,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Error al enviar");
 
       setSuccess(true);
+      setYaExistia(Boolean(data.planoYaExistia));
       if (!checkIn) setAbiertos((n) => n + 1);
       setTimeout(() => {
-        setRadicado(""); setFmi(""); setNota(""); setFormato(""); setCheckIn(false);
-        setSuccess(false);
-      }, 2400);
+        setRadicado(""); setFmi(""); setNota(""); setFormato("");
+        setCheckIn(false); setReceptor("");
+        setSuccess(false); setYaExistia(false);
+      }, 2800);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -307,10 +324,19 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
                   </p>
                 )}
                 {success && (
-                  <p className="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-sm rounded-lg border border-emerald-100 dark:border-emerald-800 flex items-center gap-2">
-                    <Check className="h-4 w-4 shrink-0" />
-                    {checkIn ? "Derecho de petición registrado" : "Solicitud enviada al digitalizador"}
-                  </p>
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 text-sm rounded-lg border border-emerald-100 dark:border-emerald-800">
+                    <p className="flex items-center gap-2 font-medium">
+                      <Check className="h-4 w-4 shrink-0" />
+                      {checkIn ? "Derecho de petición registrado" : "Solicitud enviada al digitalizador"}
+                    </p>
+                    {checkIn && (
+                      <p className="text-xs mt-1 leading-snug">
+                        {yaExistia
+                          ? "Ya existía un plano con ese radicado; se enlazó al existente."
+                          : "El plano quedó registrado en el sistema como Derecho de Petición."}
+                      </p>
+                    )}
+                  </div>
                 )}
 
                 <div>
@@ -335,7 +361,7 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
                       title={
                         checkIn
                           ? "Derecho de petición activo — toca para quitarlo"
-                          : "Marcar como derecho de petición (el digitalizador no está)"
+                          : "Registrar como derecho de petición (el digitalizador no está)"
                       }
                       aria-pressed={checkIn}
                       className={`absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors ${
@@ -351,7 +377,7 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
                     checkIn ? "text-purple-600 dark:text-purple-400" : "text-slate-400"
                   }`}>
                     {checkIn
-                      ? "Derecho de petición: se registra de inmediato, sin esperar al digitalizador."
+                      ? "Se registra como plano en el sistema, con trámite Derecho de Petición."
                       : "Toca DP si el digitalizador no está y entra como derecho de petición."}
                   </p>
                 </div>
@@ -391,6 +417,25 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
                   </select>
                 </div>
 
+                {/* El derecho de petición crea un plano, que lleva receptor físico */}
+                {checkIn && (
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
+                      Recibido por <span className="text-slate-400 text-xs font-normal">(opcional)</span>
+                    </label>
+                    <select
+                      value={receptor}
+                      onChange={(e) => setReceptor(e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="">Sin asignar</option>
+                      {receptores.map((r) => (
+                        <option key={r.id} value={r.id}>{r.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                     Nota <span className="text-slate-400 text-xs font-normal">(opcional)</span>
@@ -413,12 +458,12 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
                 >
                   {saving
                     ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : checkIn ? <LogIn className="h-4 w-4" /> : <ClipboardCheck className="h-4 w-4" />}
+                    : checkIn ? <FilePlus2 className="h-4 w-4" /> : <ClipboardCheck className="h-4 w-4" />}
                   {saving
                     ? "Guardando…"
                     : success
                       ? "¡Listo!"
-                      : checkIn ? "Registrar Check-in" : "Solicitar Verificación"}
+                      : checkIn ? "Registrar Derecho de Petición" : "Solicitar Verificación"}
                 </button>
               </form>
             )}

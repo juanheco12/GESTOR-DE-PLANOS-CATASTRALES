@@ -189,7 +189,7 @@ function buildReportHTML(
 
   const seccionDerechos = derechos.length === 0 ? "" : `
   <h2 class="seccion">Derechos de Petición registrados en ventanilla (${derechos.length})</h2>
-  <p class="subnota">Radicados por ventanilla mediante check-in mientras el digitalizador no estaba en la oficina.</p>
+  <p class="subnota">Registrados por ventanilla como plano en el sistema mientras el digitalizador no estaba en la oficina.</p>
   <table>
     <thead>
       <tr>
