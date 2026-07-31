@@ -5,16 +5,18 @@ import { useRouter } from "next/navigation";
 import { UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck, KeyRound, Mail, Pencil } from "lucide-react";
 
 const ROLE_OPTIONS = [
-  { value: "ADMINISTRADOR", label: "Administrador" },
-  { value: "ENCARGADO",     label: "Encargado" },
-  { value: "EJECUTOR",      label: "Ejecutor" },
-  { value: "RADICADORA",    label: "Radicador" },
+  { value: "ADMINISTRADOR",  label: "Administrador" },
+  { value: "ENCARGADO",      label: "Encargado" },
+  { value: "EJECUTOR",       label: "Ejecutor" },
+  { value: "RADICADORA",     label: "Radicador" },
+  { value: "DIGITALIZADOR",  label: "Digitalizador" },
 ];
 
 const ROLE_COLORS: Record<string, string> = {
   ADMINISTRADOR: "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300",
   ENCARGADO:     "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   EJECUTOR:      "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  DIGITALIZADOR: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300",
   RADICADORA:    "bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300",
 };
 

@@ -27,6 +27,7 @@ model User {
   pushSubs          PushSubscription[]
   prestamosEntregados Prestamo[]        @relation("PrestamoEntregadoPor")
   prestamosRecibidos  Prestamo[]        @relation("PrestamoDevueltoPor")
+  verificaciones      Verificacion[]
 }
 
 enum Role {
@@ -34,6 +35,7 @@ enum Role {
   ENCARGADO
   EJECUTOR
   RADICADORA
+  DIGITALIZADOR
 }
 
 model Plan {
@@ -152,6 +154,20 @@ model PushSubscription {
   createdAt DateTime @default(now())
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Verificacion {
+  id            String   @id @default(cuid())
+  fmi           String
+  radicado      String
+  cumple        Boolean
+  observaciones String?
+  imagenNombre  String?
+  imagenData    String?
+  userId        String
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Prestamo {

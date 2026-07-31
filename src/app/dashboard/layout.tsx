@@ -22,18 +22,19 @@ import InactivityLogout from "@/components/InactivityLogout";
 import NotificationBell from "@/components/NotificationBell";
 import PushManager from "@/components/PushManager";
 import SessionGuard from "@/components/SessionGuard";
+import VerificacionPanel from "@/components/VerificacionPanel";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const role           = session?.user?.role;
-  const isEjecutor     = role === "EJECUTOR";
+  const role            = session?.user?.role;
+  const isEjecutor      = role === "EJECUTOR" || role === "DIGITALIZADOR";
   const isAdministrador = role === "ADMINISTRADOR";
-  const isRadicadora   = role === "RADICADORA";
-  const showPushBell   = role === "ADMINISTRADOR" || role === "ENCARGADO";
-  const showNotifBell  = role === "ADMINISTRADOR" || role === "ENCARGADO" || role === "EJECUTOR";
+  const isRadicadora    = role === "RADICADORA";
+  const showPushBell    = role === "ADMINISTRADOR" || role === "ENCARGADO";
+  const showNotifBell   = role === "ADMINISTRADOR" || role === "ENCARGADO" || role === "EJECUTOR" || role === "DIGITALIZADOR";
 
   const navigation = [
     { name: "Inicio",        href: "/dashboard",            icon: LayoutDashboard },
@@ -121,7 +122,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 role === "RADICADORA"    ? "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/40" :
                 "text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800"
               }`}>
-                {role === "ADMINISTRADOR" ? "Administrador" : role === "ENCARGADO" ? "Encargado" : role === "RADICADORA" ? "Radicador" : role === "EJECUTOR" ? "Ejecutor" : role}
+                {role === "ADMINISTRADOR" ? "Administrador" : role === "ENCARGADO" ? "Encargado" : role === "RADICADORA" ? "Radicador" : role === "EJECUTOR" ? "Ejecutor" : role === "DIGITALIZADOR" ? "Digitalizador" : role}
               </span>
             </div>
           </div>
@@ -164,6 +165,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+
+      {/* Verification FAB — only for EJECUTOR and DIGITALIZADOR */}
+      {isEjecutor && (
+        <VerificacionPanel userName={session?.user?.name ?? session?.user?.email ?? "Usuario"} />
+      )}
     </div>
   );
 }
