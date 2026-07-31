@@ -17,7 +17,7 @@ const SELECT_LLAMADO = {
   finalizadoEn:      true,
   solicitante:   { select: { name: true, email: true } },
   digitalizador: { select: { name: true, email: true } },
-  verificacion:  { select: { id: true, cumple: true, observaciones: true } },
+  verificacion:  { select: { id: true, cumple: true, resultado: true, observaciones: true } },
 } as const;
 
 const ESTADOS = ["PENDIENTE", "EN_PROCESO", "COMPLETADO", "CANCELADO"];

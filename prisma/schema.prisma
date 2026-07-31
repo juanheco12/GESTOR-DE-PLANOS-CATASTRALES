@@ -163,6 +163,9 @@ model Verificacion {
   fmi           String
   radicado      String
   cumple        Boolean
+  // Concepto técnico: PROCEDE | NO_PROCEDE | REQUIERE_AJUSTE.
+  // `cumple` se conserva como resumen booleano para el histórico.
+  resultado     String?
   observaciones String?
   imagenNombre  String?
   imagenData    String?

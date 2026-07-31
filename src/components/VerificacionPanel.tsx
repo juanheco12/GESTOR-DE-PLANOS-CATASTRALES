@@ -3,8 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ClipboardCheck, X, Plus, FileText, Check, XCircle,
-  Trash2, Download, Upload, ImageIcon, Eye, BellRing, Clock, Loader2,
+  Trash2, Download, Upload, ImageIcon, Eye, BellRing, Clock, Loader2, PenLine, FileBarChart,
 } from "lucide-react";
+
+import { buildInformeMensual, type LlamadoInforme } from "@/lib/informeMensual";
+
+type Concepto = "PROCEDE" | "NO_PROCEDE" | "REQUIERE_AJUSTE";
+
+const CONCEPTO_LABEL: Record<string, string> = {
+  PROCEDE:         "PROCEDE",
+  NO_PROCEDE:      "NO PROCEDE",
+  REQUIERE_AJUSTE: "REQUIERE AJUSTE",
+};
 
 interface Llamado {
   id:                string;
@@ -31,18 +41,68 @@ interface Verificacion {
   fmi:           string;
   radicado:      string;
   cumple:        boolean;
+  resultado?:    string | null;
   observaciones: string | null;
   imagenNombre:  string | null;
   createdAt:     string;
   imagenData?:   string | null;
   llamado?: {
     id:                string;
+    createdAt:         string;
     tomadoEn:          string | null;
     finalizadoEn:      string | null;
     esDerechoPeticion: boolean;
     formato:           string | null;
     solicitante:       { name: string | null; email: string | null } | null;
   } | null;
+}
+
+// Concepto técnico; los registros anteriores solo tienen el booleano
+function concepto(v: Verificacion): Concepto {
+  if (v.resultado === "PROCEDE" || v.resultado === "NO_PROCEDE" || v.resultado === "REQUIERE_AJUSTE") {
+    return v.resultado;
+  }
+  return v.cumple ? "PROCEDE" : "NO_PROCEDE";
+}
+
+const CONCEPTO_CSS: Record<Concepto, string> = {
+  PROCEDE:         "cumple",
+  NO_PROCEDE:      "nocumple",
+  REQUIERE_AJUSTE: "ajuste",
+};
+
+const CONCEPTO_ICONO: Record<Concepto, string> = {
+  PROCEDE:         "✔ PROCEDE",
+  NO_PROCEDE:      "✘ NO PROCEDE",
+  REQUIERE_AJUSTE: "▲ REQUIERE AJUSTE",
+};
+
+// Minutos efectivos entre que el digitalizador toma el plano y lo cierra
+function minutosRevision(v: Verificacion): number | null {
+  const ini = v.llamado?.tomadoEn;
+  const fin = v.llamado?.finalizadoEn;
+  if (!ini || !fin) return null;
+  const ms = new Date(fin).getTime() - new Date(ini).getTime();
+  return Number.isFinite(ms) && ms >= 0 ? ms / 60000 : null;
+}
+
+// Minutos de espera del ciudadano: del registro en ventanilla a la toma
+function minutosRespuesta(v: Verificacion): number | null {
+  const ini = v.llamado?.createdAt;
+  const fin = v.llamado?.tomadoEn;
+  if (!ini || !fin) return null;
+  const ms = new Date(fin).getTime() - new Date(ini).getTime();
+  return Number.isFinite(ms) && ms >= 0 ? ms / 60000 : null;
+}
+
+function fmtMin(min: number | null): string {
+  if (min === null) return "—";
+  const m = Math.round(min);
+  if (m < 1)  return "< 1 min";
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  return r === 0 ? `${h} h` : `${h} h ${r} min`;
 }
 
 // Duración entre que el digitalizador toma el plano y lo cierra
@@ -79,8 +139,9 @@ function buildReportHTML(
   });
 
   const total      = verifs.length;
-  const proceden   = verifs.filter((v) => v.cumple).length;
-  const noProceden = total - proceden;
+  const proceden   = verifs.filter((v) => concepto(v) === "PROCEDE").length;
+  const noProceden = verifs.filter((v) => concepto(v) === "NO_PROCEDE").length;
+  const ajustes    = verifs.filter((v) => concepto(v) === "REQUIERE_AJUSTE").length;
 
   // Promedio de duración sobre los que tienen tiempos registrados
   const medidos = verifs.filter((v) => v.llamado?.tomadoEn && v.llamado?.finalizadoEn);
@@ -106,7 +167,7 @@ function buildReportHTML(
       })}</td>
       <td>${escHtml(v.fmi)}</td>
       <td>${escHtml(v.radicado)}</td>
-      <td class="${v.cumple ? "cumple" : "nocumple"}">${v.cumple ? "✔ PROCEDE" : "✘ NO PROCEDE"}</td>
+      <td class="${CONCEPTO_CSS[concepto(v)]}">${CONCEPTO_ICONO[concepto(v)]}</td>
       <td>${duracion(v)}</td>
       <td>${escHtml(v.llamado?.formato ?? "—")}</td>
       <td>${escHtml(v.observaciones ?? "—")}</td>
@@ -157,7 +218,7 @@ function buildReportHTML(
           <tr><th>Fecha</th><td>${new Date(v.createdAt).toLocaleDateString("es-CO", {
             timeZone: "America/Bogota", day: "2-digit", month: "long", year: "numeric",
           })}</td></tr>
-          <tr><th>Resultado</th><td class="${v.cumple ? "cumple" : "nocumple"}">${v.cumple ? "✔ PROCEDE" : "✘ NO PROCEDE"}</td></tr>
+          <tr><th>Resultado</th><td class="${CONCEPTO_CSS[concepto(v)]}">${CONCEPTO_ICONO[concepto(v)]}</td></tr>
           <tr><th>Tiempo</th><td>${duracion(v)}</td></tr>
           <tr><th>Formato</th><td>${escHtml(v.llamado?.formato ?? "—")}</td></tr>
           <tr><th>Solicitó</th><td>${escHtml(v.llamado?.solicitante?.name ?? "—")}</td></tr>
@@ -195,6 +256,8 @@ function buildReportHTML(
     tr:nth-child(even) td{background:#f8fafc}
     .cumple{color:#15803d;font-weight:700}
     .nocumple{color:#b91c1c;font-weight:700}
+    .ajuste{color:#b45309;font-weight:700}
+    .stat.ajuste{background:#fef3c7;color:#b45309}
     footer{margin-top:14px;font-size:9px;color:#94a3b8;text-align:center}
     h2.seccion{font-size:12px;color:#6b21a8;margin-top:18px;border-bottom:1px solid #d8b4fe;padding-bottom:4px}
     .subnota{font-size:8.5px;color:#94a3b8;margin:3px 0 5px}
@@ -222,6 +285,7 @@ function buildReportHTML(
     <div class="stat total"><div class="num">${total}</div><div class="lbl">Total</div></div>
     <div class="stat si"><div class="num">${proceden}</div><div class="lbl">Proceden</div></div>
     <div class="stat no"><div class="num">${noProceden}</div><div class="lbl">No proceden</div></div>
+    <div class="stat ajuste"><div class="num">${ajustes}</div><div class="lbl">Req. ajuste</div></div>
     <div class="stat tiempo"><div class="num">${promedioTxt}</div><div class="lbl">Tiempo promedio</div></div>
   </div>
 
@@ -261,6 +325,13 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   const [loadingImg,  setLoadingImg]  = useState<string | null>(null);
   const [generando,   setGenerando]   = useState(false);
 
+  // Informe mensual: por defecto el mes en curso
+  const hoy = new Date();
+  const [mesInforme, setMesInforme] = useState(
+    `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, "0")}`
+  );
+  const [generandoInforme, setGenerandoInforme] = useState(false);
+
   // llamados de ventanilla
   const [llamados,      setLlamados]      = useState<Llamado[]>([]);
   const [loadingLlam,   setLoadingLlam]   = useState(false);
@@ -272,6 +343,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   const [fmi,          setFmi]          = useState("");
   const [radicado,     setRadicado]     = useState("");
   const [cumple,       setCumple]       = useState<boolean | null>(null);
+  const [resultado,    setResultado]    = useState<Concepto | null>(null);
   const [observaciones, setObservaciones] = useState("");
   const [imagen,       setImagen]       = useState<{ nombre: string; data: string } | null>(null);
   const [saving,       setSaving]       = useState(false);
@@ -331,7 +403,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
       setLlamadoActivo({ ...l, estado: "EN_PROCESO" });
       setRadicado(l.radicado ?? "");
       setFmi(l.fmi ?? "");
-      setCumple(null);
+      setCumple(null); setResultado(null);
       setObservaciones("");
       setImagen(null);
       setFormError("");
@@ -370,7 +442,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   };
 
   const resetForm = () => {
-    setFmi(""); setRadicado(""); setCumple(null);
+    setFmi(""); setRadicado(""); setCumple(null); setResultado(null);
     setObservaciones(""); setImagen(null);
     setFormError(""); setSuccess(false);
     setLlamadoActivo(null);
@@ -381,7 +453,12 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
     e.preventDefault();
     if (!fmi.trim())     { setFormError("El FMI es requerido");             return; }
     if (!radicado.trim()){ setFormError("El número de radicado es requerido"); return; }
-    if (cumple === null)  { setFormError("Seleccione si el plano procede o no"); return; }
+    if (resultado === null) { setFormError("Seleccione el concepto técnico"); return; }
+    // El concepto desfavorable es el respaldo documental: exige observación
+    if (resultado !== "PROCEDE" && !observaciones.trim()) {
+      setFormError(`Un concepto de ${CONCEPTO_LABEL[resultado]} exige escribir la observación técnica`);
+      return;
+    }
 
     setSaving(true);
     setFormError("");
@@ -390,7 +467,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify({
-          fmi: fmi.trim(), radicado: radicado.trim(), cumple,
+          fmi: fmi.trim(), radicado: radicado.trim(), cumple, resultado,
           observaciones: observaciones.trim() || null,
           imagenNombre:  imagen?.nombre || null,
           imagenData:    imagen?.data   || null,
@@ -456,6 +533,32 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
       alert("No se pudo cargar el archivo.");
     } finally {
       setLoadingImg(null);
+    }
+  };
+
+  // Informe mensual de atención técnica, con la estructura del formato oficial
+  const generarInforme = async () => {
+    const [anio, mes] = mesInforme.split("-").map(Number);
+    if (!anio || !mes) return;
+
+    setGenerandoInforme(true);
+    try {
+      // Rango del mes completo en hora local
+      const desde = new Date(anio, mes - 1, 1, 0, 0, 0);
+      const hasta = new Date(anio, mes, 0, 23, 59, 59, 999);
+
+      const res = await fetch(
+        `/api/llamados?desde=${desde.toISOString()}&hasta=${hasta.toISOString()}`
+      );
+      const data = await res.json();
+      if (!Array.isArray(data)) { alert("No se pudieron cargar los datos del periodo."); return; }
+
+      const w = window.open("", "_blank");
+      if (!w) { alert("Permite las ventanas emergentes para generar el informe."); return; }
+      w.document.write(buildInformeMensual(data as LlamadoInforme[], userName, anio, mes - 1));
+      w.document.close();
+    } finally {
+      setGenerandoInforme(false);
     }
   };
 
@@ -678,7 +781,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                             setLlamadoActivo(l);
                             setRadicado(l.radicado ?? "");
                             setFmi(l.fmi ?? "");
-                            setCumple(null); setObservaciones(""); setImagen(null);
+                            setCumple(null); setResultado(null); setObservaciones(""); setImagen(null);
                             setFormError(""); setSuccess(false);
                             setTab("nueva");
                           }}
@@ -761,28 +864,39 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                     Resultado de la revisión <span className="text-red-500">*</span>
                   </label>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-2">
                     <button
                       type="button"
-                      onClick={() => setCumple(true)}
-                      className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
-                        cumple === true
+                      onClick={() => { setResultado("PROCEDE"); setCumple(true); }}
+                      className={`flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-xl border-2 text-[11px] font-bold transition-all ${
+                        resultado === "PROCEDE"
                           ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 shadow-sm"
                           : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-emerald-300"
                       }`}
                     >
-                      <Check className="h-4 w-4" /> PROCEDE
+                      <Check className="h-4 w-4 shrink-0" /> PROCEDE
                     </button>
                     <button
                       type="button"
-                      onClick={() => setCumple(false)}
-                      className={`flex items-center justify-center gap-2 py-3 rounded-xl border-2 text-sm font-semibold transition-all ${
-                        cumple === false
+                      onClick={() => { setResultado("NO_PROCEDE"); setCumple(false); }}
+                      className={`flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-xl border-2 text-[11px] font-bold transition-all ${
+                        resultado === "NO_PROCEDE"
                           ? "border-red-500 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 shadow-sm"
                           : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-red-300"
                       }`}
                     >
-                      <XCircle className="h-4 w-4" /> NO PROCEDE
+                      <XCircle className="h-4 w-4 shrink-0" /> NO PROCEDE
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setResultado("REQUIERE_AJUSTE"); setCumple(false); }}
+                      className={`flex flex-col items-center justify-center gap-1 py-2.5 px-1 rounded-xl border-2 text-[11px] font-bold transition-all ${
+                        resultado === "REQUIERE_AJUSTE"
+                          ? "border-amber-500 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 shadow-sm"
+                          : "border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-amber-300"
+                      }`}
+                    >
+                      <PenLine className="h-4 w-4 shrink-0" /> REQUIERE AJUSTE
                     </button>
                   </div>
                 </div>
@@ -889,6 +1003,36 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                     El <strong>resumen</strong> lleva solo la tabla. El <strong>reporte con planos</strong> agrega
                     una página por cada plano con su imagen adjunta.
                   </p>
+
+                  {/* Informe mensual de atención técnica */}
+                  <div className="pt-3 mt-1 border-t border-slate-200 dark:border-slate-800">
+                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
+                      <FileBarChart className="h-3.5 w-3.5 text-teal-700 dark:text-teal-400 shrink-0" />
+                      Informe Mensual de Atención Técnica
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="month"
+                        value={mesInforme}
+                        onChange={(e) => setMesInforme(e.target.value)}
+                        className="flex-1 min-w-0 px-2.5 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-xs"
+                      />
+                      <button
+                        onClick={generarInforme}
+                        disabled={generandoInforme}
+                        className="px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 shrink-0 flex items-center gap-1.5"
+                      >
+                        {generandoInforme
+                          ? <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          : <FileBarChart className="h-3.5 w-3.5" />}
+                        {generandoInforme ? "Generando…" : "Generar"}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-snug mt-1.5">
+                      Volumen, carga de trabajo, oportunidad, resultados y pendientes del mes,
+                      con anexo de derechos de petición sin concepto.
+                    </p>
+                  </div>
                 </div>
 
                 {loadingList ? (
@@ -903,9 +1047,11 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                       <div
                         key={v.id}
                         className={`p-3.5 rounded-xl border ${
-                          v.cumple
+                          concepto(v) === "PROCEDE"
                             ? "border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10"
-                            : "border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10"
+                            : concepto(v) === "REQUIERE_AJUSTE"
+                              ? "border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10"
+                              : "border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
@@ -913,13 +1059,19 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                             <div className="flex items-center gap-2 flex-wrap mb-1.5">
                               <span
                                 className={`inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full ${
-                                  v.cumple
+                                  concepto(v) === "PROCEDE"
                                     ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400"
-                                    : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400"
+                                    : concepto(v) === "REQUIERE_AJUSTE"
+                                      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400"
+                                      : "bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-400"
                                 }`}
                               >
-                                {v.cumple ? <Check className="h-3 w-3" /> : <XCircle className="h-3 w-3" />}
-                                {v.cumple ? "PROCEDE" : "NO PROCEDE"}
+                                {concepto(v) === "PROCEDE"
+                                  ? <Check className="h-3 w-3" />
+                                  : concepto(v) === "REQUIERE_AJUSTE"
+                                    ? <PenLine className="h-3 w-3" />
+                                    : <XCircle className="h-3 w-3" />}
+                                {CONCEPTO_LABEL[concepto(v)]}
                               </span>
                               <span className="text-xs text-slate-400 dark:text-slate-500">
                                 {new Date(v.createdAt).toLocaleDateString("es-CO", {

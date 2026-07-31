@@ -20,11 +20,12 @@ const SELECT_LLAMADO = {
   finalizadoEn:      true,
   solicitante:   { select: { name: true, email: true } },
   digitalizador: { select: { name: true, email: true } },
-  verificacion:  { select: { id: true, cumple: true, observaciones: true } },
+  verificacion:  { select: { id: true, cumple: true, resultado: true, observaciones: true } },
 } as const;
 
-// GET — digitalizador y administrador ven todos; el resto solo los suyos
-export async function GET() {
+// GET — digitalizador y administrador ven todos; el resto solo los suyos.
+// Con ?desde=&hasta= (ISO) devuelve el periodo completo, para el informe mensual.
+export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
@@ -35,11 +36,21 @@ export async function GET() {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const desde = searchParams.get("desde");
+  const hasta = searchParams.get("hasta");
+  const esPeriodo = Boolean(desde && hasta);
+
+  const where: Record<string, unknown> = veTodos ? {} : { solicitanteId: session.user.id };
+  if (esPeriodo) {
+    where.createdAt = { gte: new Date(desde!), lte: new Date(hasta!) };
+  }
+
   try {
     const llamados = await prisma.llamadoVerificacion.findMany({
-      where: veTodos ? {} : { solicitanteId: session.user.id },
-      orderBy: [{ estado: "asc" }, { createdAt: "desc" }],
-      take: 100,
+      where,
+      orderBy: esPeriodo ? { createdAt: "asc" } : [{ estado: "asc" }, { createdAt: "desc" }],
+      take: esPeriodo ? 5000 : 100,
       select: SELECT_LLAMADO,
     });
     return NextResponse.json(llamados);
@@ -67,15 +78,23 @@ export async function POST(req: Request) {
     const rad = radicado?.trim() || null;
     const folio = fmi?.trim() || null;
 
-    // El radicado ya no es obligatorio, pero hace falta algo que identifique el plano
+    const esCheckIn = esDerechoPeticion === true;
+
+    // El derecho de petición sí exige radicado: es el número con el que se responde
+    if (esCheckIn && !rad) {
+      return NextResponse.json(
+        { error: "El derecho de petición requiere el número de radicado" },
+        { status: 400 }
+      );
+    }
+
+    // Para el resto basta con algo que identifique el plano
     if (!rad && !folio) {
       return NextResponse.json(
         { error: "Indica al menos el número de radicado o el FMI" },
         { status: 400 }
       );
     }
-
-    const esCheckIn = esDerechoPeticion === true;
 
     // Evita llamados duplicados sin atender para el mismo radicado
     if (rad && !esCheckIn) {

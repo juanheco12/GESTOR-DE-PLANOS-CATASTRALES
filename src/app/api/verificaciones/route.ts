@@ -4,6 +4,12 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
 
+const CONCEPTO_LABEL: Record<string, string> = {
+  PROCEDE:         "PROCEDE",
+  NO_PROCEDE:      "NO PROCEDE",
+  REQUIERE_AJUSTE: "REQUIERE AJUSTE",
+};
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
@@ -17,6 +23,7 @@ export async function GET() {
         fmi:           true,
         radicado:      true,
         cumple:        true,
+        resultado:     true,
         observaciones: true,
         imagenNombre:  true,
         // imagenData excluded — potentially large; fetched only for the report
@@ -24,8 +31,8 @@ export async function GET() {
         // Tiempos del llamado de ventanilla, para medir la duración de la revisión
         llamado: {
           select: {
-            id: true, tomadoEn: true, finalizadoEn: true, esDerechoPeticion: true,
-            formato: true,
+            id: true, createdAt: true, tomadoEn: true, finalizadoEn: true,
+            esDerechoPeticion: true, formato: true,
             solicitante: { select: { name: true, email: true } },
           },
         },
@@ -43,10 +50,25 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   try {
-    const { fmi, radicado, cumple, observaciones, imagenNombre, imagenData, llamadoId } = await req.json();
+    const { fmi, radicado, cumple, resultado, observaciones, imagenNombre, imagenData, llamadoId } =
+      await req.json();
 
     if (!fmi?.trim() || !radicado?.trim() || cumple === undefined || cumple === null) {
       return NextResponse.json({ error: "FMI, radicado y resultado son requeridos" }, { status: 400 });
+    }
+
+    const RESULTADOS = ["PROCEDE", "NO_PROCEDE", "REQUIERE_AJUSTE"];
+    const concepto = RESULTADOS.includes(resultado)
+      ? resultado
+      : cumple ? "PROCEDE" : "NO_PROCEDE";
+
+    // El concepto desfavorable es el respaldo documental del acto técnico:
+    // sin observación escrita no puede cerrarse. Validado también en el servidor.
+    if (concepto !== "PROCEDE" && !observaciones?.trim()) {
+      return NextResponse.json(
+        { error: "Un concepto de NO PROCEDE o REQUIERE AJUSTE exige observación escrita." },
+        { status: 400 }
+      );
     }
 
     // Si viene de un llamado de ventanilla, valida que sea de este digitalizador
@@ -67,6 +89,7 @@ export async function POST(req: Request) {
           fmi:           fmi.trim(),
           radicado:      radicado.trim(),
           cumple,
+          resultado:     concepto,
           observaciones: observaciones?.trim() || null,
           imagenNombre:  imagenNombre || null,
           imagenData:    imagenData   || null,
@@ -81,7 +104,7 @@ export async function POST(req: Request) {
         });
         await tx.notification.create({
           data: {
-            message: `Verificación del radicado ${llamado.radicado}: ${cumple ? "PROCEDE" : "NO PROCEDE"}.`,
+            message: `Verificación del radicado ${llamado.radicado}: ${CONCEPTO_LABEL[concepto]}.`,
             userId:  llamado.solicitanteId,
           },
         });
@@ -92,7 +115,7 @@ export async function POST(req: Request) {
 
     if (llamado) {
       sendPushToUser(llamado.solicitanteId, {
-        title: cumple ? "Plano PROCEDE" : "Plano NO PROCEDE",
+        title: `Plano ${CONCEPTO_LABEL[concepto]}`,
         body:  `Radicado ${llamado.radicado} — ${observaciones?.trim() || "Verificación completada."}`,
         url:   "/dashboard",
         tag:   `llamado-${llamado.id}`,

@@ -96,6 +96,17 @@ export async function POST() {
       `ALTER TABLE "LlamadoVerificacion" ADD COLUMN IF NOT EXISTS "esDerechoPeticion" BOOLEAN NOT NULL DEFAULT false`
     );
 
+    // 7. Verificacion: concepto técnico de tres valores
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Verificacion" ADD COLUMN IF NOT EXISTS "resultado" TEXT`
+    );
+    // Backfill del histórico a partir del booleano existente
+    await prisma.$executeRawUnsafe(
+      `UPDATE "Verificacion"
+         SET "resultado" = CASE WHEN "cumple" THEN 'PROCEDE' ELSE 'NO_PROCEDE' END
+       WHERE "resultado" IS NULL`
+    );
+
     return NextResponse.json({ ok: true, message: "Migraciones aplicadas correctamente." });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
