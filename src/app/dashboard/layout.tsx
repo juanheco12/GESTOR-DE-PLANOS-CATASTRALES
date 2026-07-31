@@ -23,6 +23,7 @@ import NotificationBell from "@/components/NotificationBell";
 import PushManager from "@/components/PushManager";
 import SessionGuard from "@/components/SessionGuard";
 import VerificacionPanel from "@/components/VerificacionPanel";
+import LlamarDigitalizadorPanel from "@/components/LlamarDigitalizadorPanel";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
@@ -32,6 +33,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const role            = session?.user?.role;
   const isEjecutor      = role === "EJECUTOR" || role === "DIGITALIZADOR";
   const isDigitalizador = role === "DIGITALIZADOR";
+  // Ventanilla: quienes pueden llamar al digitalizador para revisar un plano
+  const isVentanilla    = role === "RADICADORA" || role === "ENCARGADO" || role === "ADMINISTRADOR";
   const isAdministrador = role === "ADMINISTRADOR";
   const isRadicadora    = role === "RADICADORA";
   const showPushBell    = role === "ADMINISTRADOR" || role === "ENCARGADO";
@@ -171,6 +174,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {isDigitalizador && (
         <VerificacionPanel userName={session?.user?.name ?? session?.user?.email ?? "Usuario"} />
       )}
+
+      {/* Call-the-digitalizador FAB — ventanilla */}
+      {isVentanilla && <LlamarDigitalizadorPanel />}
     </div>
   );
 }

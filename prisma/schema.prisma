@@ -28,6 +28,8 @@ model User {
   prestamosEntregados Prestamo[]        @relation("PrestamoEntregadoPor")
   prestamosRecibidos  Prestamo[]        @relation("PrestamoDevueltoPor")
   verificaciones      Verificacion[]
+  llamadosSolicitados LlamadoVerificacion[] @relation("LlamadoSolicitante")
+  llamadosAtendidos   LlamadoVerificacion[] @relation("LlamadoDigitalizador")
 }
 
 enum Role {
@@ -168,6 +170,37 @@ model Verificacion {
   createdAt     DateTime @default(now())
 
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  llamado       LlamadoVerificacion?
+}
+
+// Solicitud de ventanilla (radicador / encargado) para que el digitalizador
+// revise un plano. Deja registro de quién llamó, cuándo, y cuándo se atendió.
+model LlamadoVerificacion {
+  id              String       @id @default(cuid())
+  radicado        String
+  fmi             String?
+  nota            String?
+  estado          LlamadoState @default(PENDIENTE)
+  solicitanteId   String
+  digitalizadorId String?
+  verificacionId  String?      @unique
+  createdAt       DateTime     @default(now())
+  tomadoEn        DateTime?
+  finalizadoEn    DateTime?
+
+  solicitante   User          @relation("LlamadoSolicitante",   fields: [solicitanteId],   references: [id], onDelete: Cascade)
+  digitalizador User?         @relation("LlamadoDigitalizador", fields: [digitalizadorId], references: [id], onDelete: SetNull)
+  verificacion  Verificacion? @relation(fields: [verificacionId], references: [id], onDelete: SetNull)
+
+  @@index([estado])
+  @@index([solicitanteId])
+}
+
+enum LlamadoState {
+  PENDIENTE
+  EN_PROCESO
+  COMPLETADO
+  CANCELADO
 }
 
 model Prestamo {
