@@ -134,12 +134,17 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
+    // El derecho de petición sí exige radicado: es el número con el que se responde
+    if (checkIn && !radicado.trim()) {
+      setError("El derecho de petición requiere el número de radicado");
+      return;
+    }
     if (!radicado.trim() && !fmi.trim()) {
       setError("Indica al menos el número de radicado o el FMI");
       return;
     }
     if (checkIn && !formato) {
-      setError("Selecciona el tipo de formato para el check-in");
+      setError("Selecciona el tipo de formato para el derecho de petición");
       return;
     }
 
@@ -310,15 +315,45 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Número de Radicado <span className="text-slate-400 text-xs font-normal">(opcional)</span>
+                    Número de Radicado{" "}
+                    {checkIn
+                      ? <span className="text-red-500">*</span>
+                      : <span className="text-slate-400 text-xs font-normal">(opcional)</span>}
                   </label>
-                  <input
-                    type="text"
-                    value={radicado}
-                    onChange={(e) => setRadicado(e.target.value)}
-                    placeholder="Ej: 2025-0123"
-                    className={inputClass}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={radicado}
+                      onChange={(e) => setRadicado(e.target.value)}
+                      placeholder="Ej: 2025-0123"
+                      className={`${inputClass} pr-14 ${checkIn ? "border-purple-500 dark:border-purple-500" : ""}`}
+                    />
+                    {/* Check-in de derecho de petición: el digitalizador no está */}
+                    <button
+                      type="button"
+                      onClick={() => setCheckIn(!checkIn)}
+                      title={
+                        checkIn
+                          ? "Derecho de petición activo — toca para quitarlo"
+                          : "Marcar como derecho de petición (el digitalizador no está)"
+                      }
+                      aria-pressed={checkIn}
+                      className={`absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors ${
+                        checkIn
+                          ? "bg-purple-600 text-white"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-purple-600 dark:hover:text-purple-400"
+                      }`}
+                    >
+                      DP
+                    </button>
+                  </div>
+                  <p className={`text-[11px] mt-1 leading-snug ${
+                    checkIn ? "text-purple-600 dark:text-purple-400" : "text-slate-400"
+                  }`}>
+                    {checkIn
+                      ? "Derecho de petición: se registra de inmediato, sin esperar al digitalizador."
+                      : "Toca DP si el digitalizador no está y entra como derecho de petición."}
+                  </p>
                 </div>
 
                 <div>
@@ -336,39 +371,6 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
                     Escribe al menos uno de los dos para poder identificar el plano.
                   </p>
                 </div>
-
-                {/* Check-in: el digitalizador no está en la oficina */}
-                <button
-                  type="button"
-                  onClick={() => setCheckIn(!checkIn)}
-                  className={`w-full flex items-start gap-3 p-3 rounded-xl border-2 text-left transition-all ${
-                    checkIn
-                      ? "border-purple-500 bg-purple-50 dark:bg-purple-900/25"
-                      : "border-slate-200 dark:border-slate-700 hover:border-purple-300"
-                  }`}
-                >
-                  <div
-                    className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-colors ${
-                      checkIn
-                        ? "border-purple-600 bg-purple-600"
-                        : "border-slate-300 dark:border-slate-600"
-                    }`}
-                  >
-                    {checkIn && <Check className="h-3.5 w-3.5 text-white" />}
-                  </div>
-                  <div className="min-w-0">
-                    <p className={`text-sm font-semibold flex items-center gap-1.5 ${
-                      checkIn ? "text-purple-800 dark:text-purple-300" : "text-slate-700 dark:text-slate-300"
-                    }`}>
-                      <LogIn className="h-3.5 w-3.5 shrink-0" />
-                      Check-in — Derecho de Petición
-                    </p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                      Márcalo si el digitalizador no está en la oficina. Queda registrado
-                      de inmediato como derecho de petición, sin esperar la revisión.
-                    </p>
-                  </div>
-                </button>
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
