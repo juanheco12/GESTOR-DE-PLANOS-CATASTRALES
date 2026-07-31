@@ -5,18 +5,22 @@ import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
 
 const SELECT_LLAMADO = {
-  id:           true,
-  radicado:     true,
-  fmi:          true,
-  nota:         true,
-  estado:       true,
-  createdAt:    true,
-  tomadoEn:     true,
-  finalizadoEn: true,
+  id:                true,
+  radicado:          true,
+  fmi:               true,
+  nota:              true,
+  formato:           true,
+  esDerechoPeticion: true,
+  estado:            true,
+  createdAt:         true,
+  tomadoEn:          true,
+  finalizadoEn:      true,
   solicitante:   { select: { name: true, email: true } },
   digitalizador: { select: { name: true, email: true } },
   verificacion:  { select: { id: true, cumple: true, observaciones: true } },
 } as const;
+
+const ESTADOS = ["PENDIENTE", "EN_PROCESO", "COMPLETADO", "CANCELADO"];
 
 // PATCH — acción: "tomar" (digitalizador) | "cancelar" (solicitante)
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -26,7 +30,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
 
   try {
-    const { accion } = await req.json();
+    const body = await req.json();
+    const { accion } = body;
 
     const llamado = await prisma.llamadoVerificacion.findUnique({
       where:  { id },
@@ -99,9 +104,75 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return NextResponse.json(actualizado);
     }
 
+    // ── Edición libre (solo administrador) ──
+    if (accion === "editar") {
+      if (session.user.role !== "ADMINISTRADOR") {
+        return NextResponse.json(
+          { error: "Solo el administrador puede modificar un llamado." },
+          { status: 403 }
+        );
+      }
+
+      const data: Record<string, unknown> = {};
+
+      if (body.radicado !== undefined)          data.radicado          = body.radicado?.trim() || null;
+      if (body.fmi !== undefined)               data.fmi               = body.fmi?.trim()      || null;
+      if (body.nota !== undefined)              data.nota              = body.nota?.trim()     || null;
+      if (body.formato !== undefined)           data.formato           = body.formato?.trim()  || null;
+      if (body.esDerechoPeticion !== undefined) data.esDerechoPeticion = body.esDerechoPeticion === true;
+
+      if (body.estado !== undefined) {
+        if (!ESTADOS.includes(body.estado)) {
+          return NextResponse.json({ error: "Estado no válido" }, { status: 400 });
+        }
+        data.estado = body.estado;
+        // Mantiene las marcas de tiempo coherentes con el estado
+        if (body.estado === "PENDIENTE") {
+          data.tomadoEn = null;
+          data.finalizadoEn = null;
+        } else if (body.estado === "EN_PROCESO") {
+          data.finalizadoEn = null;
+        } else if (!llamado.digitalizadorId) {
+          data.finalizadoEn = new Date();
+        }
+      }
+
+      if (Object.keys(data).length === 0) {
+        return NextResponse.json({ error: "Nada que actualizar" }, { status: 400 });
+      }
+
+      const actualizado = await prisma.llamadoVerificacion.update({
+        where:  { id },
+        data,
+        select: SELECT_LLAMADO,
+      });
+      return NextResponse.json(actualizado);
+    }
+
     return NextResponse.json({ error: "Acción no válida" }, { status: 400 });
   } catch (error) {
     console.error("Error updating llamado:", error);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  }
+}
+
+// DELETE — solo el administrador puede borrar un llamado
+export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+
+  if (session.user.role !== "ADMINISTRADOR") {
+    return NextResponse.json(
+      { error: "Solo el administrador puede eliminar llamados." },
+      { status: 403 }
+    );
+  }
+
+  const { id } = await params;
+  try {
+    await prisma.llamadoVerificacion.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "No se pudo eliminar el llamado" }, { status: 500 });
   }
 }

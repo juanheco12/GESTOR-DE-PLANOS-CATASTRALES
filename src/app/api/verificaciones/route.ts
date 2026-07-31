@@ -21,6 +21,14 @@ export async function GET() {
         imagenNombre:  true,
         // imagenData excluded — potentially large; fetched only for the report
         createdAt:     true,
+        // Tiempos del llamado de ventanilla, para medir la duración de la revisión
+        llamado: {
+          select: {
+            id: true, tomadoEn: true, finalizadoEn: true, esDerechoPeticion: true,
+            formato: true,
+            solicitante: { select: { name: true, email: true } },
+          },
+        },
       },
     });
     return NextResponse.json(verifs);

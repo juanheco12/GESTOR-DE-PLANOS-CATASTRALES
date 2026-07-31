@@ -177,9 +177,13 @@ model Verificacion {
 // revise un plano. Deja registro de quién llamó, cuándo, y cuándo se atendió.
 model LlamadoVerificacion {
   id              String       @id @default(cuid())
-  radicado        String
+  radicado        String?
   fmi             String?
   nota            String?
+  formato         String?
+  // Check-in de ventanilla cuando el digitalizador no está: queda registrado
+  // de inmediato como derecho de petición, sin esperar verificación.
+  esDerechoPeticion Boolean    @default(false)
   estado          LlamadoState @default(PENDIENTE)
   solicitanteId   String
   digitalizadorId String?
