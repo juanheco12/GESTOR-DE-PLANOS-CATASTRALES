@@ -31,6 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const role            = session?.user?.role;
   const isEjecutor      = role === "EJECUTOR" || role === "DIGITALIZADOR";
+  const isDigitalizador = role === "DIGITALIZADOR";
   const isAdministrador = role === "ADMINISTRADOR";
   const isRadicadora    = role === "RADICADORA";
   const showPushBell    = role === "ADMINISTRADOR" || role === "ENCARGADO";
@@ -166,8 +167,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </main>
       </div>
 
-      {/* Verification FAB — only for EJECUTOR and DIGITALIZADOR */}
-      {isEjecutor && (
+      {/* Verification FAB — only for DIGITALIZADOR */}
+      {isDigitalizador && (
         <VerificacionPanel userName={session?.user?.name ?? session?.user?.email ?? "Usuario"} />
       )}
     </div>

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck, KeyRound, Mail, Pencil } from "lucide-react";
+import { UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck, KeyRound, Mail, Pencil, UserCog } from "lucide-react";
 
 const ROLE_OPTIONS = [
   { value: "ADMINISTRADOR",  label: "Administrador" },
@@ -36,6 +36,9 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
   const [changingNameFor, setChangingNameFor] = useState<string | null>(null);
   const [newName, setNewName] = useState("");
   const [nameError, setNameError] = useState("");
+  const [changingRoleFor, setChangingRoleFor] = useState<string | null>(null);
+  const [newRole, setNewRole] = useState("");
+  const [roleError, setRoleError] = useState("");
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +83,33 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
       setUsers(users.map((u) => (u.id === userId ? { ...u, isActive: !currentStatus } : u)));
     } catch (err: any) {
       alert(err.message);
+    } finally {
+      setLoadingAction(null);
+    }
+  };
+
+  const handleChangeRole = async (userId: string) => {
+    if (!newRole) {
+      setRoleError("Selecciona un rol");
+      return;
+    }
+    setLoadingAction(`ROLE_${userId}`);
+    setRoleError("");
+    try {
+      const res = await fetch(`/api/usuarios/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newRole }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Error al cambiar rol");
+      }
+      setUsers(users.map((u) => (u.id === userId ? { ...u, role: newRole } : u)));
+      setChangingRoleFor(null);
+      setNewRole("");
+    } catch (err: any) {
+      setRoleError(err.message);
     } finally {
       setLoadingAction(null);
     }
@@ -315,7 +345,15 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
                     <div className="flex flex-col gap-2 items-end">
                       <div className="flex items-center gap-3">
                         <button
-                          onClick={() => { setChangingNameFor(changingNameFor === user.id ? null : user.id); setNewName(user.name ?? ""); setNameError(""); setChangingEmailFor(null); setChangingPwdFor(null); }}
+                          onClick={() => { setChangingRoleFor(changingRoleFor === user.id ? null : user.id); setNewRole(user.role ?? ""); setRoleError(""); setChangingNameFor(null); setChangingEmailFor(null); setChangingPwdFor(null); }}
+                          className="text-sm font-medium text-cyan-600 dark:text-cyan-400 hover:underline inline-flex items-center gap-1"
+                        >
+                          <UserCog className="h-3.5 w-3.5" />
+                          Rol
+                        </button>
+                        <span className="text-slate-300 dark:text-slate-700">|</span>
+                        <button
+                          onClick={() => { setChangingNameFor(changingNameFor === user.id ? null : user.id); setNewName(user.name ?? ""); setNameError(""); setChangingEmailFor(null); setChangingPwdFor(null); setChangingRoleFor(null); }}
                           className="text-sm font-medium text-slate-600 dark:text-slate-400 hover:underline inline-flex items-center gap-1"
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -323,7 +361,7 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
                         </button>
                         <span className="text-slate-300 dark:text-slate-700">|</span>
                         <button
-                          onClick={() => { setChangingEmailFor(changingEmailFor === user.id ? null : user.id); setNewEmail(user.email ?? ""); setEmailError(""); setChangingPwdFor(null); setChangingNameFor(null); }}
+                          onClick={() => { setChangingEmailFor(changingEmailFor === user.id ? null : user.id); setNewEmail(user.email ?? ""); setEmailError(""); setChangingPwdFor(null); setChangingNameFor(null); setChangingRoleFor(null); }}
                           className="text-sm font-medium text-violet-600 dark:text-violet-400 hover:underline inline-flex items-center gap-1"
                         >
                           <Mail className="h-3.5 w-3.5" />
@@ -331,7 +369,7 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
                         </button>
                         <span className="text-slate-300 dark:text-slate-700">|</span>
                         <button
-                          onClick={() => { setChangingPwdFor(changingPwdFor === user.id ? null : user.id); setNewPwd(""); setPwdError(""); setChangingEmailFor(null); setChangingNameFor(null); }}
+                          onClick={() => { setChangingPwdFor(changingPwdFor === user.id ? null : user.id); setNewPwd(""); setPwdError(""); setChangingEmailFor(null); setChangingNameFor(null); setChangingRoleFor(null); }}
                           className="text-sm font-medium text-teal-700 dark:text-teal-400 hover:underline inline-flex items-center gap-1"
                         >
                           <KeyRound className="h-3.5 w-3.5" />
@@ -355,6 +393,27 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
                           Eliminar
                         </button>
                       </div>
+                      {changingRoleFor === user.id && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <select
+                            value={newRole}
+                            onChange={(e) => setNewRole(e.target.value)}
+                            className="px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 w-40"
+                          >
+                            {ROLE_OPTIONS.map((r) => (
+                              <option key={r.value} value={r.value}>{r.label}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => handleChangeRole(user.id)}
+                            disabled={loadingAction === `ROLE_${user.id}` || newRole === user.role}
+                            className="px-2 py-1 text-xs bg-cyan-600 hover:bg-cyan-700 text-white rounded disabled:opacity-50"
+                          >
+                            {loadingAction === `ROLE_${user.id}` ? "..." : "Guardar"}
+                          </button>
+                          {roleError && <span className="text-xs text-red-500">{roleError}</span>}
+                        </div>
+                      )}
                       {changingNameFor === user.id && (
                         <div className="flex items-center gap-2 mt-1">
                           <input

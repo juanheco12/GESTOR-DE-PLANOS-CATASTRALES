@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+const ALLOWED_ROLES = ["ADMINISTRADOR", "ENCARGADO", "EJECUTOR", "RADICADORA", "DIGITALIZADOR"] as const;
+
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const resolvedParams = await params;
@@ -13,6 +15,61 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
 
     const body = await req.json();
+
+    // Cambio de rol
+    if (body.newRole !== undefined) {
+      const role = body.newRole;
+      if (!ALLOWED_ROLES.includes(role)) {
+        return NextResponse.json({ error: "Rol no válido" }, { status: 400 });
+      }
+      if (session.user.id === resolvedParams.id && role !== "ADMINISTRADOR") {
+        return NextResponse.json(
+          { error: "No puedes quitarte a ti mismo el rol de administrador" },
+          { status: 400 }
+        );
+      }
+
+      const target = await prisma.user.findUnique({
+        where:  { id: resolvedParams.id },
+        select: { role: true },
+      });
+      if (!target) {
+        return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
+      }
+
+      // Evita dejar el sistema sin ningún administrador
+      if (target.role === "ADMINISTRADOR" && role !== "ADMINISTRADOR") {
+        const admins = await prisma.user.count({ where: { role: "ADMINISTRADOR" } });
+        if (admins <= 1) {
+          return NextResponse.json(
+            { error: "Debe existir al menos un administrador en el sistema" },
+            { status: 400 }
+          );
+        }
+      }
+
+      const updated = await prisma.user.update({
+        where:  { id: resolvedParams.id },
+        data:   { role },
+        select: { id: true, name: true, email: true, role: true },
+      });
+
+      // Notificar a los administradores del cambio de rol
+      const admins = await prisma.user.findMany({
+        where:  { role: "ADMINISTRADOR", isActive: true },
+        select: { id: true },
+      });
+      if (admins.length > 0) {
+        await prisma.notification.createMany({
+          data: admins.map((u) => ({
+            message: `El rol de ${updated.name ?? updated.email} cambió a ${role}.`,
+            userId:  u.id,
+          })),
+        });
+      }
+
+      return NextResponse.json(updated, { status: 200 });
+    }
 
     // Cambio de nombre
     if (body.newName !== undefined) {
