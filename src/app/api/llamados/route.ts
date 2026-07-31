@@ -73,7 +73,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { radicado, fmi, nota, formato, esDerechoPeticion } = await req.json();
+    const { radicado, fmi, nota, formato, esDerechoPeticion, receivedById } = await req.json();
 
     const rad = radicado?.trim() || null;
     const folio = fmi?.trim() || null;
@@ -119,7 +119,45 @@ export async function POST(req: Request) {
     const ident  = rad ? `radicado ${rad}` : `FMI ${folio}`;
     const ahora  = new Date();
 
+    // El derecho de petición entra al inventario como un plano más.
+    // Si el radicado ya está registrado se reutiliza en vez de duplicarlo.
+    let planExistente: { id: string } | null = null;
+    if (esCheckIn && rad) {
+      planExistente = await prisma.plan.findUnique({
+        where:  { radicado: rad },
+        select: { id: true },
+      });
+    }
+
     const llamado = await prisma.$transaction(async (tx) => {
+      let planId: string | null = planExistente?.id ?? null;
+
+      if (esCheckIn && rad && !planId) {
+        const plan = await tx.plan.create({
+          data: {
+            radicado:        rad,
+            mutacion:        "Derecho de Petición",
+            formato:         formato?.trim() || "OTRO",
+            predial:         folio,
+            observaciones:   nota?.trim() || null,
+            receivedById:    receivedById || null,
+            registradoPorId: session.user.id,
+            estado:          "DISPONIBLE",
+          },
+          select: { id: true },
+        });
+        planId = plan.id;
+
+        await tx.history.create({
+          data: {
+            planId,
+            userId:   session.user.id,
+            accion:   "REGISTRO",
+            detalles: "Derecho de petición registrado desde ventanilla.",
+          },
+        });
+      }
+
       const creado = await tx.llamadoVerificacion.create({
         data: {
           radicado:          rad,
@@ -128,13 +166,31 @@ export async function POST(req: Request) {
           formato:           formato?.trim() || null,
           esDerechoPeticion: esCheckIn,
           solicitanteId:     session.user.id,
-          // El check-in queda registrado y cerrado de inmediato: no espera
-          // al digitalizador porque no está en la oficina.
+          planId,
+          // El derecho de petición queda registrado y cerrado de inmediato:
+          // no espera al digitalizador porque no está en la oficina.
           estado:            esCheckIn ? "COMPLETADO" : "PENDIENTE",
           finalizadoEn:      esCheckIn ? ahora : null,
         },
         select: SELECT_LLAMADO,
       });
+
+      // El registro del plano se avisa igual que cualquier otro ingreso
+      if (esCheckIn && planId && !planExistente) {
+        const destinatarios = await tx.user.findMany({
+          where:  { role: { in: ["ENCARGADO", "ADMINISTRADOR"] }, isActive: true },
+          select: { id: true },
+        });
+        if (destinatarios.length > 0) {
+          await tx.notification.createMany({
+            data: destinatarios.map((u) => ({
+              message: `${nombre} registró el derecho de petición ${rad} como plano en el sistema.`,
+              userId:  u.id,
+              planoId: planId,
+            })),
+          });
+        }
+      }
 
       // Notifica a todos los digitalizadores activos
       const digitalizadores = await tx.user.findMany({
@@ -165,9 +221,27 @@ export async function POST(req: Request) {
       tag:   "llamado-verificacion",
     }).catch((err) => console.error("[Push] llamado:", err));
 
-    return NextResponse.json(llamado, { status: 201 });
-  } catch (error) {
+    if (esCheckIn && !planExistente) {
+      sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
+        title: "📋 Derecho de petición registrado",
+        body:  `Radicado ${rad} ingresado al sistema por ${nombre}.`,
+        url:   "/dashboard/buscar",
+        tag:   `plano-dp-${rad}`,
+      }).catch((err) => console.error("[Push] plano DP:", err));
+    }
+
+    return NextResponse.json(
+      { ...llamado, planoYaExistia: Boolean(planExistente) },
+      { status: 201 }
+    );
+  } catch (error: any) {
     console.error("Error creating llamado:", error);
+    if (error?.code === "P2002") {
+      return NextResponse.json(
+        { error: "Ya existe un plano registrado con este número de radicado." },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }

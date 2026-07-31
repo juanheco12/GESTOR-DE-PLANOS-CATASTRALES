@@ -107,6 +107,20 @@ export async function POST() {
        WHERE "resultado" IS NULL`
     );
 
+    // 8. LlamadoVerificacion: plano creado al registrar el derecho de petición
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "LlamadoVerificacion" ADD COLUMN IF NOT EXISTS "planId" TEXT`
+    );
+    await prisma.$executeRawUnsafe(`
+      DO $$ BEGIN
+        ALTER TABLE "LlamadoVerificacion"
+          ADD CONSTRAINT "LlamadoVerificacion_planId_fkey"
+          FOREIGN KEY ("planId") REFERENCES "Plan"("id")
+          ON DELETE SET NULL ON UPDATE CASCADE;
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+    `);
+
     return NextResponse.json({ ok: true, message: "Migraciones aplicadas correctamente." });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

@@ -67,6 +67,7 @@ model Plan {
   history                History[]
   notifications          Notification[]
   prestamos              Prestamo[]
+  llamados               LlamadoVerificacion[]
 }
 
 model Receiver {
@@ -191,6 +192,8 @@ model LlamadoVerificacion {
   solicitanteId   String
   digitalizadorId String?
   verificacionId  String?      @unique
+  // Plano creado en el sistema al registrar el derecho de petición
+  planId          String?
   createdAt       DateTime     @default(now())
   tomadoEn        DateTime?
   finalizadoEn    DateTime?
@@ -198,6 +201,7 @@ model LlamadoVerificacion {
   solicitante   User          @relation("LlamadoSolicitante",   fields: [solicitanteId],   references: [id], onDelete: Cascade)
   digitalizador User?         @relation("LlamadoDigitalizador", fields: [digitalizadorId], references: [id], onDelete: SetNull)
   verificacion  Verificacion? @relation(fields: [verificacionId], references: [id], onDelete: SetNull)
+  plan          Plan?         @relation(fields: [planId], references: [id], onDelete: SetNull)
 
   @@index([estado])
   @@index([solicitanteId])
