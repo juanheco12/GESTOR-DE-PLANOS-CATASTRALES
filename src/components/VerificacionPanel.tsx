@@ -3,8 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ClipboardCheck, X, Plus, FileText, Check, XCircle,
-  Trash2, Download, Upload, ImageIcon, Eye,
+  Trash2, Download, Upload, ImageIcon, Eye, BellRing, Clock, Loader2,
 } from "lucide-react";
+
+interface Llamado {
+  id:        string;
+  radicado:  string;
+  fmi:       string | null;
+  nota:      string | null;
+  estado:    "PENDIENTE" | "EN_PROCESO" | "COMPLETADO" | "CANCELADO";
+  createdAt: string;
+  tomadoEn:  string | null;
+  solicitante: { name: string | null; email: string | null } | null;
+}
 
 interface Verificacion {
   id:            string;
@@ -149,11 +160,18 @@ function escHtml(s: string) {
 // ────────────────────────────────────────────────────────────
 export default function VerificacionPanel({ userName }: { userName: string }) {
   const [open,        setOpen]        = useState(false);
-  const [tab,         setTab]         = useState<"nueva" | "historial">("nueva");
+  const [tab,         setTab]         = useState<"llamados" | "nueva" | "historial">("llamados");
   const [verifs,      setVerifs]      = useState<Verificacion[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [loadingImg,  setLoadingImg]  = useState<string | null>(null);
   const [generando,   setGenerando]   = useState(false);
+
+  // llamados de ventanilla
+  const [llamados,      setLlamados]      = useState<Llamado[]>([]);
+  const [loadingLlam,   setLoadingLlam]   = useState(false);
+  const [pendientes,    setPendientes]    = useState(0);
+  const [tomando,       setTomando]       = useState<string | null>(null);
+  const [llamadoActivo, setLlamadoActivo] = useState<Llamado | null>(null);
 
   // form
   const [fmi,          setFmi]          = useState("");
@@ -170,7 +188,65 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   // Load list when historial tab is active
   useEffect(() => {
     if (open && tab === "historial") loadVerifs();
+    if (open && tab === "llamados")  loadLlamados();
   }, [open, tab]);
+
+  // Sondeo del contador de llamados pendientes, también con el panel cerrado
+  useEffect(() => {
+    const contar = async () => {
+      try {
+        const res  = await fetch("/api/llamados");
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setPendientes(data.filter((l: Llamado) => l.estado === "PENDIENTE").length);
+        }
+      } catch { /* silencioso: se reintenta en el siguiente ciclo */ }
+    };
+    contar();
+    const t = setInterval(contar, 12_000);
+    return () => clearInterval(t);
+  }, []);
+
+  const loadLlamados = async () => {
+    setLoadingLlam(true);
+    try {
+      const res  = await fetch("/api/llamados");
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setLlamados(data);
+        setPendientes(data.filter((l: Llamado) => l.estado === "PENDIENTE").length);
+      }
+    } finally {
+      setLoadingLlam(false);
+    }
+  };
+
+  // Toma un llamado y salta al formulario con los datos precargados
+  const tomarLlamado = async (l: Llamado) => {
+    setTomando(l.id);
+    try {
+      const res  = await fetch(`/api/llamados/${l.id}`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ accion: "tomar" }),
+      });
+      const data = await res.json();
+      if (!res.ok) { alert(data.error ?? "No se pudo tomar el llamado"); loadLlamados(); return; }
+
+      setLlamadoActivo({ ...l, estado: "EN_PROCESO" });
+      setRadicado(l.radicado);
+      setFmi(l.fmi ?? "");
+      setCumple(null);
+      setObservaciones("");
+      setImagen(null);
+      setFormError("");
+      setSuccess(false);
+      setTab("nueva");
+      setPendientes((n) => Math.max(0, n - 1));
+    } finally {
+      setTomando(null);
+    }
+  };
 
   const loadVerifs = async () => {
     setLoadingList(true);
@@ -202,6 +278,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
     setFmi(""); setRadicado(""); setCumple(null);
     setObservaciones(""); setImagen(null);
     setFormError(""); setSuccess(false);
+    setLlamadoActivo(null);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -222,10 +299,12 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
           observaciones: observaciones.trim() || null,
           imagenNombre:  imagen?.nombre || null,
           imagenData:    imagen?.data   || null,
+          llamadoId:     llamadoActivo?.id || null,
         }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Error"); }
       setSuccess(true);
+      if (llamadoActivo) loadLlamados();
       setTimeout(() => resetForm(), 2200);
     } catch (err: any) {
       setFormError(err.message);
@@ -322,12 +401,19 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
     <>
       {/* ── Floating Action Button ── */}
       <button
-        onClick={() => { setOpen(true); setTab("nueva"); }}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-teal-700 hover:bg-teal-800 text-white shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center"
-        title="Verificación de planos"
+        onClick={() => { setOpen(true); setTab(pendientes > 0 ? "llamados" : "nueva"); }}
+        className={`fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full text-white shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center ${
+          pendientes > 0 ? "bg-amber-500 hover:bg-amber-600 animate-pulse" : "bg-teal-700 hover:bg-teal-800"
+        }`}
+        title={pendientes > 0 ? `${pendientes} verificación(es) solicitada(s)` : "Verificación de planos"}
         aria-label="Abrir panel de verificación"
       >
         <ClipboardCheck className="h-6 w-6" />
+        {pendientes > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[22px] h-[22px] px-1 rounded-full bg-red-600 text-white text-xs font-bold flex items-center justify-center border-2 border-white dark:border-slate-950">
+            {pendientes}
+          </span>
+        )}
       </button>
 
       {/* ── Modal ── */}
@@ -359,25 +445,161 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
 
             {/* Tabs */}
             <div className="flex border-b border-slate-200 dark:border-slate-800 shrink-0">
-              {(["nueva", "historial"] as const).map((t) => (
+              {(["llamados", "nueva", "historial"] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
-                  className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-3 text-sm font-medium transition-colors ${
+                  className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-3 text-xs sm:text-sm font-medium transition-colors ${
                     tab === t
                       ? "border-b-2 border-teal-700 text-teal-700 dark:text-teal-400"
                       : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
                   }`}
                 >
-                  {t === "nueva" ? <Plus className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
-                  {t === "nueva" ? "Nueva Verificación" : "Historial"}
+                  {t === "llamados"
+                    ? <BellRing className="h-4 w-4 shrink-0" />
+                    : t === "nueva"
+                      ? <Plus className="h-4 w-4 shrink-0" />
+                      : <FileText className="h-4 w-4 shrink-0" />}
+                  {t === "llamados" ? "Llamados" : t === "nueva" ? "Nueva" : "Historial"}
+                  {t === "llamados" && pendientes > 0 && (
+                    <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center">
+                      {pendientes}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
 
+            {/* ── TAB: Llamados de ventanilla ── */}
+            {tab === "llamados" && (
+              <div className="flex-1 overflow-y-auto p-5 space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {pendientes > 0
+                      ? `${pendientes} plano${pendientes !== 1 ? "s" : ""} por revisar`
+                      : "Sin llamados pendientes"}
+                  </p>
+                  <button
+                    onClick={loadLlamados}
+                    className="text-xs text-teal-700 dark:text-teal-400 hover:underline shrink-0"
+                  >
+                    Actualizar
+                  </button>
+                </div>
+
+                {loadingLlam ? (
+                  <div className="py-10 text-center text-sm text-slate-400">Cargando…</div>
+                ) : llamados.length === 0 ? (
+                  <div className="py-10 text-center text-sm text-slate-400">
+                    Ventanilla no ha solicitado ninguna verificación.
+                  </div>
+                ) : (
+                  llamados.map((l) => (
+                    <div
+                      key={l.id}
+                      className={`p-3.5 rounded-xl border ${
+                        l.estado === "PENDIENTE"
+                          ? "border-amber-300 dark:border-amber-700 bg-amber-50/60 dark:bg-amber-900/15"
+                          : l.estado === "EN_PROCESO"
+                            ? "border-blue-300 dark:border-blue-700 bg-blue-50/60 dark:bg-blue-900/15"
+                            : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 opacity-70"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                            l.estado === "PENDIENTE"
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300"
+                              : l.estado === "EN_PROCESO"
+                                ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
+                                : l.estado === "COMPLETADO"
+                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+                                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                          }`}
+                        >
+                          {l.estado === "PENDIENTE"  ? "PENDIENTE"
+                            : l.estado === "EN_PROCESO" ? "EN REVISIÓN"
+                            : l.estado === "COMPLETADO" ? "VERIFICADO" : "CANCELADO"}
+                        </span>
+                        <span className="text-[11px] text-slate-400 shrink-0 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {new Date(l.createdAt).toLocaleString("es-CO", {
+                            timeZone: "America/Bogota",
+                            day: "2-digit", month: "short",
+                            hour: "2-digit", minute: "2-digit",
+                          })}
+                        </span>
+                      </div>
+
+                      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                        Radicado: {l.radicado}
+                      </p>
+                      {l.fmi && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">FMI: {l.fmi}</p>
+                      )}
+                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        Solicita: {l.solicitante?.name ?? l.solicitante?.email ?? "Ventanilla"}
+                      </p>
+                      {l.nota && (
+                        <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 italic">{l.nota}</p>
+                      )}
+
+                      {l.estado === "PENDIENTE" && (
+                        <button
+                          onClick={() => tomarLlamado(l)}
+                          disabled={tomando === l.id}
+                          className="mt-2.5 w-full py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+                        >
+                          {tomando === l.id
+                            ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                            : <Check className="h-3.5 w-3.5" />}
+                          {tomando === l.id ? "Tomando…" : "Tomar verificación"}
+                        </button>
+                      )}
+
+                      {l.estado === "EN_PROCESO" && (
+                        <button
+                          onClick={() => {
+                            setLlamadoActivo(l);
+                            setRadicado(l.radicado);
+                            setFmi(l.fmi ?? "");
+                            setCumple(null); setObservaciones(""); setImagen(null);
+                            setFormError(""); setSuccess(false);
+                            setTab("nueva");
+                          }}
+                          className="mt-2.5 w-full py-2 border border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xs font-semibold transition-colors"
+                        >
+                          Registrar resultado
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
             {/* ── TAB: Nueva Verificación ── */}
             {tab === "nueva" && (
               <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
+
+                {llamadoActivo && (
+                  <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
+                      <BellRing className="h-3.5 w-3.5 shrink-0" />
+                      Atendiendo llamado de {llamadoActivo.solicitante?.name ?? "ventanilla"}
+                    </p>
+                    <p className="text-xs text-blue-700 dark:text-blue-400 mt-1 leading-snug">
+                      Al guardar, se le notifica el resultado y el llamado queda cerrado.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => { setLlamadoActivo(null); setFmi(""); setRadicado(""); }}
+                      className="text-xs text-blue-600 dark:text-blue-400 underline mt-1.5"
+                    >
+                      Desvincular del llamado
+                    </button>
+                  </div>
+                )}
 
                 {formError && (
                   <p className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-sm rounded-lg border border-red-100 dark:border-red-800">

@@ -41,6 +41,50 @@ export async function POST() {
       )
     `);
 
+    // 4. LlamadoState enum (CREATE TYPE no admite IF NOT EXISTS)
+    await prisma.$executeRawUnsafe(`
+      DO $$ BEGIN
+        CREATE TYPE "LlamadoState" AS ENUM ('PENDIENTE', 'EN_PROCESO', 'COMPLETADO', 'CANCELADO');
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+    `);
+
+    // 5. LlamadoVerificacion table (ventanilla pide revisión al digitalizador)
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "LlamadoVerificacion" (
+        "id"              TEXT           NOT NULL,
+        "radicado"        TEXT           NOT NULL,
+        "fmi"             TEXT,
+        "nota"            TEXT,
+        "estado"          "LlamadoState" NOT NULL DEFAULT 'PENDIENTE',
+        "solicitanteId"   TEXT           NOT NULL,
+        "digitalizadorId" TEXT,
+        "verificacionId"  TEXT,
+        "createdAt"       TIMESTAMP(3)   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        "tomadoEn"        TIMESTAMP(3),
+        "finalizadoEn"    TIMESTAMP(3),
+        CONSTRAINT "LlamadoVerificacion_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "LlamadoVerificacion_solicitanteId_fkey"
+          FOREIGN KEY ("solicitanteId") REFERENCES "User"("id")
+          ON DELETE CASCADE ON UPDATE CASCADE,
+        CONSTRAINT "LlamadoVerificacion_digitalizadorId_fkey"
+          FOREIGN KEY ("digitalizadorId") REFERENCES "User"("id")
+          ON DELETE SET NULL ON UPDATE CASCADE,
+        CONSTRAINT "LlamadoVerificacion_verificacionId_fkey"
+          FOREIGN KEY ("verificacionId") REFERENCES "Verificacion"("id")
+          ON DELETE SET NULL ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe(
+      `CREATE UNIQUE INDEX IF NOT EXISTS "LlamadoVerificacion_verificacionId_key" ON "LlamadoVerificacion"("verificacionId")`
+    );
+    await prisma.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS "LlamadoVerificacion_estado_idx" ON "LlamadoVerificacion"("estado")`
+    );
+    await prisma.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS "LlamadoVerificacion_solicitanteId_idx" ON "LlamadoVerificacion"("solicitanteId")`
+    );
+
     return NextResponse.json({ ok: true, message: "Migraciones aplicadas correctamente." });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
