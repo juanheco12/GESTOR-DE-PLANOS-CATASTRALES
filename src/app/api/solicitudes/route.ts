@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
 
     const { planId, observaciones } = await req.json();
 
-    if (session.user.role !== "EJECUTOR") {
-      return NextResponse.json({ error: "Solo los ejecutores pueden solicitar planos." }, { status: 403 });
+    if (session.user.role !== "EJECUTOR" && session.user.role !== "DIGITALIZADOR") {
+      return NextResponse.json({ error: "Solo ejecutores y digitalizadores pueden solicitar planos." }, { status: 403 });
     }
 
     if (!planId) {

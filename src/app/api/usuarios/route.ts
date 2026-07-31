@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-const ALLOWED_ROLES = ["ADMINISTRADOR", "ENCARGADO", "EJECUTOR", "RADICADORA"] as const;
+const ALLOWED_ROLES = ["ADMINISTRADOR", "ENCARGADO", "EJECUTOR", "RADICADORA", "DIGITALIZADOR"] as const;
 
 export async function POST(req: Request) {
   try {

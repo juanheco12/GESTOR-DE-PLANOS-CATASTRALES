@@ -46,7 +46,7 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
   const role            = session?.user?.role;
   const isAdministrador = role === "ADMINISTRADOR";
   const isEncargado     = role === "ENCARGADO";
-  const isEjecutor      = role === "EJECUTOR";
+  const isEjecutor      = role === "EJECUTOR" || role === "DIGITALIZADOR";
   const isRadicadora    = role === "RADICADORA";
   const canManage       = isAdministrador || isEncargado || isRadicadora;
 

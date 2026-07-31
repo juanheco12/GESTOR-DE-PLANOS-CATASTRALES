@@ -12,8 +12,8 @@ import AutoRefresh from "@/components/AutoRefresh";
 export default async function MisSolicitudesPage() {
   const session = await getServerSession(authOptions);
 
-  if (session?.user?.role !== "EJECUTOR") {
-    return <div className="p-8 text-center text-red-500">Acceso denegado. Solo para ejecutores.</div>;
+  if (session?.user?.role !== "EJECUTOR" && session?.user?.role !== "DIGITALIZADOR") {
+    return <div className="p-8 text-center text-red-500">Acceso denegado.</div>;
   }
 
   const solicitudes = await prisma.request.findMany({
