@@ -49,9 +49,9 @@ function StatCard({
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
   const role = session?.user?.role;
-  const isEjecutor = role === "EJECUTOR";
+  const isEjecutor = role === "EJECUTOR" || role === "DIGITALIZADOR";
 
-  /* ── DASHBOARD EJECUTOR ─────────────────────────────────── */
+  /* ── DASHBOARD EJECUTOR ───────────────────────────────── */
   if (isEjecutor) {
     const userId = session!.user.id;
 
