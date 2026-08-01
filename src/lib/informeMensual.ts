@@ -1,5 +1,5 @@
 // Informe mensual de atención técnica — revisión de procedencia de planos.
-// Estructura según la especificación del profesional revisor (TRAZA v1.0).
+// Reproduce el formato oficial entregado por el profesional revisor (TRAZA v1.0).
 
 export interface LlamadoInforme {
   id:                string;
@@ -22,8 +22,8 @@ const MESES = [
   "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
 ];
 
-// Meta institucional: proporción de atenciones respondidas en 10 min o menos
-const META_OPORTUNIDAD = 0.60;
+// Metas institucionales
+const META_OPORTUNIDAD   = 0.60;
 const META_RESPUESTA_MIN = 15;
 
 function esc(s: string): string {
@@ -66,8 +66,8 @@ export function buildInformeMensual(
   anio: number,
   mes: number            // 0-11
 ): string {
-  const habiles = diasHabiles(anio, mes);
-  const periodo = `${MESES[mes]} de ${anio}`;
+  const habiles  = diasHabiles(anio, mes);
+  const periodo  = `${MESES[mes]} de ${anio}`;
   const generado = new Date().toLocaleDateString("es-CO", {
     timeZone: "America/Bogota", day: "2-digit", month: "2-digit", year: "numeric",
   });
@@ -82,15 +82,18 @@ export function buildInformeMensual(
   const promDiario = habiles > 0 ? total / habiles : 0;
 
   // ── 2. Carga de trabajo ──
-  const revisados = atendidas
+  // Tiempo efectivo = suma de tramos activos. El sistema registra un único
+  // tramo por revisión (no hay pausa), de modo que las interrupciones son 0.
+  const tramos = atendidas
     .map((l) => minutosEntre(l.tomadoEn, l.finalizadoEn))
     .filter((m): m is number => m !== null);
 
-  const minutosTotal = revisados.reduce((a, b) => a + b, 0);
-  const horasTotal   = minutosTotal / 60;
-  const jornadas     = horasTotal / 8;
-  const promRevision = revisados.length ? minutosTotal / revisados.length : 0;
-  const maxRevision  = revisados.length ? Math.max(...revisados) : 0;
+  const minutosTotal  = tramos.reduce((a, b) => a + b, 0);
+  const horasTotal    = minutosTotal / 60;
+  const jornadas      = horasTotal / 8;
+  const promRevision  = tramos.length ? minutosTotal / tramos.length : 0;
+  const maxRevision   = tramos.length ? Math.max(...tramos) : 0;
+  const interrupciones = 0;
 
   // ── 3. Oportunidad (solo atención inmediata) ──
   const respuestas = atendidas
@@ -101,9 +104,10 @@ export function buildInformeMensual(
   const promRespuesta = respuestas.length
     ? respuestas.reduce((a, b) => a + b, 0) / respuestas.length
     : 0;
-  const enDiezMin  = respuestas.filter((m) => m <= 10).length;
-  const propDiez   = respuestas.length ? enDiezMin / respuestas.length : 0;
-  const bajoMeta   = respuestas.length > 0 && propDiez < META_OPORTUNIDAD;
+  const enDiezMin = respuestas.filter((m) => m <= 10).length;
+  const propDiez  = respuestas.length ? enDiezMin / respuestas.length : 0;
+  const bajoMeta  = respuestas.length > 0 && propDiez < META_OPORTUNIDAD;
+  const respLenta = respuestas.length > 0 && promRespuesta > META_RESPUESTA_MIN;
 
   // ── 4. Resultado de la revisión ──
   const conceptos = atendidas.map((l) => conceptoDe(l.verificacion)).filter(Boolean) as string[];
@@ -117,32 +121,35 @@ export function buildInformeMensual(
   const enTramite    = atendidas.filter((l) => l.estado === "PENDIENTE" || l.estado === "EN_PROCESO");
   const dpSinAtender = atendidas.filter((l) => l.esDerechoPeticion && !l.verificacion);
 
-  const filaPct = (n: number) => (total ? pct(n / total) : "—");
+  const partTotal = (n: number) => (total ? pct(n / total) : "—");
+  const partEmit  = (n: number) => (emitidos ? pct(n / emitidos) : "—");
 
   // Anexo: relación de derechos de petición sin concepto emitido
   const filasDP = dpSinAtender.map((l) => {
-    const dias = Math.floor(
-      (Date.now() - new Date(l.createdAt).getTime()) / 86_400_000
-    );
+    const dias = Math.floor((Date.now() - new Date(l.createdAt).getTime()) / 86_400_000);
     return `
       <tr>
         <td>${esc(l.radicado ?? "—")}</td>
         <td>${esc(l.fmi ?? "—")}</td>
-        <td>${new Date(l.createdAt).toLocaleDateString("es-CO", {
+        <td class="c">${new Date(l.createdAt).toLocaleString("es-CO", {
           timeZone: "America/Bogota", day: "2-digit", month: "2-digit", year: "numeric",
+          hour: "2-digit", minute: "2-digit",
         })}</td>
-        <td>${dias}</td>
+        <td class="c">${dias}</td>
         <td>${esc(l.solicitante?.name ?? l.solicitante?.email ?? "—")}</td>
       </tr>`;
   }).join("");
 
   const anexoDP = dpSinAtender.length === 0 ? "" : `
   <section class="anexo">
-    <h2>Anexo — Derechos de petición sin concepto emitido (${dpSinAtender.length})</h2>
-    <p class="pie">Relación para solicitud de asignación formal ante la coordinación.</p>
+    <h2>Anexo — Derechos de petición pendientes de trámite o asignación</h2>
+    <p class="nota">Relación para solicitud de asignación formal ante la coordinación.</p>
     <table>
       <thead>
-        <tr><th>Radicado</th><th>Matrícula</th><th>Registrada</th><th>Días transcurridos</th><th>Funcionario que registró</th></tr>
+        <tr>
+          <th>Radicado</th><th>Matrícula</th><th class="c">Registrada</th>
+          <th class="c">Días transcurridos</th><th>Funcionario que registró</th>
+        </tr>
       </thead>
       <tbody>${filasDP}</tbody>
     </table>
@@ -155,41 +162,60 @@ export function buildInformeMensual(
 <title>Informe Mensual de Atención Técnica — ${esc(periodo)}</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:"Times New Roman",Georgia,serif;font-size:10.5pt;color:#111;padding:22mm 18mm;line-height:1.35}
-  h1{font-size:13pt;text-align:center;letter-spacing:.3px}
-  .sub{font-size:10.5pt;text-align:center;margin-top:2px}
-  .ofi{font-size:9.5pt;text-align:center;color:#444;margin-top:2px;padding-bottom:8px;border-bottom:1.5px solid #111}
-  table{width:100%;border-collapse:collapse;margin-top:5px}
-  th,td{border:.5pt solid #999;padding:3.5px 7px;text-align:left;font-size:9.5pt;vertical-align:top}
-  thead th{background:#e8e8e8;font-weight:bold}
-  td.n,th.n{text-align:right;white-space:nowrap}
-  table.cab{margin:10px 0 4px}
-  table.cab th{background:#f2f2f2;width:22%}
-  h2{font-size:10.5pt;margin-top:15px;margin-bottom:2px;font-weight:bold}
-  .pie{font-size:8.5pt;color:#555;margin-top:4px;font-style:italic}
-  .alerta{color:#b00;font-weight:bold}
-  .obs{border:.5pt solid #999;padding:9px 11px;margin-top:5px;min-height:70px;font-size:9.5pt;text-align:justify;line-height:1.45}
+  body{
+    font-family:Calibri,Candara,"Segoe UI",Arial,sans-serif;
+    font-size:10.5pt;color:#000;padding:18mm 16mm;line-height:1.3;
+  }
+  h1{font-size:15pt;color:#1F3864;text-align:center;font-weight:bold;letter-spacing:.2px}
+  .sub{font-size:11pt;color:#333;text-align:center;margin-top:3px}
+  .ofi{font-size:9.5pt;color:#777;text-align:center;margin-top:2px}
+
+  table{width:100%;border-collapse:collapse;margin-top:6px}
+  th,td{border:.75pt solid #BFBFBF;padding:4.5px 9px;font-size:10pt;vertical-align:middle}
+  thead th{background:#1F3864;color:#fff;font-weight:bold;border-color:#1F3864;text-align:left}
+  tbody tr:nth-child(even) td{background:#F2F2F2}
+  td.c,th.c{text-align:center}
+  td.v{text-align:center;font-weight:bold}
+  td.ind{padding-left:22px}
+
+  table.cab{margin:14px 0 4px}
+  table.cab td,table.cab th{padding:5px 10px}
+  table.cab th{background:#fff;color:#000;border-color:#BFBFBF;font-weight:normal;width:20%}
+  table.cab td{text-align:center;font-weight:bold;width:30%}
+
+  h2{font-size:11.5pt;color:#1F3864;font-weight:bold;margin-top:16px}
+  .nota{font-size:8.5pt;color:#666;font-style:italic;margin-top:4px}
+  .alerta{color:#C00000;font-weight:bold}
+
+  .obs{
+    border:.75pt solid #BFBFBF;padding:9px 11px;margin-top:6px;min-height:74px;
+    font-size:10pt;text-align:justify;line-height:1.45;
+  }
   .obs:focus{outline:2px solid #2563eb;background:#f8fbff}
-  .firma{margin-top:34px;font-size:9.5pt}
-  .firma .linea{border-top:.5pt solid #111;width:62mm;margin-bottom:3px}
-  .nota-final{margin-top:16px;font-size:8.5pt;color:#555}
+  .editable{background:#FFFBE6}
+
+  .firma{margin-top:36px;font-size:10pt}
+  .firma .linea{border-top:.75pt solid #000;width:66mm;margin-bottom:4px}
+  .anexo-nota{margin-top:18px;font-size:9pt;color:#555}
   .anexo{page-break-before:always;padding-top:4px}
-  .editable{background:#fffbe6}
+
   @media print{
-    @page{margin:16mm}
+    @page{margin:14mm}
     body{padding:0}
-    .obs{background:none}
-    .editable{background:none}
+    .obs,.editable{background:none}
     .noprint{display:none}
   }
-  .noprint{background:#eff6ff;border:1px solid #bfdbfe;padding:8px 11px;margin-bottom:14px;font-size:9pt;font-family:Arial,sans-serif;border-radius:4px}
+  .noprint{
+    background:#EFF6FF;border:1px solid #BFDBFE;padding:8px 12px;margin-bottom:14px;
+    font-size:9pt;border-radius:4px;color:#1e3a5f;
+  }
 </style>
 </head>
 <body>
 
 <div class="noprint">
-  Los campos resaltados son editables: haz clic y escribe antes de imprimir.
-  Luego usa <strong>Ctrl+P → Guardar como PDF</strong>.
+  Los campos resaltados en amarillo son editables: haz clic y escribe antes de imprimir.
+  Luego usa <strong>Ctrl+P → Destino: Guardar como PDF</strong>.
 </div>
 
 <h1>INFORME MENSUAL DE ATENCIÓN TÉCNICA</h1>
@@ -203,69 +229,72 @@ export function buildInformeMensual(
 
 <h2>1. Volumen de atención</h2>
 <table>
-  <thead><tr><th>Concepto</th><th class="n">Cantidad</th><th class="n">Participación</th></tr></thead>
+  <thead><tr><th>Concepto</th><th class="c">Cantidad</th><th class="c">Participación</th></tr></thead>
   <tbody>
-    <tr><td>Solicitudes atendidas en el periodo</td><td class="n">${total}</td><td class="n">${total ? "100,0 %" : "—"}</td></tr>
-    <tr><td>&nbsp;&nbsp;&nbsp;Procedencia de plano — atención inmediata</td><td class="n">${inmediatas}</td><td class="n">${filaPct(inmediatas)}</td></tr>
-    <tr><td>&nbsp;&nbsp;&nbsp;Derechos de petición</td><td class="n">${dp}</td><td class="n">${filaPct(dp)}</td></tr>
-    <tr><td>Promedio diario (días hábiles)</td><td class="n">${num(promDiario)}</td><td class="n">—</td></tr>
+    <tr><td>Solicitudes atendidas en el periodo</td><td class="v">${total}</td><td class="c">${total ? "100,0 %" : "—"}</td></tr>
+    <tr><td class="ind">Procedencia de plano — atención inmediata</td><td class="v">${inmediatas}</td><td class="c">${partTotal(inmediatas)}</td></tr>
+    <tr><td class="ind">Derechos de petición</td><td class="v">${dp}</td><td class="c">${partTotal(dp)}</td></tr>
+    <tr><td>Promedio diario (días hábiles)</td><td class="v">${num(promDiario)}</td><td class="c">—</td></tr>
   </tbody>
 </table>
 
 <h2>2. Carga de trabajo profesional</h2>
 <table>
-  <thead><tr><th>Indicador</th><th class="n">Valor</th><th>Equivalencia</th></tr></thead>
+  <thead><tr><th>Indicador</th><th class="c">Valor</th><th class="c">Equivalencia</th></tr></thead>
   <tbody>
-    <tr><td>Tiempo total de revisión</td><td class="n">${num(horasTotal)} horas</td><td>${num(jornadas)} jornadas</td></tr>
-    <tr><td>Tiempo promedio por solicitud</td><td class="n">${num(promRevision)} minutos</td><td>—</td></tr>
-    <tr><td>Revisión de mayor duración</td><td class="n">${Math.round(maxRevision)} minutos</td><td>—</td></tr>
-    <tr><td>Solicitudes con tiempo registrado</td><td class="n">${revisados.length}</td><td>de ${total}</td></tr>
+    <tr><td>Tiempo efectivo total de revisión</td><td class="v">${num(horasTotal)} horas</td><td class="c">${num(jornadas)} jornadas</td></tr>
+    <tr><td>Tiempo efectivo promedio por solicitud</td><td class="v">${num(promRevision)} minutos</td><td class="c">—</td></tr>
+    <tr><td>Revisión de mayor duración</td><td class="v">${Math.round(maxRevision)} minutos</td><td class="c">—</td></tr>
+    <tr><td>Interrupciones por atención simultánea</td><td class="v">${interrupciones}</td><td class="c">—</td></tr>
   </tbody>
 </table>
-<p class="pie">
-  Tiempo de revisión: intervalo entre la toma de la solicitud por el profesional revisor y su cierre
-  con concepto técnico. El sistema no registra todavía pausas por atención simultánea, de modo que
-  este valor corresponde al tiempo transcurrido y no al tiempo efectivo descontando interrupciones.
+<p class="nota">
+  Tiempo efectivo: suma de tramos activos de revisión, excluyendo pausas por atención simultánea.
+  El sistema registra un tramo continuo por revisión, por lo que no se contabilizan interrupciones.
 </p>
 
 <h2>3. Oportunidad en la atención</h2>
 <table>
-  <thead><tr><th>Indicador</th><th class="n">Valor</th><th class="n">Meta</th></tr></thead>
+  <thead><tr><th>Indicador</th><th class="c">Valor</th><th class="c">Meta</th></tr></thead>
   <tbody>
-    <tr><td>Tiempo promedio de respuesta — inmediatas</td><td class="n">${num(promRespuesta)} minutos</td><td class="n">≤ ${META_RESPUESTA_MIN} min</td></tr>
-    <tr><td>Atenciones respondidas en 10 minutos o menos</td><td class="n">${enDiezMin} de ${respuestas.length}</td><td class="n">—</td></tr>
+    <tr>
+      <td>Tiempo promedio de respuesta — inmediatas</td>
+      <td class="v ${respLenta ? "alerta" : ""}">${num(promRespuesta)} minutos</td>
+      <td class="c">≤ ${META_RESPUESTA_MIN} min</td>
+    </tr>
+    <tr><td>Atenciones respondidas en 10 minutos o menos</td><td class="v">${enDiezMin} de ${respuestas.length}</td><td class="c">—</td></tr>
     <tr>
       <td>Proporción respondida en 10 minutos o menos</td>
-      <td class="n ${bajoMeta ? "alerta" : ""}">${respuestas.length ? pct(propDiez) : "—"}</td>
-      <td class="n">≥ ${Math.round(META_OPORTUNIDAD * 100)} %</td>
+      <td class="v ${bajoMeta ? "alerta" : ""}">${respuestas.length ? pct(propDiez) : "—"}</td>
+      <td class="c ${bajoMeta ? "alerta" : ""}">≥ ${Math.round(META_OPORTUNIDAD * 100)} %</td>
     </tr>
   </tbody>
 </table>
-<p class="pie">
+<p class="nota">
   Tiempo de respuesta: intervalo entre el registro de la solicitud en ventanilla y el inicio de la
   atención por parte del profesional revisor. Se calcula únicamente sobre atención inmediata.
 </p>
 
 <h2>4. Resultado de la revisión</h2>
 <table>
-  <thead><tr><th>Concepto emitido</th><th class="n">Cantidad</th><th class="n">Participación</th></tr></thead>
+  <thead><tr><th>Concepto emitido</th><th class="c">Cantidad</th><th class="c">Participación</th></tr></thead>
   <tbody>
-    <tr><td>Procede</td><td class="n">${procede}</td><td class="n">${emitidos ? pct(procede / emitidos) : "—"}</td></tr>
-    <tr><td>No procede</td><td class="n">${noProcede}</td><td class="n">${emitidos ? pct(noProcede / emitidos) : "—"}</td></tr>
-    <tr><td>Requiere ajuste</td><td class="n">${ajuste}</td><td class="n">${emitidos ? pct(ajuste / emitidos) : "—"}</td></tr>
+    <tr><td>Procede</td><td class="v">${procede}</td><td class="c">${partEmit(procede)}</td></tr>
+    <tr><td>No procede</td><td class="v">${noProcede}</td><td class="c">${partEmit(noProcede)}</td></tr>
+    <tr><td>Requiere ajuste</td><td class="v">${ajuste}</td><td class="c">${partEmit(ajuste)}</td></tr>
   </tbody>
 </table>
-<p class="pie">
-  Cada concepto de no procedencia cuenta con observación técnica escrita en el registro detallado.
-  Las solicitudes abiertas se excluyen de este cuadro y de los promedios.
+<p class="nota">
+  Cada no procedencia cuenta con observación técnica escrita y evidencia gráfica en el registro detallado.
+  Las solicitudes abiertas se excluyen de este cuadro y del denominador de no procedencia.
 </p>
 
 <h2>5. Pendientes al cierre del periodo</h2>
 <table>
-  <thead><tr><th>Concepto</th><th class="n">Cantidad</th><th>Observación</th></tr></thead>
+  <thead><tr><th>Concepto</th><th class="c">Cantidad</th><th>Observación</th></tr></thead>
   <tbody>
-    <tr><td>Solicitudes en trámite</td><td class="n">${enTramite.length}</td><td>En revisión</td></tr>
-    <tr><td>Derechos de petición sin concepto emitido</td><td class="n">${dpSinAtender.length}</td><td>${dpSinAtender.length ? "Requiere asignación formal" : "Sin pendientes"}</td></tr>
+    <tr><td>Solicitudes en trámite</td><td class="v">${enTramite.length}</td><td>En revisión</td></tr>
+    <tr><td>Derechos de petición sin asignación formal</td><td class="v">${dpSinAtender.length}</td><td>${dpSinAtender.length ? "Requiere asignación" : "Sin pendientes"}</td></tr>
   </tbody>
 </table>
 
@@ -278,7 +307,7 @@ export function buildInformeMensual(
   <div class="editable" contenteditable="true">Coordinador de Digitalización — [matrícula profesional]</div>
 </div>
 
-<p class="nota-final">
+<p class="anexo-nota">
   Anexo: registro detallado de ${total} solicitud${total === 1 ? "" : "es"} del periodo, disponible en el módulo de verificación.
 </p>
 
