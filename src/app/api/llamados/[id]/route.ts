@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
+import { notificarAdmins } from "@/lib/notificarAdmins";
 
 const SELECT_LLAMADO = {
   id:                true,
@@ -64,16 +65,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           data:   { estado: "EN_PROCESO", digitalizadorId: session.user.id, tomadoEn: new Date() },
           select: SELECT_LLAMADO,
         });
+        const ident = llamado.radicado ? `radicado ${llamado.radicado}` : "un plano de ventanilla";
         await tx.notification.create({
           data: {
-            message: `${nombre} tomó la verificación del radicado ${llamado.radicado}.`,
+            message: `${nombre} tomó la verificación del ${ident}.`,
             userId:  llamado.solicitanteId,
           },
+        });
+        await notificarAdmins(tx, `${nombre} tomó la verificación del ${ident}.`, {
+          excluirUserId: session.user.id,
         });
         return upd;
       });
 
-      sendPushToUser(llamado.solicitanteId, {
+      await sendPushToUser(llamado.solicitanteId, {
         title: "Verificación tomada",
         body:  `${nombre} está revisando el radicado ${llamado.radicado}.`,
         url:   "/dashboard",
@@ -96,10 +101,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         );
       }
 
-      const actualizado = await prisma.llamadoVerificacion.update({
-        where:  { id },
-        data:   { estado: "CANCELADO", finalizadoEn: new Date() },
-        select: SELECT_LLAMADO,
+      const quien = session.user.name ?? session.user.email ?? "Ventanilla";
+      const ident = llamado.radicado ? `radicado ${llamado.radicado}` : "un plano de ventanilla";
+
+      const actualizado = await prisma.$transaction(async (tx) => {
+        const upd = await tx.llamadoVerificacion.update({
+          where:  { id },
+          data:   { estado: "CANCELADO", finalizadoEn: new Date() },
+          select: SELECT_LLAMADO,
+        });
+        await notificarAdmins(tx, `${quien} canceló la verificación del ${ident}.`, {
+          excluirUserId: session.user.id,
+        });
+        return upd;
       });
       return NextResponse.json(actualizado);
     }

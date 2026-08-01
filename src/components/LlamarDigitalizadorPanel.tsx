@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRealtimeRefresh } from "@/lib/useRealtimeRefresh";
 import {
   ClipboardCheck, X, Plus, FileText, Check, XCircle,
   Clock, Loader2, UserCheck, Trash2, Pencil, LogIn, FilePlus2,
@@ -119,19 +120,18 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
     }
   };
 
-  // Sondeo del contador mientras el panel está cerrado
-  useEffect(() => {
-    const contar = async () => {
-      try {
-        const res  = await fetch("/api/llamados");
-        const data = await res.json();
-        if (Array.isArray(data)) setAbiertos(contarAbiertos(data));
-      } catch { /* silencioso: se reintenta en el siguiente ciclo */ }
-    };
-    contar();
-    const t = setInterval(contar, 15_000);
-    return () => clearInterval(t);
-  }, []);
+  // Contador de llamados abiertos: se actualiza al instante con el push
+  useRealtimeRefresh(async () => {
+    try {
+      const res  = await fetch("/api/llamados");
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setAbiertos(contarAbiertos(data));
+        // Si el historial está a la vista, refresca también la lista
+        if (open && tab === "historial") setLlamados(data);
+      }
+    } catch { /* silencioso: se reintenta en el siguiente ciclo */ }
+  }, 20_000);
 
   useEffect(() => {
     if (open && tab === "historial") cargar();
