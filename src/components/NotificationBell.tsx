@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Bell } from "lucide-react";
 import Link from "next/link";
+import { useRealtimeRefresh } from "@/lib/useRealtimeRefresh";
 
 interface Notif {
   id: string;
@@ -29,11 +30,9 @@ export default function NotificationBell() {
       .then((data) => Array.isArray(data) && setNotifs(data))
       .catch(() => {});
 
-  useEffect(() => {
-    fetchNotifs();
-    const id = setInterval(fetchNotifs, 10_000);
-    return () => clearInterval(id);
-  }, []);
+  // Refresco inmediato al recibir un push; el sondeo solo cubre el caso
+  // de que el usuario no tenga las notificaciones del navegador activadas
+  useRealtimeRefresh(fetchNotifs, 10_000);
 
   // Cerrar al hacer clic fuera
   useEffect(() => {

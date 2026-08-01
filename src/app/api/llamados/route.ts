@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPushToRoles } from "@/lib/push";
+import { notificarAdmins } from "@/lib/notificarAdmins";
 
 // Roles de ventanilla que pueden llamar al digitalizador
 const ROLES_SOLICITANTES = ["RADICADORA", "ENCARGADO", "ADMINISTRADOR"];
@@ -201,11 +202,19 @@ export async function POST(req: Request) {
         });
       }
 
+      // El administrador queda enterado de toda solicitud de verificación.
+      // El derecho de petición ya se avisó arriba junto con el plano.
+      if (!esCheckIn) {
+        await notificarAdmins(tx, `${nombre} solicitó verificar ${ident}.`, {
+          excluirUserId: session.user.id,
+        });
+      }
+
       return creado;
     });
 
     // Push fuera de la transacción — que un fallo de red no revierta el llamado
-    sendPushToRoles(["DIGITALIZADOR"], {
+    await sendPushToRoles(["DIGITALIZADOR"], {
       title: esCheckIn ? "Derecho de petición registrado" : "Verificación solicitada",
       body:  esCheckIn
         ? `${nombre} dejó registrado un derecho de petición (${ident}).`
@@ -215,7 +224,7 @@ export async function POST(req: Request) {
     }).catch((err) => console.error("[Push] llamado:", err));
 
     if (esCheckIn && !planExistente) {
-      sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
+      await sendPushToRoles(["ENCARGADO", "ADMINISTRADOR"], {
         title: "📋 Derecho de petición registrado",
         body:  `Radicado ${rad} ingresado al sistema por ${nombre}.`,
         url:   "/dashboard/buscar",

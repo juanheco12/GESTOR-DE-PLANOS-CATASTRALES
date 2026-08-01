@@ -1,4 +1,4 @@
-const CACHE = "catastro-v2";
+const CACHE = "catastro-v3";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(clients.claim()));
@@ -17,13 +17,22 @@ self.addEventListener("push", (event) => {
   } = data;
 
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body,
-      tag,
-      renotify:  true,
-      requireInteraction: false,
-      data: { url },
-    })
+    Promise.all([
+      self.registration.showNotification(title, {
+        body,
+        tag,
+        renotify:  true,
+        requireInteraction: false,
+        data: { url },
+      }),
+      // Avisa a las pestañas abiertas para que refresquen al instante,
+      // sin esperar al siguiente ciclo de sondeo.
+      clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+        for (const client of list) {
+          client.postMessage({ type: "catastro-push", title, body, tag });
+        }
+      }),
+    ])
   );
 });
 

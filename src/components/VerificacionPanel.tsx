@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 
 import { buildInformeMensual, type LlamadoInforme } from "@/lib/informeMensual";
+import { useRealtimeRefresh } from "@/lib/useRealtimeRefresh";
 
 type Concepto = "PROCEDE" | "NO_PROCEDE" | "REQUIERE_AJUSTE";
 
@@ -358,21 +359,18 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
     if (open && tab === "llamados")  loadLlamados();
   }, [open, tab]);
 
-  // Sondeo del contador de llamados pendientes, también con el panel cerrado
-  useEffect(() => {
-    const contar = async () => {
-      try {
-        const res  = await fetch("/api/llamados");
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setPendientes(data.filter((l: Llamado) => l.estado === "PENDIENTE").length);
-        }
-      } catch { /* silencioso: se reintenta en el siguiente ciclo */ }
-    };
-    contar();
-    const t = setInterval(contar, 12_000);
-    return () => clearInterval(t);
-  }, []);
+  // Contador de llamados pendientes: se actualiza al instante con el push
+  useRealtimeRefresh(async () => {
+    try {
+      const res  = await fetch("/api/llamados");
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setPendientes(data.filter((l: Llamado) => l.estado === "PENDIENTE").length);
+        // Si el panel está abierto en Llamados, refresca también la lista
+        if (open && tab === "llamados") setLlamados(data);
+      }
+    } catch { /* silencioso: se reintenta en el siguiente ciclo */ }
+  }, 20_000);
 
   const loadLlamados = async () => {
     setLoadingLlam(true);

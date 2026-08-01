@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
+import { notificarAdmins } from "@/lib/notificarAdmins";
 
 const CONCEPTO_LABEL: Record<string, string> = {
   PROCEDE:         "PROCEDE",
@@ -110,11 +111,19 @@ export async function POST(req: Request) {
         });
       }
 
+      // El administrador queda enterado de todo concepto técnico emitido
+      const quien = session.user.name ?? session.user.email ?? "El digitalizador";
+      await notificarAdmins(
+        tx,
+        `${quien} emitió concepto ${CONCEPTO_LABEL[concepto]} para el radicado ${radicado.trim()}.`,
+        { excluirUserId: session.user.id }
+      );
+
       return creada;
     });
 
     if (llamado) {
-      sendPushToUser(llamado.solicitanteId, {
+      await sendPushToUser(llamado.solicitanteId, {
         title: `Plano ${CONCEPTO_LABEL[concepto]}`,
         body:  `Radicado ${llamado.radicado} — ${observaciones?.trim() || "Verificación completada."}`,
         url:   "/dashboard",

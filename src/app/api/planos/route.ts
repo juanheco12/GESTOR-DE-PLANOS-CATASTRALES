@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendPushToRoles } from "@/lib/push";
+import { notificarAdmins } from "@/lib/notificarAdmins";
 
 const ROLES_REGISTRO = ["ADMINISTRADOR", "ENCARGADO", "RADICADORA"];
 
@@ -50,24 +51,23 @@ const result = await prisma.$transaction(async (tx) => {
         },
       });
 
-      // Notificar si quien registra es RADICADORA → ENCARGADO recibe alerta
-      // ADMINISTRADOR recibe siempre todos los movimientos
-      if (session.user.role === "RADICADORA") {
-        const registrador = await tx.user.findUnique({
-          where: { id: session.user.id },
-          select: { name: true },
-        });
-        const receptor = receiverExists.name;
-        const mensaje = `${registrador?.name ?? "Radicadora"} registró el plano ${data.radicado} y fue entregado físicamente a ${receptor}.`;
+      const registrador = await tx.user.findUnique({
+        where:  { id: session.user.id },
+        select: { name: true },
+      });
+      const mensaje =
+        `${registrador?.name ?? "Un funcionario"} registró el plano ${data.radicado} ` +
+        `y fue entregado físicamente a ${receiverExists.name}.`;
 
-        const destinatarios = await tx.user.findMany({
-          where: { role: { in: ["ENCARGADO", "ADMINISTRADOR"] }, isActive: true },
+      // Cuando registra la RADICADORA, el ENCARGADO también recibe la alerta
+      if (session.user.role === "RADICADORA") {
+        const encargados = await tx.user.findMany({
+          where:  { role: "ENCARGADO", isActive: true },
           select: { id: true },
         });
-
-        if (destinatarios.length > 0) {
+        if (encargados.length > 0) {
           await tx.notification.createMany({
-            data: destinatarios.map((u) => ({
+            data: encargados.map((u) => ({
               message: mensaje,
               userId:  u.id,
               planoId: newPlan.id,
@@ -75,6 +75,12 @@ const result = await prisma.$transaction(async (tx) => {
           });
         }
       }
+
+      // El ADMINISTRADOR recibe constancia de todo registro, lo haga quien lo haga
+      await notificarAdmins(tx, mensaje, {
+        planoId:       newPlan.id,
+        excluirUserId: session.user.id,
+      });
 
       return newPlan;
     });
