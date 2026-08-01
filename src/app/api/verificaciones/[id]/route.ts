@@ -8,11 +8,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const { id } = await params;
+  const esAdmin = session.user.role === "ADMINISTRADOR";
   try {
     const verif = await prisma.verificacion.findUnique({
       where: { id },
     });
-    if (!verif || verif.userId !== session.user.id) {
+    if (!verif || (verif.userId !== session.user.id && !esAdmin)) {
       return NextResponse.json({ error: "No encontrado" }, { status: 404 });
     }
     return NextResponse.json(verif);
@@ -26,14 +27,28 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   const { id } = await params;
+  const esAdmin = session.user.role === "ADMINISTRADOR";
   try {
-    const verif = await prisma.verificacion.findUnique({ where: { id } });
-    if (!verif || verif.userId !== session.user.id) {
+    const verif = await prisma.verificacion.findUnique({
+      where:  { id },
+      select: { id: true, userId: true },
+    });
+    // El administrador puede eliminar cualquier registro; el resto, solo el suyo
+    if (!verif || (verif.userId !== session.user.id && !esAdmin)) {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
-    await prisma.verificacion.delete({ where: { id } });
+    // El llamado enlazado queda sin verificación, no se borra con ella
+    await prisma.llamadoVerificacion.updateMany({
+      where: { verificacionId: id },
+      data:  { verificacionId: null },
+    });
+    await prisma.verificacion.deleteMany({ where: { id } });
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Error deleting verificacion:", error);
+    return NextResponse.json(
+      { error: `No se pudo eliminar: ${error?.message ?? "error desconocido"}` },
+      { status: 500 }
+    );
   }
 }

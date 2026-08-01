@@ -170,9 +170,18 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
   const { id } = await params;
   try {
-    await prisma.llamadoVerificacion.delete({ where: { id } });
+    // deleteMany en vez de delete: no hace RETURNING de todas las columnas,
+    // así el borrado no depende de que el esquema esté al día.
+    const { count } = await prisma.llamadoVerificacion.deleteMany({ where: { id } });
+    if (count === 0) {
+      return NextResponse.json({ error: "El registro ya no existe." }, { status: 404 });
+    }
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "No se pudo eliminar el llamado" }, { status: 500 });
+  } catch (error: any) {
+    console.error("Error deleting llamado:", error);
+    return NextResponse.json(
+      { error: `No se pudo eliminar: ${error?.message ?? "error desconocido"}` },
+      { status: 500 }
+    );
   }
 }
