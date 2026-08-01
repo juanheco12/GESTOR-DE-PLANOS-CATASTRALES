@@ -148,13 +148,10 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
-    // El derecho de petición sí exige radicado: es el número con el que se responde
+    // Sin DP el llamado es solo un aviso al digitalizador: no exige datos.
+    // Con DP sí, porque se registra un plano y el radicado lo identifica.
     if (checkIn && !radicado.trim()) {
       setError("El derecho de petición requiere el número de radicado");
-      return;
-    }
-    if (!radicado.trim() && !fmi.trim()) {
-      setError("Indica al menos el número de radicado o el FMI");
       return;
     }
     if (checkIn && !formato) {
@@ -393,9 +390,6 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
                     placeholder="Ej: 060-123456"
                     className={inputClass}
                   />
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    Escribe al menos uno de los dos para poder identificar el plano.
-                  </p>
                 </div>
 
                 <div>

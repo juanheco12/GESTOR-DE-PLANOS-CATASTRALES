@@ -60,6 +60,47 @@ const minutosEntre = (a: string | null, b: string | null): number | null => {
   return Number.isFinite(ms) && ms >= 0 ? ms / 60000 : null;
 };
 
+const LETRAS = [
+  "cero", "uno", "dos", "tres", "cuatro", "cinco", "seis", "siete", "ocho", "nueve", "diez",
+  "once", "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete", "dieciocho",
+  "diecinueve", "veinte",
+];
+const enLetras = (n: number) => LETRAS[n] ?? String(n);
+
+// Causas recurrentes tomadas de las observaciones escritas en los conceptos
+// desfavorables del periodo, ordenadas por frecuencia.
+function causasRecurrentes(llamados: LlamadoInforme[], max = 3): string[] {
+  const conteo = new Map<string, { texto: string; n: number }>();
+
+  for (const l of llamados) {
+    const c = conceptoDe(l.verificacion);
+    if (!c || c === "PROCEDE") continue;
+    const texto = l.verificacion?.observaciones?.trim();
+    if (!texto) continue;
+
+    // Normaliza para agrupar redacciones equivalentes
+    const clave = texto
+      .toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    const prev = conteo.get(clave);
+    if (prev) prev.n++;
+    else conteo.set(clave, { texto, n: 1 });
+  }
+
+  return [...conteo.values()]
+    .sort((a, b) => b.n - a.n)
+    .slice(0, max)
+    .map((v) => v.texto.replace(/\s*[.;]+\s*$/, ""));
+}
+
+// Une frases con comas y una "y" final
+const enumerar = (xs: string[]) =>
+  xs.length <= 1 ? (xs[0] ?? "") : `${xs.slice(0, -1).join("; ")} y ${xs[xs.length - 1]}`;
+
 export function buildInformeMensual(
   llamados: LlamadoInforme[],
   revisor: string,
@@ -123,6 +164,75 @@ export function buildInformeMensual(
 
   const partTotal = (n: number) => (total ? pct(n / total) : "—");
   const partEmit  = (n: number) => (emitidos ? pct(n / emitidos) : "—");
+
+  // ── 6. Observaciones, redactadas a partir de los indicadores del periodo ──
+  const causas   = causasRecurrentes(atendidas);
+  const unoDeCada = propNoProcede > 0 ? Math.round(1 / propNoProcede) : 0;
+
+  const parrafos: string[] = [];
+
+  if (total === 0) {
+    parrafos.push(
+      `Durante ${periodo} no se registraron solicitudes de revisión de procedencia de planos.`
+    );
+  } else {
+    parrafos.push(
+      `Durante ${periodo} se atendieron ${total} solicitud${total === 1 ? "" : "es"} ` +
+      `(${inmediatas} de atención inmediata y ${dp} derecho${dp === 1 ? "" : "s"} de petición), ` +
+      `con un promedio de ${num(promDiario)} solicitudes por día hábil sobre ${habiles} días.`
+    );
+
+    if (tramos.length > 0) {
+      parrafos.push(
+        `El tiempo efectivo de revisión sumó ${num(horasTotal)} horas, equivalentes a ` +
+        `${num(jornadas)} jornadas de ocho horas, con un promedio de ${num(promRevision)} minutos ` +
+        `por solicitud y un máximo de ${Math.round(maxRevision)} minutos.`
+      );
+    }
+
+    if (respuestas.length > 0) {
+      parrafos.push(
+        `El tiempo promedio de respuesta en atención inmediata fue de ${num(promRespuesta)} minutos, ` +
+        `${respLenta ? "por encima de" : "dentro de"} la meta de ${META_RESPUESTA_MIN} minutos. ` +
+        `La proporción atendida en diez minutos o menos alcanzó ${pct(propDiez)} ` +
+        `(${enDiezMin} de ${respuestas.length}), ${bajoMeta
+          ? `por debajo de la meta institucional del ${Math.round(META_OPORTUNIDAD * 100)} %`
+          : `cumpliendo la meta institucional del ${Math.round(META_OPORTUNIDAD * 100)} %`}.`
+      );
+    }
+
+    if (emitidos > 0) {
+      let p = `Se emitieron ${emitidos} conceptos técnicos: ${procede} procede, ` +
+              `${noProcede} no procede y ${ajuste} requiere ajuste.`;
+      if (noProcede > 0) {
+        p += ` La proporción de no procedencia (${pct(propNoProcede)}) evidencia que ` +
+             `uno de cada ${enLetras(unoDeCada)} planos radicados no cumple los requisitos técnicos`;
+        p += causas.length
+          ? `; las causas registradas con mayor frecuencia son: ${esc(enumerar(causas))}.`
+          : `.`;
+        p += ` Se recomienda socializar una guía de requisitos mínimos dirigida a usuarios externos, ` +
+             `orientada a reducir las radicaciones no procedentes.`;
+      }
+      parrafos.push(p);
+    }
+
+    if (dpSinAtender.length > 0) {
+      parrafos.push(
+        `Asimismo, se solicita la asignación formal de los ${enLetras(dpSinAtender.length)} ` +
+        `derecho${dpSinAtender.length === 1 ? "" : "s"} de petición relacionados en el anexo, ` +
+        `a efectos de garantizar su atención dentro de los términos legales.`
+      );
+    }
+
+    if (enTramite.length > 0) {
+      parrafos.push(
+        `Al cierre del periodo quedaron ${enTramite.length} solicitud${enTramite.length === 1 ? "" : "es"} ` +
+        `en trámite, pendientes de concepto técnico.`
+      );
+    }
+  }
+
+  const observaciones = parrafos.map((p) => `<p>${p}</p>`).join("");
 
   // Anexo: relación de derechos de petición sin concepto emitido
   const filasDP = dpSinAtender.map((l) => {
@@ -191,6 +301,7 @@ export function buildInformeMensual(
     border:.75pt solid #BFBFBF;padding:9px 11px;margin-top:6px;min-height:74px;
     font-size:10pt;text-align:justify;line-height:1.45;
   }
+  .obs p+p{margin-top:7px}
   .obs:focus{outline:2px solid #2563eb;background:#f8fbff}
   .editable{background:#FFFBE6}
 
@@ -299,7 +410,7 @@ export function buildInformeMensual(
 </table>
 
 <h2>6. Observaciones</h2>
-<div class="obs editable" contenteditable="true">La proporción de no procedencia (${emitidos ? pct(propNoProcede) : "sin datos"}) corresponde a ${noProcede} de ${emitidos} conceptos emitidos en el periodo.${bajoMeta ? ` La proporción de atenciones respondidas en 10 minutos o menos (${pct(propDiez)}) se ubica por debajo de la meta institucional del ${Math.round(META_OPORTUNIDAD * 100)} %.` : ""}${dpSinAtender.length ? ` Se solicita la asignación formal de los ${dpSinAtender.length} derechos de petición relacionados en el anexo, a efectos de garantizar su atención dentro de los términos legales.` : ""} [Escriba aquí las causas recurrentes y las recomendaciones del periodo.]</div>
+<div class="obs editable" contenteditable="true">${observaciones}</div>
 
 <div class="firma">
   <div class="linea"></div>
