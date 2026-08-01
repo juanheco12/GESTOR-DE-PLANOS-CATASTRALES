@@ -80,18 +80,11 @@ export async function POST(req: Request) {
 
     const esCheckIn = esDerechoPeticion === true;
 
-    // El derecho de petición sí exige radicado: es el número con el que se responde
+    // Sin DP el llamado es solo un aviso al digitalizador y no exige datos.
+    // Con DP sí, porque se registra un plano y el radicado lo identifica.
     if (esCheckIn && !rad) {
       return NextResponse.json(
         { error: "El derecho de petición requiere el número de radicado" },
-        { status: 400 }
-      );
-    }
-
-    // Para el resto basta con algo que identifique el plano
-    if (!rad && !folio) {
-      return NextResponse.json(
-        { error: "Indica al menos el número de radicado o el FMI" },
         { status: 400 }
       );
     }
@@ -116,7 +109,7 @@ export async function POST(req: Request) {
     }
 
     const nombre = session.user.name ?? session.user.email ?? "Ventanilla";
-    const ident  = rad ? `radicado ${rad}` : `FMI ${folio}`;
+    const ident  = rad ? `radicado ${rad}` : folio ? `FMI ${folio}` : "un plano en ventanilla";
     const ahora  = new Date();
 
     // El derecho de petición entra al inventario como un plano más.
@@ -202,7 +195,7 @@ export async function POST(req: Request) {
           data: digitalizadores.map((d) => ({
             message: esCheckIn
               ? `${nombre} registró un derecho de petición (${ident}) mientras no estabas.`
-              : `${nombre} solicita verificar el plano con ${ident}.`,
+              : `${nombre} solicita verificar ${ident}.`,
             userId: d.id,
           })),
         });
@@ -216,7 +209,7 @@ export async function POST(req: Request) {
       title: esCheckIn ? "Derecho de petición registrado" : "Verificación solicitada",
       body:  esCheckIn
         ? `${nombre} dejó registrado un derecho de petición (${ident}).`
-        : `${nombre} necesita revisar el ${ident}.`,
+        : `${nombre} necesita revisar ${ident}.`,
       url:   "/dashboard",
       tag:   "llamado-verificacion",
     }).catch((err) => console.error("[Push] llamado:", err));
