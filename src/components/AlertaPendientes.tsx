@@ -7,9 +7,28 @@ import { useRealtimeRefresh } from "@/lib/useRealtimeRefresh";
 
 interface Detalle { tipo: string; n: number; texto: string; url: string }
 
-const POSPONER_MS = 5 * 60 * 1000;   // el aviso vuelve a los 5 minutos
-const SONIDO_MS   = 45 * 1000;       // recordatorio sonoro mientras haya pendientes
-const CLAVE_MUDO  = "catastro:alerta-muda";
+const POSPONER_MS   = 5 * 60 * 1000;   // el aviso vuelve a los 5 minutos
+const SONIDO_MS     = 45 * 1000;       // recordatorio sonoro mientras haya pendientes
+const RECORDAR_MS   = 3 * 60 * 1000;   // recordatorio del navegador con la pestaña de fondo
+const CLAVE_MUDO    = "catastro:alerta-muda";
+
+// Notificación del sistema operativo: se ve aunque el navegador esté
+// minimizado o el usuario esté en otra aplicación.
+async function notificarNavegador(titulo: string, cuerpo: string) {
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration();
+    const opciones: NotificationOptions & { renotify?: boolean } = {
+      body: cuerpo,
+      tag:  "catastro-pendientes",   // reemplaza la anterior en vez de apilarlas
+      renotify: true,
+      data: { url: "/dashboard" },
+    };
+    // Vía service worker cuando existe: permite reemplazar y reaccionar al clic
+    if (reg) await reg.showNotification(titulo, opciones);
+    else new Notification(titulo, opciones);
+  } catch { /* la notificación es un extra; si falla, queda el aviso en pantalla */ }
+}
 
 // Dos notas cortas generadas en el momento: no hace falta archivo de audio
 function pitido() {
@@ -44,18 +63,50 @@ export default function AlertaPendientes() {
 
   const tituloOriginal = useRef<string>("");
   const ultimoSonido   = useRef<number>(0);
+  const totalPrevio    = useRef<number>(0);
+  const ultimoAviso    = useRef<number>(0);
+
+  const [permiso, setPermiso] = useState<NotificationPermission | "no-soportado">("default");
 
   useEffect(() => {
     tituloOriginal.current = document.title;
     setMudo(localStorage.getItem(CLAVE_MUDO) === "1");
+    setPermiso(typeof Notification === "undefined" ? "no-soportado" : Notification.permission);
   }, []);
+
+  const pedirPermiso = async () => {
+    if (typeof Notification === "undefined") return;
+    const r = await Notification.requestPermission();
+    setPermiso(r);
+    if (r === "granted") {
+      notificarNavegador("Avisos activados", "Te avisaremos aquí cuando tengas pendientes.");
+    }
+  };
 
   useRealtimeRefresh(async () => {
     try {
       const res  = await fetch("/api/pendientes");
       const data = await res.json();
-      setTotal(data?.total ?? 0);
-      setDetalle(Array.isArray(data?.detalle) ? data.detalle : []);
+      const n    = data?.total ?? 0;
+      const det  = Array.isArray(data?.detalle) ? data.detalle : [];
+
+      setTotal(n);
+      setDetalle(det);
+
+      if (n === 0) { totalPrevio.current = 0; return; }
+
+      const texto  = det[0]?.texto ?? "Tienes trabajo pendiente";
+      const subio  = n > totalPrevio.current;
+      // Con la pestaña de fondo se insiste; si está a la vista basta el aviso en pantalla
+      const tocaRecordar =
+        document.visibilityState === "hidden" &&
+        Date.now() - ultimoAviso.current > RECORDAR_MS;
+
+      if (subio || tocaRecordar) {
+        ultimoAviso.current = Date.now();
+        notificarNavegador(`🔔 ${n} pendiente${n === 1 ? "" : "s"}`, texto);
+      }
+      totalPrevio.current = n;
     } catch { /* se reintenta en el siguiente ciclo */ }
   }, 20_000);
 
@@ -144,6 +195,23 @@ export default function AlertaPendientes() {
             {mudo ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
         </div>
+
+        {/* Sin permiso el aviso no sale del navegador: se ofrece activarlo */}
+        {permiso === "default" && (
+          <button
+            onClick={pedirPermiso}
+            className="w-full mt-2.5 px-3 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+          >
+            <BellRing className="h-3.5 w-3.5" />
+            Activar avisos en el escritorio
+          </button>
+        )}
+        {permiso === "denied" && (
+          <p className="mt-2.5 text-[11px] text-white/80 leading-snug">
+            Los avisos del navegador están bloqueados. Actívalos desde el candado
+            de la barra de direcciones para verlos fuera de esta pestaña.
+          </p>
+        )}
 
         <div className="flex items-center gap-2 mt-3">
           <Link
