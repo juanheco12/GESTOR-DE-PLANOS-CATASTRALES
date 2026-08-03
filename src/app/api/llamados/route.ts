@@ -230,8 +230,11 @@ export async function POST(req: Request) {
         : `${nombre} necesita revisar ${ident}.`,
       url:   "/dashboard",
       tag:   "llamado-verificacion",
-      // La solicitud de verificación debe resaltar y quedarse en pantalla
-      ...(esCheckIn ? {} : { image: "/aviso-verificacion.png", requireInteraction: true }),
+      // La solicitud de verificación resalta, permanece en pantalla y al
+      // tocarla abre directamente el panel de llamados del digitalizador
+      ...(esCheckIn
+        ? {}
+        : { image: "/aviso-verificacion.png", requireInteraction: true, panel: "verificacion" as const }),
     }).catch((err) => console.error("[Push] llamado:", err));
 
     if (esCheckIn && !planExistente) {
