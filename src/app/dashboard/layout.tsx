@@ -24,6 +24,7 @@ import PushManager from "@/components/PushManager";
 import SessionGuard from "@/components/SessionGuard";
 import VerificacionPanel from "@/components/VerificacionPanel";
 import LlamarDigitalizadorPanel from "@/components/LlamarDigitalizadorPanel";
+import PerfilPanel from "@/components/PerfilPanel";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
@@ -129,6 +130,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {role === "ADMINISTRADOR" ? "Administrador" : role === "ENCARGADO" ? "Encargado" : role === "RADICADORA" ? "Radicador" : role === "EJECUTOR" ? "Ejecutor" : role === "DIGITALIZADOR" ? "Digitalizador" : role}
               </span>
             </div>
+            <PerfilPanel
+              nombre={session?.user?.name ?? "Usuario"}
+              correo={session?.user?.email ?? ""}
+              rol={role ?? ""}
+            />
           </div>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}

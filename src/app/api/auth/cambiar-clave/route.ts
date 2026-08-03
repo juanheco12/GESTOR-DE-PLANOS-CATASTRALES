@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { notificarAdmins } from "@/lib/notificarAdmins";
 
 export async function PATCH(req: Request) {
   try {
@@ -15,6 +16,20 @@ export async function PATCH(req: Request) {
 
     if (!currentPassword || !newPassword) {
       return NextResponse.json({ error: "Faltan contraseñas" }, { status: 400 });
+    }
+
+    if (newPassword.length < 6) {
+      return NextResponse.json(
+        { error: "La nueva contraseña debe tener al menos 6 caracteres" },
+        { status: 400 }
+      );
+    }
+
+    if (currentPassword === newPassword) {
+      return NextResponse.json(
+        { error: "La nueva contraseña debe ser distinta de la actual" },
+        { status: 400 }
+      );
     }
 
     const user = await prisma.user.findUnique({
@@ -33,9 +48,18 @@ export async function PATCH(req: Request) {
 
     const hashedNewPassword = await bcrypt.hash(newPassword, 8);
 
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { password: hashedNewPassword }
+    await prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: session.user.id },
+        data:  { password: hashedNewPassword },
+      });
+
+      // El administrador queda enterado de todo cambio de credenciales
+      await notificarAdmins(
+        tx,
+        `${user.name ?? user.email} cambió su contraseña de acceso.`,
+        { excluirUserId: session.user.id }
+      );
     });
 
     return NextResponse.json({ message: "Contraseña actualizada correctamente" }, { status: 200 });
