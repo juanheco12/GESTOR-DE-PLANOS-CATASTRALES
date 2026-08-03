@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ClipboardCheck, X, FileText, Check, XCircle,
   Trash2, Download, Upload, ImageIcon, Eye, BellRing, Clock, Loader2, PenLine, FileBarChart,
-  History,
+  History, Clipboard,
 } from "lucide-react";
 
 import { buildInformeMensual, type LlamadoInforme } from "@/lib/informeMensual";
@@ -514,20 +514,52 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
     }
   };
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Adjunta un archivo venga de donde venga: del selector o del portapapeles
+  const adjuntar = (file: File, nombreSugerido?: string) => {
     if (file.size > 2 * 1024 * 1024) {
       setFormError("El archivo no puede superar 2 MB");
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
-      setImagen({ nombre: file.name, data: reader.result as string });
+      setImagen({ nombre: nombreSugerido || file.name || "adjunto", data: reader.result as string });
       setFormError("");
     };
     reader.readAsDataURL(file);
   };
+
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) adjuntar(file);
+  };
+
+  // Ctrl+V sobre el formulario: pega la captura recortada con la
+  // herramienta de Windows sin tener que guardarla antes en disco.
+  useEffect(() => {
+    if (!open || !llamadoActivo) return;
+
+    const onPaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (const item of Array.from(items)) {
+        if (!item.type.startsWith("image/")) continue;
+        const file = item.getAsFile();
+        if (!file) continue;
+        e.preventDefault();
+        const sello = new Date().toLocaleString("es-CO", {
+          timeZone: "America/Bogota",
+          day: "2-digit", month: "2-digit", year: "numeric",
+          hour: "2-digit", minute: "2-digit",
+        }).replace(/[/:]/g, "-").replace(/,?\s+/g, " ");
+        const ext = item.type.split("/")[1]?.split("+")[0] || "png";
+        adjuntar(file, `Captura ${sello}.${ext}`);
+        return;
+      }
+    };
+
+    document.addEventListener("paste", onPaste);
+    return () => document.removeEventListener("paste", onPaste);
+  }, [open, llamadoActivo]);
 
   const resetForm = () => {
     setFmi(""); setRadicado(""); setCumple(null); setResultado(null);
@@ -1103,7 +1135,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                     Imagen del plano
-                    <span className="text-slate-400 text-xs font-normal ml-1">(PDF, JPG, PNG — máx. 2 MB)</span>
+                    <span className="text-slate-400 text-xs font-normal ml-1">(imagen o PDF — máx. 2 MB)</span>
                   </label>
                   <div
                     onClick={() => fileRef.current?.click()}
@@ -1124,14 +1156,22 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                     ) : (
                       <>
                         <Upload className="h-5 w-5 text-slate-400" />
-                        <span className="text-xs text-slate-500 dark:text-slate-400">Toca para adjuntar un archivo</span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          Toca para adjuntar un archivo
+                        </span>
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                          <Clipboard className="h-3 w-3 shrink-0" />
+                          o pega una captura con <kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[10px]">Ctrl</kbd>
+                          +
+                          <kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[10px]">V</kbd>
+                        </span>
                       </>
                     )}
                   </div>
                   <input
                     ref={fileRef}
                     type="file"
-                    accept=".pdf,.jpg,.jpeg,.png"
+                    accept="image/*,.pdf"
                     className="hidden"
                     onChange={handleFile}
                   />
