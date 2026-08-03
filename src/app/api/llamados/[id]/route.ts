@@ -161,28 +161,25 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           { status: 400 }
         );
       }
-      if (!body.receivedById) {
+      // Si el plano ya se registró por la vía normal, se enlaza en vez de
+      // duplicarlo: el trabajo del digitalizador debe quedar asociado igual.
+      const existente = await prisma.plan.findUnique({
+        where:  { radicado: rad },
+        select: { id: true },
+      });
+
+      // El receptor solo hace falta al crear: el plano existente ya lo tiene
+      if (!existente && !body.receivedById) {
         return NextResponse.json(
           { error: "Indica quién recibió el plano." },
           { status: 400 }
         );
       }
 
-      const duplicado = await prisma.plan.findUnique({
-        where:  { radicado: rad },
-        select: { id: true },
-      });
-      if (duplicado) {
-        return NextResponse.json(
-          { error: "Ya existe un plano registrado con este número de radicado." },
-          { status: 409 }
-        );
-      }
-
       const quien = session.user.name ?? session.user.email ?? "Ventanilla";
 
       const actualizado = await prisma.$transaction(async (tx) => {
-        const plan = await tx.plan.create({
+        const plan = existente ?? await tx.plan.create({
           data: {
             radicado:        rad,
             mutacion:        body.mutacion?.trim() || "Otro",
@@ -200,8 +197,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
           data: {
             planId:   plan.id,
             userId:   session.user.id,
-            accion:   "REGISTRO",
-            detalles: "Radicado en ventanilla tras concepto PROCEDE del digitalizador.",
+            accion:   existente ? "VERIFICACION" : "REGISTRO",
+            detalles: existente
+              ? "Asociado a la verificación previa del digitalizador (concepto PROCEDE)."
+              : "Radicado en ventanilla tras concepto PROCEDE del digitalizador.",
           },
         });
 
@@ -219,14 +218,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         if (llamado.digitalizadorId) {
           await tx.notification.create({
             data: {
-              message: `${quien} radicó el plano que aprobaste, con el número ${rad}.`,
+              message: existente
+                ? `${quien} asoció tu verificación al plano ${rad}, ya registrado en el sistema.`
+                : `${quien} radicó el plano que aprobaste, con el número ${rad}.`,
               userId:  llamado.digitalizadorId,
               planoId: plan.id,
             },
           });
         }
 
-        await notificarAdmins(tx, `${quien} radicó el plano ${rad} tras el visto bueno del digitalizador.`, {
+        await notificarAdmins(tx, existente
+          ? `${quien} asoció el plano ${rad} a la verificación del digitalizador.`
+          : `${quien} radicó el plano ${rad} tras el visto bueno del digitalizador.`, {
           planoId:       plan.id,
           excluirUserId: session.user.id,
         });
@@ -243,7 +246,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         }).catch((err) => console.error("[Push] radicar:", err));
       }
 
-      return NextResponse.json(actualizado);
+      return NextResponse.json({ ...actualizado, planoYaExistia: Boolean(existente) });
     }
 
     // ── Edición libre (solo administrador) ──
