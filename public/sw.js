@@ -1,4 +1,4 @@
-const CACHE = "catastro-v3";
+const CACHE = "catastro-v4";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(clients.claim()));
@@ -14,6 +14,8 @@ self.addEventListener("push", (event) => {
     body  = "",
     url   = "/dashboard",
     tag   = "catastro",
+    image,                    // banner grande, para los avisos que deben resaltar
+    requireInteraction = false,
   } = data;
 
   event.waitUntil(
@@ -22,7 +24,8 @@ self.addEventListener("push", (event) => {
         body,
         tag,
         renotify:  true,
-        requireInteraction: false,
+        requireInteraction,
+        ...(image ? { image, icon: image } : {}),
         data: { url },
       }),
       // Avisa a las pestañas abiertas para que refresquen al instante,
