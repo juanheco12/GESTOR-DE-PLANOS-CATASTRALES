@@ -175,8 +175,15 @@ model Verificacion {
   userId        String
   createdAt     DateTime @default(now())
 
+  // Verificación anterior del mismo folio que esta revisión subsana
+  subsanaId     String?
+
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   llamado       LlamadoVerificacion?
+  subsana       Verificacion?  @relation("Subsanacion", fields: [subsanaId], references: [id], onDelete: SetNull)
+  subsanadaPor  Verificacion[] @relation("Subsanacion")
+
+  @@index([fmi])
 }
 
 // Solicitud de ventanilla (radicador / encargado) para que el digitalizador

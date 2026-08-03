@@ -129,6 +129,24 @@ export async function POST() {
       `ALTER TABLE "Verificacion" ALTER COLUMN "radicado" DROP NOT NULL`
     );
 
+    // 10. Verificacion: enlace a la revisión anterior que se subsana
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Verificacion" ADD COLUMN IF NOT EXISTS "subsanaId" TEXT`
+    );
+    await prisma.$executeRawUnsafe(`
+      DO $$ BEGIN
+        ALTER TABLE "Verificacion"
+          ADD CONSTRAINT "Verificacion_subsanaId_fkey"
+          FOREIGN KEY ("subsanaId") REFERENCES "Verificacion"("id")
+          ON DELETE SET NULL ON UPDATE CASCADE;
+      EXCEPTION WHEN duplicate_object THEN NULL;
+      END $$;
+    `);
+    // Búsqueda por folio para detectar revisiones previas
+    await prisma.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS "Verificacion_fmi_idx" ON "Verificacion"("fmi")`
+    );
+
     return NextResponse.json({ ok: true, message: "Migraciones aplicadas correctamente." });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
