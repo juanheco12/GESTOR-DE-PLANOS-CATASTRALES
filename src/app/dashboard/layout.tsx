@@ -25,6 +25,7 @@ import SessionGuard from "@/components/SessionGuard";
 import VerificacionPanel from "@/components/VerificacionPanel";
 import LlamarDigitalizadorPanel from "@/components/LlamarDigitalizadorPanel";
 import PerfilPanel from "@/components/PerfilPanel";
+import AlertaPendientes from "@/components/AlertaPendientes";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession();
@@ -69,6 +70,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex">
       <SessionGuard />
       <InactivityLogout />
+
+      {/* Aviso insistente de trabajo sin atender */}
+      {(isDigitalizador || isAdministrador || role === "ENCARGADO") && <AlertaPendientes />}
 
       {sidebarOpen && (
         <div

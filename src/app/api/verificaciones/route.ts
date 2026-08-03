@@ -29,10 +29,16 @@ export async function GET() {
         imagenNombre:  true,
         // imagenData excluded — potentially large; fetched only for the report
         createdAt:     true,
+        subsanaId:     true,
+        subsana: {
+          select: {
+            id: true, createdAt: true, resultado: true, cumple: true, observaciones: true,
+          },
+        },
         // Tiempos del llamado de ventanilla, para medir la duración de la revisión
         llamado: {
           select: {
-            id: true, createdAt: true, tomadoEn: true, finalizadoEn: true,
+            id: true, radicado: true, createdAt: true, tomadoEn: true, finalizadoEn: true,
             esDerechoPeticion: true, formato: true, planId: true,
             plan: { select: { id: true, radicado: true, mutacion: true } },
             solicitante: { select: { name: true, email: true } },
@@ -52,7 +58,7 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   try {
-    const { fmi, radicado, cumple, resultado, observaciones, imagenNombre, imagenData, llamadoId } =
+    const { fmi, radicado, cumple, resultado, observaciones, imagenNombre, imagenData, llamadoId, subsanaId } =
       await req.json();
 
     // Solo el concepto técnico es obligatorio: el plano puede llegar a
@@ -92,6 +98,7 @@ export async function POST(req: Request) {
         data: {
           fmi:           fmi?.trim()      || null,
           radicado:      radicado?.trim() || null,
+          subsanaId:     subsanaId        || null,
           cumple,
           resultado:     concepto,
           observaciones: observaciones?.trim() || null,

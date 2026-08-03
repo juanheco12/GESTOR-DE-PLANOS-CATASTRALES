@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
-  ClipboardCheck, X, Plus, FileText, Check, XCircle,
+  ClipboardCheck, X, FileText, Check, XCircle,
   Trash2, Download, Upload, ImageIcon, Eye, BellRing, Clock, Loader2, PenLine, FileBarChart,
+  History,
 } from "lucide-react";
 
 import { buildInformeMensual, type LlamadoInforme } from "@/lib/informeMensual";
@@ -33,6 +34,37 @@ interface Llamado {
   plan?:   { id: string; radicado: string; mutacion: string } | null;
 }
 
+interface Previa {
+  id:            string;
+  radicado:      string | null;
+  cumple:        boolean;
+  resultado:     string | null;
+  observaciones: string | null;
+  createdAt:     string;
+  subsanaId:     string | null;
+  user:    { name: string | null; email: string | null } | null;
+  llamado: { plan: { radicado: string } | null } | null;
+}
+
+// Marca para predios sin folio de matrícula
+const SIN_FOLIO = "N/A";
+
+// Hora local de Bogotá, formato corto
+const hora = (iso: string) =>
+  new Date(iso).toLocaleTimeString("es-CO", {
+    timeZone: "America/Bogota", hour: "2-digit", minute: "2-digit",
+  });
+
+// Cronómetro: milisegundos a mm:ss o h:mm:ss
+function cronometro(ms: number): string {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const seg = s % 60;
+  const dd = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${dd(m)}:${dd(seg)}` : `${dd(m)}:${dd(seg)}`;
+}
+
 const FORMATO_LABEL: Record<string, string> = {
   FISICO: "Físico (Plano impreso)",
   CD:     "CD",
@@ -50,8 +82,14 @@ interface Verificacion {
   imagenNombre:  string | null;
   createdAt:     string;
   imagenData?:   string | null;
+  subsanaId?:    string | null;
+  subsana?: {
+    id: string; createdAt: string; resultado: string | null;
+    cumple: boolean; observaciones: string | null;
+  } | null;
   llamado?: {
     id:                string;
+    radicado:          string | null;
     createdAt:         string;
     tomadoEn:          string | null;
     finalizadoEn:      string | null;
@@ -82,6 +120,12 @@ const CONCEPTO_ICONO: Record<Concepto, string> = {
   NO_PROCEDE:      "✘ NO PROCEDE",
   REQUIERE_AJUSTE: "▲ REQUIERE AJUSTE",
 };
+
+// Radicado a mostrar: el que asignó ventanilla al radicar tiene prioridad
+// sobre el que el digitalizador anotó durante la revisión.
+function radicadoDe(v: Verificacion): string {
+  return v.llamado?.plan?.radicado ?? v.radicado ?? v.llamado?.radicado ?? "—";
+}
 
 // Minutos efectivos entre que el digitalizador toma el plano y lo cierra
 function minutosRevision(v: Verificacion): number | null {
@@ -172,7 +216,7 @@ function buildReportHTML(
         timeZone: "America/Bogota", day: "2-digit", month: "2-digit", year: "numeric",
       })}</td>
       <td>${escHtml(v.fmi ?? "—")}</td>
-      <td>${escHtml(v.radicado ?? "—")}</td>
+      <td>${escHtml(radicadoDe(v))}</td>
       <td class="${CONCEPTO_CSS[concepto(v)]}">${CONCEPTO_ICONO[concepto(v)]}</td>
       <td>${duracion(v)}</td>
       <td>${escHtml(v.llamado?.formato ?? "—")}</td>
@@ -220,7 +264,7 @@ function buildReportHTML(
       <section class="anexo">
         <h2>Anexo ${i + 1} — ${v.fmi ? `FMI ${escHtml(v.fmi)}` : v.radicado ? `Radicado ${escHtml(v.radicado)}` : "Sin identificar"}</h2>
         <table class="ficha">
-          <tr><th>Radicado</th><td>${escHtml(v.radicado ?? "—")}</td></tr>
+          <tr><th>Radicado</th><td>${escHtml(radicadoDe(v))}</td></tr>
           <tr><th>Fecha</th><td>${new Date(v.createdAt).toLocaleDateString("es-CO", {
             timeZone: "America/Bogota", day: "2-digit", month: "long", year: "numeric",
           })}</td></tr>
@@ -325,7 +369,9 @@ function escHtml(s: string) {
 // ────────────────────────────────────────────────────────────
 export default function VerificacionPanel({ userName }: { userName: string }) {
   const [open,        setOpen]        = useState(false);
-  const [tab,         setTab]         = useState<"llamados" | "nueva" | "historial">("llamados");
+  // El digitalizador no crea verificaciones sueltas: solo atiende llamados.
+  // El formulario aparece dentro de "llamados" al tomar uno.
+  const [tab,         setTab]         = useState<"llamados" | "historial">("llamados");
   const [verifs,      setVerifs]      = useState<Verificacion[]>([]);
   const [loadingList, setLoadingList] = useState(false);
   const [loadingImg,  setLoadingImg]  = useState<string | null>(null);
@@ -344,6 +390,14 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   const [pendientes,    setPendientes]    = useState(0);
   const [tomando,       setTomando]       = useState<string | null>(null);
   const [llamadoActivo, setLlamadoActivo] = useState<Llamado | null>(null);
+
+  // Cronómetro de la revisión en curso
+  const [ahora, setAhora] = useState(() => Date.now());
+
+  // Revisiones anteriores del mismo folio, para subsanar la observación previa
+  const [previas,    setPrevias]    = useState<Previa[]>([]);
+  const [buscandoP,  setBuscandoP]  = useState(false);
+  const [subsanaId,  setSubsanaId]  = useState<string | null>(null);
 
   // form
   const [fmi,          setFmi]          = useState("");
@@ -376,6 +430,37 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
       }
     } catch { /* silencioso: se reintenta en el siguiente ciclo */ }
   }, 20_000);
+
+  // Avanza el cronómetro solo mientras hay una revisión abierta
+  useEffect(() => {
+    if (!llamadoActivo?.tomadoEn) return;
+    setAhora(Date.now());
+    const t = setInterval(() => setAhora(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, [llamadoActivo?.id, llamadoActivo?.tomadoEn]);
+
+  // Busca revisiones anteriores del folio que se está digitando
+  useEffect(() => {
+    const folio = fmi.trim();
+    if (!llamadoActivo || !folio || folio.toUpperCase() === SIN_FOLIO) {
+      setPrevias([]);
+      return;
+    }
+    let cancelado = false;
+    setBuscandoP(true);
+    const t = setTimeout(async () => {
+      try {
+        const res  = await fetch(`/api/verificaciones/historial?fmi=${encodeURIComponent(folio)}`);
+        const data = await res.json();
+        if (!cancelado && Array.isArray(data)) setPrevias(data);
+      } catch {
+        if (!cancelado) setPrevias([]);
+      } finally {
+        if (!cancelado) setBuscandoP(false);
+      }
+    }, 500);   // espera a que termine de escribir
+    return () => { cancelado = true; clearTimeout(t); setBuscandoP(false); };
+  }, [fmi, llamadoActivo?.id]);
 
   const loadLlamados = async () => {
     setLoadingLlam(true);
@@ -411,7 +496,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
       setImagen(null);
       setFormError("");
       setSuccess(false);
-      setTab("nueva");
+      // el formulario se muestra dentro de la pestaña de llamados
       setPendientes((n) => Math.max(0, n - 1));
     } finally {
       setTomando(null);
@@ -449,12 +534,17 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
     setObservaciones(""); setImagen(null);
     setFormError(""); setSuccess(false);
     setLlamadoActivo(null);
+    setPrevias([]); setSubsanaId(null);
     if (fileRef.current) fileRef.current.value = "";
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // FMI y radicado son opcionales: el plano puede llegar sin radicar
+    // El folio identifica el predio; si no tiene, se marca N/A explícitamente
+    if (!fmi.trim()) {
+      setFormError('Escribe el folio de matrícula, o marca N/A si el predio no tiene');
+      return;
+    }
     if (resultado === null) { setFormError("Seleccione el concepto técnico"); return; }
     // El concepto desfavorable es el respaldo documental: exige observación
     if (resultado !== "PROCEDE" && !observaciones.trim()) {
@@ -474,6 +564,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
           imagenNombre:  imagen?.nombre || null,
           imagenData:    imagen?.data   || null,
           llamadoId:     llamadoActivo?.id || null,
+          subsanaId,
         }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Error"); }
@@ -611,7 +702,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
     <>
       {/* ── Floating Action Button ── */}
       <button
-        onClick={() => { setOpen(true); setTab(pendientes > 0 ? "llamados" : "nueva"); }}
+        onClick={() => { setOpen(true); setTab("llamados"); }}
         className={`fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full text-white shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center ${
           pendientes > 0 ? "bg-amber-500 hover:bg-amber-600 animate-pulse" : "bg-teal-700 hover:bg-teal-800"
         }`}
@@ -655,7 +746,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
 
             {/* Tabs */}
             <div className="flex border-b border-slate-200 dark:border-slate-800 shrink-0">
-              {(["llamados", "nueva", "historial"] as const).map((t) => (
+              {(["llamados", "historial"] as const).map((t) => (
                 <button
                   key={t}
                   onClick={() => setTab(t)}
@@ -667,10 +758,8 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                 >
                   {t === "llamados"
                     ? <BellRing className="h-4 w-4 shrink-0" />
-                    : t === "nueva"
-                      ? <Plus className="h-4 w-4 shrink-0" />
-                      : <FileText className="h-4 w-4 shrink-0" />}
-                  {t === "llamados" ? "Llamados" : t === "nueva" ? "Nueva" : "Historial"}
+                    : <FileText className="h-4 w-4 shrink-0" />}
+                  {t === "llamados" ? "Llamados" : "Historial"}
                   {t === "llamados" && pendientes > 0 && (
                     <span className="ml-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-red-600 text-white text-[10px] font-bold flex items-center justify-center">
                       {pendientes}
@@ -681,7 +770,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
             </div>
 
             {/* ── TAB: Llamados de ventanilla ── */}
-            {tab === "llamados" && (
+            {tab === "llamados" && !llamadoActivo && (
               <div className="flex-1 overflow-y-auto p-5 space-y-2.5">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -803,7 +892,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                             setFmi(l.fmi ?? "");
                             setCumple(null); setResultado(null); setObservaciones(""); setImagen(null);
                             setFormError(""); setSuccess(false);
-                            setTab("nueva");
+
                           }}
                           className="mt-2.5 w-full py-2 border border-blue-500 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg text-xs font-semibold transition-colors"
                         >
@@ -817,24 +906,41 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
             )}
 
             {/* ── TAB: Nueva Verificación ── */}
-            {tab === "nueva" && (
+            {tab === "llamados" && llamadoActivo && (
               <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
 
                 {llamadoActivo && (
-                  <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
-                    <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
-                      <BellRing className="h-3.5 w-3.5 shrink-0" />
-                      Atendiendo llamado de {llamadoActivo.solicitante?.name ?? "ventanilla"}
-                    </p>
-                    <p className="text-xs text-blue-700 dark:text-blue-400 mt-1 leading-snug">
-                      Al guardar, se le notifica el resultado y el llamado queda cerrado.
-                    </p>
+                  <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
+                          <BellRing className="h-3.5 w-3.5 shrink-0" />
+                          Revisando plano de {llamadoActivo.solicitante?.name ?? "ventanilla"}
+                        </p>
+                        <p className="text-xs text-blue-700 dark:text-blue-400 mt-1 leading-snug">
+                          Al guardar se le notifica el resultado y el llamado queda cerrado.
+                        </p>
+                      </div>
+
+                      {/* Cronómetro de la revisión en curso */}
+                      {llamadoActivo.tomadoEn && (
+                        <div className="shrink-0 text-center px-3 py-1.5 rounded-lg bg-blue-600 text-white">
+                          <p className="text-base font-bold tabular-nums leading-none">
+                            {cronometro(ahora - new Date(llamadoActivo.tomadoEn).getTime())}
+                          </p>
+                          <p className="text-[9px] uppercase tracking-wide opacity-80 mt-0.5">
+                            en revisión
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
                     <button
                       type="button"
-                      onClick={() => { setLlamadoActivo(null); setFmi(""); setRadicado(""); }}
-                      className="text-xs text-blue-600 dark:text-blue-400 underline mt-1.5"
+                      onClick={() => { resetForm(); loadLlamados(); }}
+                      className="text-xs text-blue-600 dark:text-blue-400 underline mt-2"
                     >
-                      Desvincular del llamado
+                      ← Volver a los llamados
                     </button>
                   </div>
                 )}
@@ -853,16 +959,97 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                 {/* FMI */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    FMI <span className="text-slate-400 text-xs font-normal">(Folio de Matrícula Inmobiliaria — opcional)</span>
+                    FMI <span className="text-slate-400 text-xs font-normal">(Folio de Matrícula Inmobiliaria)</span>
+                    <span className="text-red-500 ml-1">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={fmi}
-                    onChange={(e) => setFmi(e.target.value)}
-                    placeholder="Ej: 060-123456"
-                    className={inputClass}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={fmi}
+                      onChange={(e) => setFmi(e.target.value)}
+                      placeholder="Ej: 060-123456"
+                      disabled={fmi.trim().toUpperCase() === SIN_FOLIO}
+                      className={`${inputClass} pr-16 ${
+                        fmi.trim().toUpperCase() === SIN_FOLIO ? "opacity-60" : ""
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFmi(fmi.trim().toUpperCase() === SIN_FOLIO ? "" : SIN_FOLIO)
+                      }
+                      title="El predio no tiene folio de matrícula"
+                      aria-pressed={fmi.trim().toUpperCase() === SIN_FOLIO}
+                      className={`absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors ${
+                        fmi.trim().toUpperCase() === SIN_FOLIO
+                          ? "bg-slate-600 text-white"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      N/A
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                    {fmi.trim().toUpperCase() === SIN_FOLIO
+                      ? "Registrado como predio sin folio de matrícula."
+                      : "Si el predio no tiene folio, toca N/A."}
+                  </p>
                 </div>
+
+                {/* Revisiones anteriores del mismo folio */}
+                {buscandoP && (
+                  <p className="text-xs text-slate-400 flex items-center gap-1.5">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Buscando revisiones anteriores…
+                  </p>
+                )}
+                {previas.length > 0 && (
+                  <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 space-y-2">
+                    <p className="text-xs font-bold text-amber-800 dark:text-amber-300 flex items-center gap-1.5">
+                      <History className="h-3.5 w-3.5 shrink-0" />
+                      Este folio ya fue verificado {previas.length} vez{previas.length !== 1 ? "ces" : ""}
+                    </p>
+                    {previas.slice(0, 3).map((p) => {
+                      const c = p.resultado ?? (p.cumple ? "PROCEDE" : "NO_PROCEDE");
+                      const fecha = new Date(p.createdAt).toLocaleDateString("es-CO", {
+                        timeZone: "America/Bogota", day: "2-digit", month: "long", year: "numeric",
+                      });
+                      return (
+                        <div key={p.id} className="text-xs bg-white/70 dark:bg-slate-900/50 rounded-lg p-2">
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <span className={`font-bold ${
+                              c === "PROCEDE" ? "text-emerald-700 dark:text-emerald-400"
+                                : c === "REQUIERE_AJUSTE" ? "text-amber-700 dark:text-amber-400"
+                                : "text-red-700 dark:text-red-400"
+                            }`}>
+                              {CONCEPTO_LABEL[c]}
+                            </span>
+                            <span className="text-slate-500 dark:text-slate-400">{fecha}</span>
+                          </div>
+                          {p.observaciones && (
+                            <p className="text-slate-600 dark:text-slate-400 mt-1 leading-snug">
+                              {p.observaciones}
+                            </p>
+                          )}
+                          {c !== "PROCEDE" && (
+                            <button
+                              type="button"
+                              onClick={() => setSubsanaId(subsanaId === p.id ? null : p.id)}
+                              className={`mt-1.5 px-2 py-1 rounded-md text-[11px] font-semibold transition-colors ${
+                                subsanaId === p.id
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/40"
+                              }`}
+                            >
+                              {subsanaId === p.id
+                                ? `✓ Subsana la observación del ${fecha}`
+                                : "Marcar como subsanada"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
 
                 {/* Radicado */}
                 <div>
@@ -1120,6 +1307,44 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                               <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5 flex items-center gap-1">
                                 <Check className="h-3 w-3 shrink-0" />
                                 Radicado en el sistema: <strong>{v.llamado.plan.radicado}</strong>
+                              </p>
+                            )}
+
+                            {/* Horas de recepción y cierre de la revisión */}
+                            {(v.llamado?.tomadoEn || v.llamado?.finalizadoEn) && (
+                              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 flex items-center gap-1 flex-wrap">
+                                <Clock className="h-3 w-3 shrink-0" />
+                                {v.llamado?.tomadoEn && (
+                                  <span>Recibido {hora(v.llamado.tomadoEn)}</span>
+                                )}
+                                {v.llamado?.finalizadoEn && (
+                                  <>
+                                    <span className="text-slate-300 dark:text-slate-600">·</span>
+                                    <span>Finalizado {hora(v.llamado.finalizadoEn)}</span>
+                                  </>
+                                )}
+                                {duracion(v) !== "—" && (
+                                  <>
+                                    <span className="text-slate-300 dark:text-slate-600">·</span>
+                                    <span className="font-semibold text-slate-600 dark:text-slate-300">
+                                      {duracion(v)}
+                                    </span>
+                                  </>
+                                )}
+                              </p>
+                            )}
+
+                            {/* Subsanación de una observación anterior */}
+                            {v.subsana && (
+                              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-1 flex items-start gap-1">
+                                <Check className="h-3 w-3 shrink-0 mt-px" />
+                                <span>
+                                  Subsana la observación del{" "}
+                                  {new Date(v.subsana.createdAt).toLocaleDateString("es-CO", {
+                                    timeZone: "America/Bogota",
+                                    day: "2-digit", month: "long", year: "numeric",
+                                  })}
+                                </span>
                               </p>
                             )}
                             {v.observaciones && (
