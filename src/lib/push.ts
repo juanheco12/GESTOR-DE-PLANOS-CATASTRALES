@@ -15,6 +15,8 @@ export interface PushPayload {
   image?: string;
   /** La notificación permanece hasta que el usuario la cierre */
   requireInteraction?: boolean;
+  /** Panel flotante que se abre al tocar la notificación */
+  panel?: "verificacion";
 }
 
 async function deliver(subId: string, endpoint: string, p256dh: string, auth: string, payload: PushPayload) {

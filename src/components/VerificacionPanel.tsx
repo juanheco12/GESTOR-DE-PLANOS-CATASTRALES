@@ -431,6 +431,45 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
     } catch { /* silencioso: se reintenta en el siguiente ciclo */ }
   }, 20_000);
 
+  // El panel se abre solo al tocar la notificación: por mensaje del service
+  // worker si la pestaña ya estaba abierta, o por el parámetro de la URL si
+  // el navegador tuvo que abrir una nueva.
+  useEffect(() => {
+    const abrirEnLlamados = () => {
+      setOpen(true);
+      setTab("llamados");
+      setLlamadoActivo(null);
+      loadLlamados();
+    };
+
+    const onMensaje = (e: MessageEvent) => {
+      if (e.data?.type === "catastro-abrir-panel" && e.data?.panel === "verificacion") {
+        abrirEnLlamados();
+      }
+    };
+    navigator.serviceWorker?.addEventListener("message", onMensaje);
+
+    // Mismo efecto desde el botón "Atender ahora" del aviso en pantalla
+    const onEvento = (e: Event) => {
+      if ((e as CustomEvent).detail?.panel === "verificacion") abrirEnLlamados();
+    };
+    window.addEventListener("catastro-abrir-panel", onEvento);
+
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("panel") === "verificacion") {
+      abrirEnLlamados();
+      // Se limpia para que al recargar no vuelva a abrirse
+      params.delete("panel");
+      const query = params.toString();
+      window.history.replaceState({}, "", window.location.pathname + (query ? `?${query}` : ""));
+    }
+
+    return () => {
+      navigator.serviceWorker?.removeEventListener("message", onMensaje);
+      window.removeEventListener("catastro-abrir-panel", onEvento);
+    };
+  }, []);
+
   // Avanza el cronómetro solo mientras hay una revisión abierta
   useEffect(() => {
     if (!llamadoActivo?.tomadoEn) return;

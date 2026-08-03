@@ -47,7 +47,8 @@ export default function AlertaPendientes() {
         requireInteraction: true,      // permanece hasta que el usuario la cierre
         image: IMAGEN,                 // banner naranja dentro de la notificación
         icon:  IMAGEN,
-        data: { url: "/dashboard" },
+        // Al tocarla se abre el panel de verificación, no solo el escritorio
+        data: { url: "/dashboard", panel: "verificacion" },
       };
       if (reg) await reg.showNotification(titulo, opciones);
       else new Notification(titulo, opciones);
@@ -164,7 +165,13 @@ export default function AlertaPendientes() {
         <div className="flex items-center gap-2 mt-3">
           <Link
             href={principal?.url ?? "/dashboard"}
-            onClick={() => setPospuesto(Date.now() + POSPONER_MS)}
+            onClick={() => {
+              setPospuesto(Date.now() + POSPONER_MS);
+              // Abre el panel flotante de verificación si esta vista lo tiene
+              window.dispatchEvent(
+                new CustomEvent("catastro-abrir-panel", { detail: { panel: "verificacion" } })
+              );
+            }}
             className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl bg-white text-amber-700 text-xs font-bold hover:bg-amber-50 transition-colors"
           >
             Atender ahora <ArrowRight className="h-3.5 w-3.5" />

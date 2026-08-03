@@ -1,4 +1,4 @@
-const CACHE = "catastro-v4";
+const CACHE = "catastro-v5";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => e.waitUntil(clients.claim()));
@@ -16,6 +16,7 @@ self.addEventListener("push", (event) => {
     tag   = "catastro",
     image,                    // banner grande, para los avisos que deben resaltar
     requireInteraction = false,
+    panel,                    // panel flotante a abrir al tocar la notificación
   } = data;
 
   event.waitUntil(
@@ -26,7 +27,7 @@ self.addEventListener("push", (event) => {
         renotify:  true,
         requireInteraction,
         ...(image ? { image, icon: image } : {}),
-        data: { url },
+        data: { url, panel },
       }),
       // Avisa a las pestañas abiertas para que refresquen al instante,
       // sin esperar al siguiente ciclo de sondeo.
@@ -41,19 +42,29 @@ self.addEventListener("push", (event) => {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || "/dashboard";
+  const { url = "/dashboard", panel } = event.notification.data || {};
+
+  // Con panel, la URL lleva el parámetro que lo abre al cargar
+  const destino = panel
+    ? `${url}${url.includes("?") ? "&" : "?"}panel=${encodeURIComponent(panel)}`
+    : url;
 
   event.waitUntil(
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((list) => {
         for (const client of list) {
-          if (client.url.includes(self.location.origin) && "focus" in client) {
-            client.navigate(url);
+          if (!client.url.includes(self.location.origin) || !("focus" in client)) continue;
+
+          // La pestaña ya está abierta: se le pide abrir el panel sin recargar
+          if (panel) {
+            client.postMessage({ type: "catastro-abrir-panel", panel });
             return client.focus();
           }
+          client.navigate(url);
+          return client.focus();
         }
-        if (clients.openWindow) return clients.openWindow(url);
+        if (clients.openWindow) return clients.openWindow(destino);
       })
   );
 });
