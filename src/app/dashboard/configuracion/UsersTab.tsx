@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck, KeyRound, Mail, Pencil, UserCog } from "lucide-react";
+import { signIn } from "next-auth/react";
+import { UserPlus, Ban, CheckCircle2, Trash2, ShieldCheck, KeyRound, Mail, Pencil, UserCog, LogIn } from "lucide-react";
 
 const ROLE_OPTIONS = [
   { value: "ADMINISTRADOR",  label: "Administrador" },
@@ -197,6 +198,32 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
     }
   };
 
+  // Entra a la cuenta de otro usuario sin cambiarle la contraseña
+  const handleEntrarComo = async (userId: string, nombre: string) => {
+    if (!confirm(
+      `Vas a ver el sistema como ${nombre}.\n\n` +
+      `Se cerrará tu sesión de administrador y quedará registrado en la auditoría. ` +
+      `Para volver a la tuya tendrás que iniciar sesión de nuevo.\n\n¿Continuar?`
+    )) return;
+
+    setLoadingAction(`ENTRAR_${userId}`);
+    try {
+      const res  = await fetch("/api/admin/suplantar", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo entrar a la cuenta");
+
+      // El vale vence en un minuto: se canjea de inmediato
+      await signIn("suplantar", { vale: data.vale, callbackUrl: "/dashboard" });
+    } catch (err: any) {
+      alert(err.message);
+      setLoadingAction(null);
+    }
+  };
+
   const handleDelete = async (userId: string) => {
     if (!confirm("⚠️ Solo elimina usuarios sin registros en el sistema (sin firmas ni historial). ¿Deseas continuar?")) return;
 
@@ -344,6 +371,16 @@ export default function UsersTab({ initialUsers }: { initialUsers: any[] }) {
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-2 items-end">
                       <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => handleEntrarComo(user.id, user.name ?? user.email)}
+                          disabled={loadingAction === `ENTRAR_${user.id}`}
+                          title="Ver el sistema como este usuario, sin cambiarle la contraseña"
+                          className="text-sm font-medium text-emerald-600 dark:text-emerald-400 hover:underline inline-flex items-center gap-1 disabled:opacity-50"
+                        >
+                          <LogIn className="h-3.5 w-3.5" />
+                          {loadingAction === `ENTRAR_${user.id}` ? "Entrando…" : "Entrar como"}
+                        </button>
+                        <span className="text-slate-300 dark:text-slate-700">|</span>
                         <button
                           onClick={() => { setChangingRoleFor(changingRoleFor === user.id ? null : user.id); setNewRole(user.role ?? ""); setRoleError(""); setChangingNameFor(null); setChangingEmailFor(null); setChangingPwdFor(null); }}
                           className="text-sm font-medium text-cyan-600 dark:text-cyan-400 hover:underline inline-flex items-center gap-1"
