@@ -182,6 +182,12 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
     e.preventDefault();
     // Sin DP el llamado es solo un aviso al digitalizador: no exige datos.
     // Con DP sí, porque se registra un plano y el radicado lo identifica.
+    // El folio identifica el predio y permite detectar planos ya revisados;
+    // si no tiene, se marca N/A de forma explícita.
+    if (!fmi.trim()) {
+      setError("Escribe el folio de matrícula, o marca N/A si el predio no tiene");
+      return;
+    }
     if (checkIn && !radicado.trim()) {
       setError("El derecho de petición requiere el número de radicado");
       return;
@@ -454,7 +460,8 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    FMI <span className="text-slate-400 text-xs font-normal">(opcional)</span>
+                    FMI <span className="text-slate-400 text-xs font-normal">(Folio de Matrícula Inmobiliaria)</span>
+                    <span className="text-red-500 ml-1">*</span>
                   </label>
                   <div className="relative">
                     <input
