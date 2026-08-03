@@ -11,6 +11,10 @@ export interface PushPayload {
   body:  string;
   url?:  string;
   tag?:  string;
+  /** Banner grande dentro de la notificación, para los avisos que deben resaltar */
+  image?: string;
+  /** La notificación permanece hasta que el usuario la cierre */
+  requireInteraction?: boolean;
 }
 
 async function deliver(subId: string, endpoint: string, p256dh: string, auth: string, payload: PushPayload) {

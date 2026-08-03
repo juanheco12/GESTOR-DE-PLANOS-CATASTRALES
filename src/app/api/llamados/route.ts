@@ -224,12 +224,14 @@ export async function POST(req: Request) {
 
     // Push fuera de la transacción — que un fallo de red no revierta el llamado
     await sendPushToRoles(["DIGITALIZADOR"], {
-      title: esCheckIn ? "Derecho de petición registrado" : "Verificación solicitada",
+      title: esCheckIn ? "Derecho de petición registrado" : "Plano por verificar",
       body:  esCheckIn
         ? `${nombre} dejó registrado un derecho de petición (${ident}).`
         : `${nombre} necesita revisar ${ident}.`,
       url:   "/dashboard",
       tag:   "llamado-verificacion",
+      // La solicitud de verificación debe resaltar y quedarse en pantalla
+      ...(esCheckIn ? {} : { image: "/aviso-verificacion.png", requireInteraction: true }),
     }).catch((err) => console.error("[Push] llamado:", err));
 
     if (esCheckIn && !planExistente) {
