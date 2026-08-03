@@ -161,8 +161,10 @@ model PushSubscription {
 
 model Verificacion {
   id            String   @id @default(cuid())
-  fmi           String
-  radicado      String
+  // Opcionales: el plano puede llegar a revisión sin radicar todavía.
+  // El radicado lo asigna ventanilla después, al radicarlo.
+  fmi           String?
+  radicado      String?
   cumple        Boolean
   // Concepto técnico: PROCEDE | NO_PROCEDE | REQUIERE_AJUSTE.
   // `cumple` se conserva como resumen booleano para el histórico.
