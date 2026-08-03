@@ -121,6 +121,14 @@ export async function POST() {
       END $$;
     `);
 
+    // 9. Verificacion: FMI y radicado dejan de ser obligatorios
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Verificacion" ALTER COLUMN "fmi" DROP NOT NULL`
+    );
+    await prisma.$executeRawUnsafe(
+      `ALTER TABLE "Verificacion" ALTER COLUMN "radicado" DROP NOT NULL`
+    );
+
     return NextResponse.json({ ok: true, message: "Migraciones aplicadas correctamente." });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

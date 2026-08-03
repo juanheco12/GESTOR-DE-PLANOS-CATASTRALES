@@ -55,8 +55,10 @@ export async function POST(req: Request) {
     const { fmi, radicado, cumple, resultado, observaciones, imagenNombre, imagenData, llamadoId } =
       await req.json();
 
-    if (!fmi?.trim() || !radicado?.trim() || cumple === undefined || cumple === null) {
-      return NextResponse.json({ error: "FMI, radicado y resultado son requeridos" }, { status: 400 });
+    // Solo el concepto técnico es obligatorio: el plano puede llegar a
+    // revisión sin radicar, y el radicado se asigna después en ventanilla.
+    if (cumple === undefined || cumple === null) {
+      return NextResponse.json({ error: "El concepto técnico es requerido" }, { status: 400 });
     }
 
     const RESULTADOS = ["PROCEDE", "NO_PROCEDE", "REQUIERE_AJUSTE"];
@@ -88,8 +90,8 @@ export async function POST(req: Request) {
     const verif = await prisma.$transaction(async (tx) => {
       const creada = await tx.verificacion.create({
         data: {
-          fmi:           fmi.trim(),
-          radicado:      radicado.trim(),
+          fmi:           fmi?.trim()      || null,
+          radicado:      radicado?.trim() || null,
           cumple,
           resultado:     concepto,
           observaciones: observaciones?.trim() || null,
@@ -120,7 +122,11 @@ export async function POST(req: Request) {
       const quien = session.user.name ?? session.user.email ?? "El digitalizador";
       await notificarAdmins(
         tx,
-        `${quien} emitió concepto ${CONCEPTO_LABEL[concepto]} para el radicado ${radicado.trim()}.`,
+        `${quien} emitió concepto ${CONCEPTO_LABEL[concepto]}${
+          radicado?.trim() ? ` para el radicado ${radicado.trim()}`
+            : fmi?.trim()  ? ` para el FMI ${fmi.trim()}`
+            : " para un plano de ventanilla"
+        }.`,
         { excluirUserId: session.user.id }
       );
 

@@ -42,8 +42,8 @@ const FORMATO_LABEL: Record<string, string> = {
 
 interface Verificacion {
   id:            string;
-  fmi:           string;
-  radicado:      string;
+  fmi:           string | null;
+  radicado:      string | null;
   cumple:        boolean;
   resultado?:    string | null;
   observaciones: string | null;
@@ -171,8 +171,8 @@ function buildReportHTML(
       <td>${new Date(v.createdAt).toLocaleDateString("es-CO", {
         timeZone: "America/Bogota", day: "2-digit", month: "2-digit", year: "numeric",
       })}</td>
-      <td>${escHtml(v.fmi)}</td>
-      <td>${escHtml(v.radicado)}</td>
+      <td>${escHtml(v.fmi ?? "—")}</td>
+      <td>${escHtml(v.radicado ?? "—")}</td>
       <td class="${CONCEPTO_CSS[concepto(v)]}">${CONCEPTO_ICONO[concepto(v)]}</td>
       <td>${duracion(v)}</td>
       <td>${escHtml(v.llamado?.formato ?? "—")}</td>
@@ -215,12 +215,12 @@ function buildReportHTML(
       const visor = esPdf
         ? `<embed src="${v.imagenData}" type="application/pdf" class="doc"/>
            <p class="nota">Documento PDF adjunto. Si no se visualiza al imprimir, ábrelo desde el historial con el botón "Ver".</p>`
-        : `<img src="${v.imagenData}" alt="Plano ${escHtml(v.fmi)}" class="doc"/>`;
+        : `<img src="${v.imagenData}" alt="Plano ${escHtml(v.fmi ?? "sin FMI")}" class="doc"/>`;
       return `
       <section class="anexo">
-        <h2>Anexo ${i + 1} — FMI ${escHtml(v.fmi)}</h2>
+        <h2>Anexo ${i + 1} — ${v.fmi ? `FMI ${escHtml(v.fmi)}` : v.radicado ? `Radicado ${escHtml(v.radicado)}` : "Sin identificar"}</h2>
         <table class="ficha">
-          <tr><th>Radicado</th><td>${escHtml(v.radicado)}</td></tr>
+          <tr><th>Radicado</th><td>${escHtml(v.radicado ?? "—")}</td></tr>
           <tr><th>Fecha</th><td>${new Date(v.createdAt).toLocaleDateString("es-CO", {
             timeZone: "America/Bogota", day: "2-digit", month: "long", year: "numeric",
           })}</td></tr>
@@ -454,8 +454,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fmi.trim())     { setFormError("El FMI es requerido");             return; }
-    if (!radicado.trim()){ setFormError("El número de radicado es requerido"); return; }
+    // FMI y radicado son opcionales: el plano puede llegar sin radicar
     if (resultado === null) { setFormError("Seleccione el concepto técnico"); return; }
     // El concepto desfavorable es el respaldo documental: exige observación
     if (resultado !== "PROCEDE" && !observaciones.trim()) {
@@ -523,7 +522,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
 <header>
   <div>
     <h1>${nombre}</h1>
-    <p class="sub">FMI ${escHtml(data.fmi)} &nbsp;·&nbsp; Radicado ${escHtml(data.radicado)} &nbsp;·&nbsp; ${data.cumple ? "PROCEDE" : "NO PROCEDE"}</p>
+    <p class="sub">FMI ${escHtml(data.fmi ?? "—")} &nbsp;·&nbsp; Radicado ${escHtml(data.radicado ?? "—")} &nbsp;·&nbsp; ${data.cumple ? "PROCEDE" : "NO PROCEDE"}</p>
   </div>
   <a class="dl" href="${data.imagenData}" download="${nombre}">Descargar</a>
 </header>
@@ -854,8 +853,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                 {/* FMI */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    FMI <span className="text-slate-400 text-xs font-normal">(Folio de Matrícula Inmobiliaria)</span>
-                    <span className="text-red-500 ml-1">*</span>
+                    FMI <span className="text-slate-400 text-xs font-normal">(Folio de Matrícula Inmobiliaria — opcional)</span>
                   </label>
                   <input
                     type="text"
@@ -869,7 +867,10 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                 {/* Radicado */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Número de Radicado <span className="text-red-500">*</span>
+                    Número de Radicado{" "}
+                    <span className="text-slate-400 text-xs font-normal">
+                      (opcional — ventanilla lo asigna al radicar)
+                    </span>
                   </label>
                   <input
                     type="text"
@@ -1102,11 +1103,19 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                               </span>
                             </div>
                             <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                              FMI: {v.fmi}
+                              {v.fmi
+                                ? `FMI: ${v.fmi}`
+                                : v.radicado
+                                  ? `Radicado: ${v.radicado}`
+                                  : v.llamado?.plan
+                                    ? `Radicado: ${v.llamado.plan.radicado}`
+                                    : "Plano sin identificar"}
                             </p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                              Radicado: {v.radicado}
-                            </p>
+                            {v.fmi && v.radicado && (
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                                Radicado: {v.radicado}
+                              </p>
+                            )}
                             {v.llamado?.plan && !v.llamado.esDerechoPeticion && (
                               <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5 flex items-center gap-1">
                                 <Check className="h-3 w-3 shrink-0" />
