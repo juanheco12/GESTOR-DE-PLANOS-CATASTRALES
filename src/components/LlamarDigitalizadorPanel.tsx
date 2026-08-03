@@ -268,7 +268,6 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
 
   const radicar = async (id: string) => {
     if (!radForm.radicado.trim()) { setRadErr("El número de radicado es obligatorio"); return; }
-    if (!radForm.receivedById)    { setRadErr("Indica quién recibió el plano");        return; }
 
     setGuardandoRad(true);
     setRadErr("");
@@ -282,6 +281,12 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
       if (!res.ok) throw new Error(data.error || "No se pudo radicar");
       setLlamados((prev) => prev.map((l) => (l.id === id ? data : l)));
       setRadicando(null);
+      if (data.planoYaExistia) {
+        alert(
+          `El plano ${radForm.radicado.trim()} ya estaba registrado en el sistema. ` +
+          `Se asoció a esta verificación y el digitalizador ya ve el número.`
+        );
+      }
     } catch (err: any) {
       setRadErr(err.message);
     } finally {
@@ -713,7 +718,9 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
                         <div className="mt-2.5 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-200 dark:border-emerald-800 space-y-2">
                           <p className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-snug">
                             El digitalizador dio el visto bueno. Al radicar, el plano entra al sistema
-                            y él verá el número asignado.
+                            y él verá el número asignado. Si ya lo registraste por
+                            <strong> Registrar plano</strong>, escribe ese mismo radicado y se asocia
+                            sin duplicarlo.
                           </p>
                           <div>
                             <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">
@@ -760,7 +767,7 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
                           </div>
                           <div>
                             <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">
-                              Recibido por <span className="text-red-500">*</span>
+                              Recibido por <span className="text-slate-400 font-normal">(si el plano ya existe, se conserva el suyo)</span>
                             </label>
                             <select
                               value={radForm.receivedById}
