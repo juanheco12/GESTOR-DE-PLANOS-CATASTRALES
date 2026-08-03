@@ -28,6 +28,9 @@ interface Llamado {
   createdAt:         string;
   tomadoEn:          string | null;
   solicitante: { name: string | null; email: string | null } | null;
+  verificacion?: { cumple: boolean; resultado: string | null } | null;
+  planId?: string | null;
+  plan?:   { id: string; radicado: string; mutacion: string } | null;
 }
 
 const FORMATO_LABEL: Record<string, string> = {
@@ -54,6 +57,8 @@ interface Verificacion {
     finalizadoEn:      string | null;
     esDerechoPeticion: boolean;
     formato:           string | null;
+    planId:            string | null;
+    plan:              { id: string; radicado: string; mutacion: string } | null;
     solicitante:       { name: string | null; email: string | null } | null;
   } | null;
 }
@@ -773,6 +778,24 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                         </button>
                       )}
 
+                      {/* Resultado de tu visto bueno: ventanilla ya radicó */}
+                      {l.plan && !l.esDerechoPeticion && (
+                        <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 flex-wrap">
+                          <Check className="h-3.5 w-3.5 shrink-0" />
+                          Radicado por ventanilla: <strong>{l.plan.radicado}</strong>
+                          {l.plan.mutacion && <span className="text-slate-500">· {l.plan.mutacion}</span>}
+                        </p>
+                      )}
+
+                      {/* Aprobado por ti, pendiente de que ventanilla lo radique */}
+                      {l.estado === "COMPLETADO" && !l.esDerechoPeticion && !l.planId &&
+                        (l.verificacion?.resultado === "PROCEDE" || (l.verificacion && l.verificacion.cumple)) && (
+                        <p className="mt-2 text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5 shrink-0" />
+                          Aprobado — ventanilla aún no lo radica
+                        </p>
+                      )}
+
                       {l.estado === "EN_PROCESO" && (
                         <button
                           onClick={() => {
@@ -1084,6 +1107,12 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                               Radicado: {v.radicado}
                             </p>
+                            {v.llamado?.plan && !v.llamado.esDerechoPeticion && (
+                              <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5 flex items-center gap-1">
+                                <Check className="h-3 w-3 shrink-0" />
+                                Radicado en el sistema: <strong>{v.llamado.plan.radicado}</strong>
+                              </p>
+                            )}
                             {v.observaciones && (
                               <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 line-clamp-2">
                                 {v.observaciones}

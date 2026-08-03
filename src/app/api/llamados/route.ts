@@ -22,6 +22,8 @@ const SELECT_LLAMADO = {
   solicitante:   { select: { name: true, email: true } },
   digitalizador: { select: { name: true, email: true } },
   verificacion:  { select: { id: true, cumple: true, resultado: true, observaciones: true } },
+  planId:        true,
+  plan:          { select: { id: true, radicado: true, mutacion: true } },
 } as const;
 
 // GET — digitalizador y administrador ven todos; el resto solo los suyos.

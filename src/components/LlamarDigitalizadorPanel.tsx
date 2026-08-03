@@ -22,8 +22,31 @@ interface Llamado {
   finalizadoEn:      string | null;
   solicitante:   { name: string | null; email: string | null } | null;
   digitalizador: { name: string | null; email: string | null } | null;
-  verificacion:  { id: string; cumple: boolean; observaciones: string | null } | null;
+  verificacion:  { id: string; cumple: boolean; resultado: string | null; observaciones: string | null } | null;
+  planId:        string | null;
+  plan:          { id: string; radicado: string; mutacion: string } | null;
 }
+
+const MUTACION_OPTIONS = [
+  "Mutación de Primera",
+  "Mutación de Segunda",
+  "Mutación de Tercera",
+  "Mutación de Cuarta",
+  "Mutación de Quinta",
+  "Rectificación",
+  "Rectificación 1101",
+  "Derecho de Petición",
+  "Otro",
+];
+
+// Concepto emitido; los registros antiguos solo tienen el booleano
+const conceptoDe = (l: Llamado) =>
+  l.verificacion
+    ? l.verificacion.resultado ?? (l.verificacion.cumple ? "PROCEDE" : "NO_PROCEDE")
+    : null;
+
+// Aprobado por el digitalizador y todavía sin radicar
+const puedeRadicar = (l: Llamado) => conceptoDe(l) === "PROCEDE" && !l.planId;
 
 const FORMATO_OPTIONS = [
   { value: "FISICO", label: "Físico (Plano impreso)" },
@@ -102,6 +125,12 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
   const [guardando, setGuardando] = useState(false);
 
   const [abiertos, setAbiertos] = useState(0);
+
+  // Radicación del plano aprobado por el digitalizador
+  const [radicando,  setRadicando]  = useState<string | null>(null);
+  const [radForm,    setRadForm]    = useState({ radicado: "", mutacion: "", formato: "", receivedById: "" });
+  const [radErr,     setRadErr]     = useState("");
+  const [guardandoRad, setGuardandoRad] = useState(false);
 
   const contarAbiertos = (data: Llamado[]) =>
     data.filter((l) => l.estado === "PENDIENTE" || l.estado === "EN_PROCESO").length;
@@ -208,6 +237,47 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
     const res = await fetch(`/api/llamados/${id}`, { method: "DELETE" });
     if (res.ok) setLlamados((prev) => prev.filter((l) => l.id !== id));
     else alert((await res.json()).error ?? "No se pudo eliminar");
+  };
+
+  const abrirRadicacion = (l: Llamado) => {
+    setRadicando(radicando === l.id ? null : l.id);
+    setRadForm({
+      radicado:     l.radicado ?? "",
+      mutacion:     "",
+      formato:      l.formato ?? "",
+      receivedById: "",
+    });
+    setRadErr("");
+    setEditando(null);
+    if (receptores.length === 0) {
+      fetch("/api/receivers")
+        .then((r) => r.json())
+        .then((d) => { if (Array.isArray(d)) setReceptores(d); })
+        .catch(() => {});
+    }
+  };
+
+  const radicar = async (id: string) => {
+    if (!radForm.radicado.trim()) { setRadErr("El número de radicado es obligatorio"); return; }
+    if (!radForm.receivedById)    { setRadErr("Indica quién recibió el plano");        return; }
+
+    setGuardandoRad(true);
+    setRadErr("");
+    try {
+      const res = await fetch(`/api/llamados/${id}`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ accion: "radicar", ...radForm }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "No se pudo radicar");
+      setLlamados((prev) => prev.map((l) => (l.id === id ? data : l)));
+      setRadicando(null);
+    } catch (err: any) {
+      setRadErr(err.message);
+    } finally {
+      setGuardandoRad(false);
+    }
   };
 
   const abrirEdicion = (l: Llamado) => {
@@ -580,6 +650,104 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
                           {l.verificacion.observaciones && (
                             <p className="mt-1 leading-snug">{l.verificacion.observaciones}</p>
                           )}
+                        </div>
+                      )}
+
+                      {/* Ya radicado tras el visto bueno */}
+                      {l.plan && !l.esDerechoPeticion && (
+                        <p className="mt-2 text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                          <FilePlus2 className="h-3.5 w-3.5 shrink-0" />
+                          Radicado en el sistema: <strong>{l.plan.radicado}</strong>
+                          {l.plan.mutacion && <span className="text-slate-500">· {l.plan.mutacion}</span>}
+                        </p>
+                      )}
+
+                      {/* Aprobado por el digitalizador: ventanilla lo radica aquí mismo */}
+                      {puedeRadicar(l) && (
+                        <button
+                          onClick={() => abrirRadicacion(l)}
+                          className="mt-2.5 w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                        >
+                          <FilePlus2 className="h-3.5 w-3.5" />
+                          {radicando === l.id ? "Cerrar" : "Radicar plano"}
+                        </button>
+                      )}
+
+                      {radicando === l.id && (
+                        <div className="mt-2.5 p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/15 border border-emerald-200 dark:border-emerald-800 space-y-2">
+                          <p className="text-[11px] text-emerald-800 dark:text-emerald-300 leading-snug">
+                            El digitalizador dio el visto bueno. Al radicar, el plano entra al sistema
+                            y él verá el número asignado.
+                          </p>
+                          <div>
+                            <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">
+                              Número de Radicado <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              value={radForm.radicado}
+                              onChange={(e) => setRadForm({ ...radForm, radicado: e.target.value })}
+                              placeholder="Ej: 2026-0123"
+                              className={miniInput}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">
+                                Tipo de Trámite
+                              </label>
+                              <select
+                                value={radForm.mutacion}
+                                onChange={(e) => setRadForm({ ...radForm, mutacion: e.target.value })}
+                                className={miniInput}
+                              >
+                                <option value="">Seleccione</option>
+                                {MUTACION_OPTIONS.map((m) => (
+                                  <option key={m} value={m}>{m}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">
+                                Formato
+                              </label>
+                              <select
+                                value={radForm.formato}
+                                onChange={(e) => setRadForm({ ...radForm, formato: e.target.value })}
+                                className={miniInput}
+                              >
+                                <option value="">Seleccione</option>
+                                {FORMATO_OPTIONS.map((f) => (
+                                  <option key={f.value} value={f.value}>{f.label}</option>
+                                ))}
+                              </select>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-[11px] text-slate-600 dark:text-slate-400 mb-1">
+                              Recibido por <span className="text-red-500">*</span>
+                            </label>
+                            <select
+                              value={radForm.receivedById}
+                              onChange={(e) => setRadForm({ ...radForm, receivedById: e.target.value })}
+                              className={miniInput}
+                            >
+                              <option value="">Seleccione</option>
+                              {receptores.map((r) => (
+                                <option key={r.id} value={r.id}>{r.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          {radErr && <p className="text-[11px] text-red-500">{radErr}</p>}
+                          <button
+                            onClick={() => radicar(l.id)}
+                            disabled={guardandoRad}
+                            className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center justify-center gap-1.5"
+                          >
+                            {guardandoRad
+                              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              : <Check className="h-3.5 w-3.5" />}
+                            {guardandoRad ? "Radicando…" : "Confirmar radicación"}
+                          </button>
                         </div>
                       )}
 
