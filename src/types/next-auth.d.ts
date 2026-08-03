@@ -8,11 +8,14 @@ declare module "next-auth" {
       name?: string | null;
       email?: string | null;
       image?: string | null;
+      /** Nombre del administrador que está viendo el sistema como este usuario */
+      suplantadoPor?: string | null;
     };
   }
 
   interface User {
     id: string;
     role: string;
+    suplantadoPor?: string | null;
   }
 }

@@ -71,6 +71,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <SessionGuard />
       <InactivityLogout />
 
+      {/* Sesión suplantada: debe quedar evidente en todo momento */}
+      {session?.user?.suplantadoPor && (
+        <div className="fixed top-0 inset-x-0 z-[80] bg-violet-600 text-white px-4 py-1.5 flex items-center justify-center gap-3 text-xs font-medium shadow-lg">
+          <span>
+            Estás viendo el sistema como <strong>{session.user.name}</strong> ·{" "}
+            {session.user.suplantadoPor}
+          </span>
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="px-2 py-0.5 rounded-md bg-white/20 hover:bg-white/30 font-semibold transition-colors"
+          >
+            Volver a mi cuenta
+          </button>
+        </div>
+      )}
+
       {/* Aviso de verificaciones sin atender — solo digitalizador y administrador */}
       {(isDigitalizador || isAdministrador) && <AlertaPendientes />}
 
