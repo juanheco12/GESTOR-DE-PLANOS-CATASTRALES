@@ -27,6 +27,9 @@ interface Llamado {
   plan:          { id: string; radicado: string; mutacion: string } | null;
 }
 
+// Marca para predios sin folio de matrícula
+const SIN_FOLIO = "N/A";
+
 const MUTACION_OPTIONS = [
   "Mutación de Primera",
   "Mutación de Segunda",
@@ -179,6 +182,12 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
     e.preventDefault();
     // Sin DP el llamado es solo un aviso al digitalizador: no exige datos.
     // Con DP sí, porque se registra un plano y el radicado lo identifica.
+    // El folio identifica el predio y permite detectar planos ya revisados;
+    // si no tiene, se marca N/A de forma explícita.
+    if (!fmi.trim()) {
+      setError("Escribe el folio de matrícula, o marca N/A si el predio no tiene");
+      return;
+    }
     if (checkIn && !radicado.trim()) {
       setError("El derecho de petición requiere el número de radicado");
       return;
@@ -451,15 +460,42 @@ export default function LlamarDigitalizadorPanel({ isAdmin = false }: { isAdmin?
 
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    FMI <span className="text-slate-400 text-xs font-normal">(opcional)</span>
+                    FMI <span className="text-slate-400 text-xs font-normal">(Folio de Matrícula Inmobiliaria)</span>
+                    <span className="text-red-500 ml-1">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={fmi}
-                    onChange={(e) => setFmi(e.target.value)}
-                    placeholder="Ej: 060-123456"
-                    className={inputClass}
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={fmi}
+                      onChange={(e) => setFmi(e.target.value)}
+                      placeholder="Ej: 060-123456"
+                      disabled={fmi.trim().toUpperCase() === SIN_FOLIO}
+                      className={`${inputClass} pr-16 ${
+                        fmi.trim().toUpperCase() === SIN_FOLIO ? "opacity-60" : ""
+                      }`}
+                    />
+                    {/* Predios que no tienen folio de matrícula */}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFmi(fmi.trim().toUpperCase() === SIN_FOLIO ? "" : SIN_FOLIO)
+                      }
+                      title="El predio no tiene folio de matrícula"
+                      aria-pressed={fmi.trim().toUpperCase() === SIN_FOLIO}
+                      className={`absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors ${
+                        fmi.trim().toUpperCase() === SIN_FOLIO
+                          ? "bg-slate-600 text-white"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                      }`}
+                    >
+                      N/A
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">
+                    {fmi.trim().toUpperCase() === SIN_FOLIO
+                      ? "Registrado como predio sin folio de matrícula."
+                      : "Si el predio no tiene folio, toca N/A."}
+                  </p>
                 </div>
 
                 <div>

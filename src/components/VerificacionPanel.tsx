@@ -540,11 +540,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // El folio identifica el predio; si no tiene, se marca N/A explícitamente
-    if (!fmi.trim()) {
-      setFormError('Escribe el folio de matrícula, o marca N/A si el predio no tiene');
-      return;
-    }
+    // El folio lo indica ventanilla al solicitar; aquí llega precargado
     if (resultado === null) { setFormError("Seleccione el concepto técnico"); return; }
     // El concepto desfavorable es el respaldo documental: exige observación
     if (resultado !== "PROCEDE" && !observaciones.trim()) {
@@ -959,41 +955,15 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                 {/* FMI */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    FMI <span className="text-slate-400 text-xs font-normal">(Folio de Matrícula Inmobiliaria)</span>
-                    <span className="text-red-500 ml-1">*</span>
+                    FMI <span className="text-slate-400 text-xs font-normal">(lo indica ventanilla; corrígelo si hace falta)</span>
                   </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={fmi}
-                      onChange={(e) => setFmi(e.target.value)}
-                      placeholder="Ej: 060-123456"
-                      disabled={fmi.trim().toUpperCase() === SIN_FOLIO}
-                      className={`${inputClass} pr-16 ${
-                        fmi.trim().toUpperCase() === SIN_FOLIO ? "opacity-60" : ""
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setFmi(fmi.trim().toUpperCase() === SIN_FOLIO ? "" : SIN_FOLIO)
-                      }
-                      title="El predio no tiene folio de matrícula"
-                      aria-pressed={fmi.trim().toUpperCase() === SIN_FOLIO}
-                      className={`absolute right-1.5 top-1/2 -translate-y-1/2 px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide transition-colors ${
-                        fmi.trim().toUpperCase() === SIN_FOLIO
-                          ? "bg-slate-600 text-white"
-                          : "bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                      }`}
-                    >
-                      N/A
-                    </button>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-1 leading-snug">
-                    {fmi.trim().toUpperCase() === SIN_FOLIO
-                      ? "Registrado como predio sin folio de matrícula."
-                      : "Si el predio no tiene folio, toca N/A."}
-                  </p>
+                  <input
+                    type="text"
+                    value={fmi}
+                    onChange={(e) => setFmi(e.target.value)}
+                    placeholder="Ej: 060-123456"
+                    className={inputClass}
+                  />
                 </div>
 
                 {/* Revisiones anteriores del mismo folio */}

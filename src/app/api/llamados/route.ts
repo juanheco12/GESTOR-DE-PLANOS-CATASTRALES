@@ -83,8 +83,15 @@ export async function POST(req: Request) {
 
     const esCheckIn = esDerechoPeticion === true;
 
-    // Sin DP el llamado es solo un aviso al digitalizador y no exige datos.
-    // Con DP sí, porque se registra un plano y el radicado lo identifica.
+    // El folio identifica el predio: obligatorio, o "N/A" si no tiene
+    if (!folio) {
+      return NextResponse.json(
+        { error: "Indica el folio de matrícula, o N/A si el predio no tiene" },
+        { status: 400 }
+      );
+    }
+
+    // El derecho de petición además exige radicado, porque registra un plano
     if (esCheckIn && !rad) {
       return NextResponse.json(
         { error: "El derecho de petición requiere el número de radicado" },
