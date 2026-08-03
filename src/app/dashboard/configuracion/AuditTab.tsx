@@ -31,6 +31,25 @@ function diffData(oldRaw: string | null, newRaw: string | null): { campo: string
   }
 }
 
+const ES_CLAVE = (a: string) => a === "CAMBIO_CLAVE_PROPIA" || a === "CAMBIO_CLAVE_ADMIN";
+
+const ACCION_LABEL: Record<string, string> = {
+  DELETE:               "Eliminación",
+  CAMBIO_CLAVE_PROPIA:  "Cambió su contraseña",
+  CAMBIO_CLAVE_ADMIN:   "Contraseña asignada",
+};
+
+const ACCION_STYLE: Record<string, string> = {
+  DELETE:               "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+  CAMBIO_CLAVE_PROPIA:  "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+  CAMBIO_CLAVE_ADMIN:   "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+};
+
+// Datos legibles del registro de contraseña
+function datosClave(raw: string | null): { usuario?: string; correo?: string; origen?: string } {
+  try { return raw ? JSON.parse(raw) : {}; } catch { return {}; }
+}
+
 export default function AuditTab() {
   const [logs, setLogs]   = useState<Log[]>([]);
   const [page, setPage]   = useState(1);
@@ -59,7 +78,9 @@ export default function AuditTab() {
       <div>
         <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Registro de Auditoría</h3>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-          Cada vez que un administrador edita o elimina un plano queda registrado aquí con los datos anteriores y posteriores.
+          Ediciones y eliminaciones de planos, y todo cambio de contraseña de acceso.
+          Por seguridad las contraseñas se guardan cifradas y no pueden consultarse: aquí queda
+          el registro de quién la cambió y cuándo.
         </p>
       </div>
 
@@ -75,7 +96,7 @@ export default function AuditTab() {
                 <tr>
                   <th className="px-5 py-3 font-medium">Fecha</th>
                   <th className="px-5 py-3 font-medium">Acción</th>
-                  <th className="px-5 py-3 font-medium">Plano ID</th>
+                  <th className="px-5 py-3 font-medium">Detalle</th>
                   <th className="px-5 py-3 font-medium">Realizado por</th>
                   <th className="px-5 py-3 font-medium">Cambios</th>
                 </tr>
@@ -90,17 +111,31 @@ export default function AuditTab() {
                         <td className="px-5 py-3 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">{fmt(log.createdAt)}</td>
                         <td className="px-5 py-3 whitespace-nowrap">
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
-                            log.action === "DELETE"
-                              ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
-                              : "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                            ACCION_STYLE[log.action] ?? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
                           }`}>
-                            {log.action === "DELETE" ? "Eliminación" : "Edición"}
+                            {ACCION_LABEL[log.action] ?? "Edición"}
                           </span>
                         </td>
-                        <td className="px-5 py-3 font-mono text-xs text-slate-500 dark:text-slate-400 max-w-[120px] truncate">{log.entityId}</td>
+                        <td className="px-5 py-3 text-xs text-slate-500 dark:text-slate-400 max-w-[220px]">
+                          {ES_CLAVE(log.action)
+                            ? (() => {
+                                const d = datosClave(log.newData);
+                                return (
+                                  <span>
+                                    <span className="font-medium text-slate-700 dark:text-slate-300">{d.usuario ?? "—"}</span>
+                                    {d.correo && <span className="block truncate">{d.correo}</span>}
+                                  </span>
+                                );
+                              })()
+                            : <span className="font-mono truncate block">{log.entityId}</span>}
+                        </td>
                         <td className="px-5 py-3 text-sm">{log.user.name || log.user.email}</td>
                         <td className="px-5 py-3">
-                          {diff.length > 0 ? (
+                          {ES_CLAVE(log.action) ? (
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              {datosClave(log.newData).origen ?? "Cambio de contraseña"}
+                            </span>
+                          ) : diff.length > 0 ? (
                             <button
                               onClick={() => setExpanded(isOpen ? null : log.id)}
                               className="text-xs text-teal-700 dark:text-teal-400 hover:underline"

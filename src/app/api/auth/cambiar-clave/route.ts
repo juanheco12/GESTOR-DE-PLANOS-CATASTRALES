@@ -54,6 +54,21 @@ export async function PATCH(req: Request) {
         data:  { password: hashedNewPassword },
       });
 
+      // Queda constancia en auditoría: nunca la contraseña, solo el hecho
+      await tx.auditLog.create({
+        data: {
+          userId:     session.user.id,
+          action:     "CAMBIO_CLAVE_PROPIA",
+          entityType: "User",
+          entityId:   session.user.id,
+          newData:    JSON.stringify({
+            usuario: user.name ?? user.email,
+            correo:  user.email,
+            origen:  "El propio usuario desde Mi Perfil",
+          }),
+        },
+      });
+
       // El administrador queda enterado de todo cambio de credenciales
       await notificarAdmins(
         tx,

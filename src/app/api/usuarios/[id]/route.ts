@@ -109,25 +109,46 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         return NextResponse.json({ error: "La contraseña debe tener al menos 6 caracteres" }, { status: 400 });
       }
       const hashed = await bcrypt.hash(body.newPassword, 8);
-      const updated = await prisma.user.update({
-        where: { id: resolvedParams.id },
-        data:  { password: hashed },
-        select: { id: true, name: true, email: true },
-      });
 
-      // Notificar a todos los ADMINISTRADOR del cambio
-      const admins = await prisma.user.findMany({
-        where: { role: "ADMINISTRADOR", isActive: true },
-        select: { id: true },
-      });
-      if (admins.length > 0) {
-        await prisma.notification.createMany({
-          data: admins.map((u) => ({
-            message: `La contraseña de ${updated.name ?? updated.email} fue actualizada por el administrador.`,
-            userId:  u.id,
-          })),
+      const updated = await prisma.$transaction(async (tx) => {
+        const upd = await tx.user.update({
+          where: { id: resolvedParams.id },
+          data:  { password: hashed },
+          select: { id: true, name: true, email: true },
         });
-      }
+
+        const quien = session.user.name ?? session.user.email ?? "El administrador";
+
+        // Queda constancia en auditoría: nunca la contraseña, solo el hecho
+        await tx.auditLog.create({
+          data: {
+            userId:     session.user.id,
+            action:     "CAMBIO_CLAVE_ADMIN",
+            entityType: "User",
+            entityId:   upd.id,
+            newData:    JSON.stringify({
+              usuario: upd.name ?? upd.email,
+              correo:  upd.email,
+              origen:  `Asignada por ${quien}`,
+            }),
+          },
+        });
+
+        const admins = await tx.user.findMany({
+          where: { role: "ADMINISTRADOR", isActive: true },
+          select: { id: true },
+        });
+        if (admins.length > 0) {
+          await tx.notification.createMany({
+            data: admins.map((u) => ({
+              message: `La contraseña de ${upd.name ?? upd.email} fue actualizada por ${quien}.`,
+              userId:  u.id,
+            })),
+          });
+        }
+
+        return upd;
+      });
 
       return NextResponse.json(updated, { status: 200 });
     }
