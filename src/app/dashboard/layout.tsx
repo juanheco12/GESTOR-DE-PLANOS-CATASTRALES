@@ -71,8 +71,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <SessionGuard />
       <InactivityLogout />
 
-      {/* Aviso insistente de trabajo sin atender */}
-      {(isDigitalizador || isAdministrador || role === "ENCARGADO") && <AlertaPendientes />}
+      {/* Aviso de verificaciones sin atender — solo digitalizador y administrador */}
+      {(isDigitalizador || isAdministrador) && <AlertaPendientes />}
 
       {sidebarOpen && (
         <div

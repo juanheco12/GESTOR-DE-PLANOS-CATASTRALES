@@ -3,62 +3,31 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// Trabajo sin atender que corresponde a quien consulta.
-// Alimenta la alerta persistente del navegador.
+// Verificaciones de plano sin atender. Alimenta el aviso de escritorio.
+// El resto de movimientos siguen avisándose por notificación push.
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ total: 0, detalle: [] });
 
   const role = session.user.role;
+  if (role !== "DIGITALIZADOR" && role !== "ADMINISTRADOR") {
+    return NextResponse.json({ total: 0, detalle: [] });
+  }
 
   try {
-    // Digitalizador: planos que ventanilla dejó esperando revisión
-    if (role === "DIGITALIZADOR") {
-      const verificaciones = await prisma.llamadoVerificacion.count({
-        where: { estado: "PENDIENTE" },
-      });
-      return NextResponse.json({
-        total: verificaciones,
-        detalle: verificaciones
-          ? [{
-              tipo:  "verificaciones",
-              n:     verificaciones,
-              texto: `${verificaciones} plano${verificaciones === 1 ? "" : "s"} esperando verificación`,
-              url:   "/dashboard",
-            }]
-          : [],
-      });
-    }
+    const n = await prisma.llamadoVerificacion.count({ where: { estado: "PENDIENTE" } });
 
-    // Administrador y encargado: solicitudes y devoluciones por gestionar
-    if (role === "ADMINISTRADOR" || role === "ENCARGADO") {
-      const [solicitudes, devoluciones] = await Promise.all([
-        prisma.request.count({ where: { estado: "PENDIENTE" } }),
-        prisma.request.count({ where: { estado: "DEVOLUCION_SOLICITADA" } }),
-      ]);
-
-      const detalle = [];
-      if (solicitudes) {
-        detalle.push({
-          tipo:  "solicitudes",
-          n:     solicitudes,
-          texto: `${solicitudes} solicitud${solicitudes === 1 ? "" : "es"} de plano por aprobar`,
-          url:   "/dashboard/entregados",
-        });
-      }
-      if (devoluciones) {
-        detalle.push({
-          tipo:  "devoluciones",
-          n:     devoluciones,
-          texto: `${devoluciones} devolución${devoluciones === 1 ? "" : "es"} por confirmar`,
-          url:   "/dashboard/entregados",
-        });
-      }
-
-      return NextResponse.json({ total: solicitudes + devoluciones, detalle });
-    }
-
-    return NextResponse.json({ total: 0, detalle: [] });
+    return NextResponse.json({
+      total: n,
+      detalle: n
+        ? [{
+            tipo:  "verificaciones",
+            n,
+            texto: `${n} plano${n === 1 ? "" : "s"} esperando verificación`,
+            url:   "/dashboard",
+          }]
+        : [],
+    });
   } catch (error) {
     console.error("Error fetching pendientes:", error);
     return NextResponse.json({ total: 0, detalle: [] });
