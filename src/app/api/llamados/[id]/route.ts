@@ -19,9 +19,14 @@ const SELECT_LLAMADO = {
   solicitante:   { select: { name: true, email: true } },
   digitalizador: { select: { name: true, email: true } },
   verificacion:  { select: { id: true, cumple: true, resultado: true, observaciones: true } },
+  planId:        true,
+  plan:          { select: { id: true, radicado: true, mutacion: true } },
 } as const;
 
 const ESTADOS = ["PENDIENTE", "EN_PROCESO", "COMPLETADO", "CANCELADO"];
+
+// Quienes atienden ventanilla y por tanto radican el plano
+const ROLES_VENTANILLA = ["RADICADORA", "ENCARGADO", "ADMINISTRADOR"];
 
 // PATCH — acción: "tomar" (digitalizador) | "cancelar" (solicitante)
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -36,7 +41,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
     const llamado = await prisma.llamadoVerificacion.findUnique({
       where:  { id },
-      select: { id: true, estado: true, radicado: true, solicitanteId: true, digitalizadorId: true },
+      select: {
+        id: true, estado: true, radicado: true, fmi: true, nota: true,
+        solicitanteId: true, digitalizadorId: true, planId: true,
+        esDerechoPeticion: true,
+        verificacion: { select: { cumple: true, resultado: true } },
+      },
     });
     if (!llamado) {
       return NextResponse.json({ error: "Llamado no encontrado" }, { status: 404 });
@@ -115,6 +125,124 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         });
         return upd;
       });
+      return NextResponse.json(actualizado);
+    }
+
+    // ── Radicar el plano tras el visto bueno del digitalizador ──
+    if (accion === "radicar") {
+      if (!ROLES_VENTANILLA.includes(session.user.role)) {
+        return NextResponse.json(
+          { error: "Solo ventanilla puede radicar el plano." },
+          { status: 403 }
+        );
+      }
+
+      const concepto =
+        llamado.verificacion?.resultado ??
+        (llamado.verificacion?.cumple ? "PROCEDE" : null);
+
+      if (concepto !== "PROCEDE") {
+        return NextResponse.json(
+          { error: "Solo se radica un plano con concepto PROCEDE del digitalizador." },
+          { status: 409 }
+        );
+      }
+      if (llamado.planId) {
+        return NextResponse.json(
+          { error: "Este plano ya fue radicado." },
+          { status: 409 }
+        );
+      }
+
+      const rad = body.radicado?.trim();
+      if (!rad) {
+        return NextResponse.json(
+          { error: "El número de radicado es obligatorio para radicar el plano." },
+          { status: 400 }
+        );
+      }
+      if (!body.receivedById) {
+        return NextResponse.json(
+          { error: "Indica quién recibió el plano." },
+          { status: 400 }
+        );
+      }
+
+      const duplicado = await prisma.plan.findUnique({
+        where:  { radicado: rad },
+        select: { id: true },
+      });
+      if (duplicado) {
+        return NextResponse.json(
+          { error: "Ya existe un plano registrado con este número de radicado." },
+          { status: 409 }
+        );
+      }
+
+      const quien = session.user.name ?? session.user.email ?? "Ventanilla";
+
+      const actualizado = await prisma.$transaction(async (tx) => {
+        const plan = await tx.plan.create({
+          data: {
+            radicado:        rad,
+            mutacion:        body.mutacion?.trim() || "Otro",
+            formato:         body.formato?.trim()  || "OTRO",
+            predial:         llamado.fmi,
+            observaciones:   llamado.nota,
+            receivedById:    body.receivedById,
+            registradoPorId: session.user.id,
+            estado:          "DISPONIBLE",
+          },
+          select: { id: true },
+        });
+
+        await tx.history.create({
+          data: {
+            planId:   plan.id,
+            userId:   session.user.id,
+            accion:   "REGISTRO",
+            detalles: "Radicado en ventanilla tras concepto PROCEDE del digitalizador.",
+          },
+        });
+
+        const upd = await tx.llamadoVerificacion.update({
+          where:  { id },
+          data:   {
+            planId:   plan.id,
+            radicado: rad,
+            formato:  body.formato?.trim() || undefined,
+          },
+          select: SELECT_LLAMADO,
+        });
+
+        // El digitalizador ve reflejado que su visto bueno terminó en radicación
+        if (llamado.digitalizadorId) {
+          await tx.notification.create({
+            data: {
+              message: `${quien} radicó el plano que aprobaste, con el número ${rad}.`,
+              userId:  llamado.digitalizadorId,
+              planoId: plan.id,
+            },
+          });
+        }
+
+        await notificarAdmins(tx, `${quien} radicó el plano ${rad} tras el visto bueno del digitalizador.`, {
+          planoId:       plan.id,
+          excluirUserId: session.user.id,
+        });
+
+        return upd;
+      });
+
+      if (llamado.digitalizadorId) {
+        await sendPushToUser(llamado.digitalizadorId, {
+          title: "Plano radicado",
+          body:  `${quien} radicó con el número ${rad} el plano que aprobaste.`,
+          url:   "/dashboard",
+          tag:   `llamado-${id}`,
+        }).catch((err) => console.error("[Push] radicar:", err));
+      }
+
       return NextResponse.json(actualizado);
     }
 

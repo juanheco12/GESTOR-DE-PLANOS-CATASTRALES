@@ -33,7 +33,8 @@ export async function GET() {
         llamado: {
           select: {
             id: true, createdAt: true, tomadoEn: true, finalizadoEn: true,
-            esDerechoPeticion: true, formato: true,
+            esDerechoPeticion: true, formato: true, planId: true,
+            plan: { select: { id: true, radicado: true, mutacion: true } },
             solicitante: { select: { name: true, email: true } },
           },
         },
@@ -103,10 +104,14 @@ export async function POST(req: Request) {
           where: { id: llamado.id },
           data:  { estado: "COMPLETADO", finalizadoEn: new Date(), verificacionId: creada.id },
         });
+        const ident = llamado.radicado ? ` del radicado ${llamado.radicado}` : "";
         await tx.notification.create({
           data: {
-            message: `Verificación del radicado ${llamado.radicado}: ${CONCEPTO_LABEL[concepto]}.`,
-            userId:  llamado.solicitanteId,
+            message:
+              concepto === "PROCEDE"
+                ? `El plano${ident} PROCEDE. Ya puedes radicarlo desde Verificación de Plano.`
+                : `Verificación${ident}: ${CONCEPTO_LABEL[concepto]}.`,
+            userId: llamado.solicitanteId,
           },
         });
       }
@@ -125,7 +130,9 @@ export async function POST(req: Request) {
     if (llamado) {
       await sendPushToUser(llamado.solicitanteId, {
         title: `Plano ${CONCEPTO_LABEL[concepto]}`,
-        body:  `Radicado ${llamado.radicado} — ${observaciones?.trim() || "Verificación completada."}`,
+        body:  concepto === "PROCEDE"
+          ? "Visto bueno del digitalizador. Ya puedes radicar el plano."
+          : `${observaciones?.trim() || "Revisa las observaciones del digitalizador."}`,
         url:   "/dashboard",
         tag:   `llamado-${llamado.id}`,
       }).catch((err) => console.error("[Push] verificacion:", err));
