@@ -527,9 +527,17 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
       const data = await res.json();
       if (!res.ok) { alert(data.error ?? "No se pudo tomar el llamado"); loadLlamados(); return; }
 
-      setLlamadoActivo({ ...l, estado: "EN_PROCESO" });
-      setRadicado(l.radicado ?? "");
-      setFmi(l.fmi ?? "");
+      // Se usa la respuesta del servidor: trae la hora real de la toma, que
+      // es la que alimenta el cronómetro. El objeto previo la tiene en nulo.
+      const tomado: Llamado = {
+        ...l,
+        ...data,
+        estado:   "EN_PROCESO",
+        tomadoEn: data?.tomadoEn ?? new Date().toISOString(),
+      };
+      setLlamadoActivo(tomado);
+      setRadicado(tomado.radicado ?? "");
+      setFmi(tomado.fmi ?? "");
       setCumple(null); setResultado(null);
       setObservaciones("");
       setImagen(null);
