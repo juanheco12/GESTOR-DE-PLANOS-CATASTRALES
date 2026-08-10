@@ -55,6 +55,17 @@ const hora = (iso: string) =>
     timeZone: "America/Bogota", hour: "2-digit", minute: "2-digit",
   });
 
+// Nombre de la captura pegada, con fecha y hora para poder ubicarla después
+function nombreCaptura(mime: string): string {
+  const sello = new Date().toLocaleString("es-CO", {
+    timeZone: "America/Bogota",
+    day: "2-digit", month: "2-digit", year: "numeric",
+    hour: "2-digit", minute: "2-digit",
+  }).replace(/[/:]/g, "-").replace(/,?\s+/g, " ");
+  const ext = mime.split("/")[1]?.split("+")[0] || "png";
+  return `Captura ${sello}.${ext}`;
+}
+
 // Cronómetro: milisegundos a mm:ss o h:mm:ss
 function cronometro(ms: number): string {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -397,6 +408,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   // Revisiones anteriores del mismo folio, para subsanar la observación previa
   const [previas,    setPrevias]    = useState<Previa[]>([]);
   const [buscandoP,  setBuscandoP]  = useState(false);
+  const [pegando,    setPegando]    = useState(false);
   const [subsanaId,  setSubsanaId]  = useState<string | null>(null);
 
   // form
@@ -593,13 +605,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
         const file = item.getAsFile();
         if (!file) continue;
         e.preventDefault();
-        const sello = new Date().toLocaleString("es-CO", {
-          timeZone: "America/Bogota",
-          day: "2-digit", month: "2-digit", year: "numeric",
-          hour: "2-digit", minute: "2-digit",
-        }).replace(/[/:]/g, "-").replace(/,?\s+/g, " ");
-        const ext = item.type.split("/")[1]?.split("+")[0] || "png";
-        adjuntar(file, `Captura ${sello}.${ext}`);
+        adjuntar(file, nombreCaptura(item.type));
         return;
       }
     };
@@ -607,6 +613,31 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
     document.addEventListener("paste", onPaste);
     return () => document.removeEventListener("paste", onPaste);
   }, [open, llamadoActivo]);
+
+  // Botón de pegar: lee el portapapeles sin depender del atajo de teclado
+  const pegarDelPortapapeles = async () => {
+    if (!navigator.clipboard?.read) {
+      setFormError("Este navegador no permite el botón de pegar. Usa Ctrl+V.");
+      return;
+    }
+    setPegando(true);
+    try {
+      const elementos = await navigator.clipboard.read();
+      for (const elemento of elementos) {
+        const tipo = elemento.types.find((t) => t.startsWith("image/"));
+        if (!tipo) continue;
+        const blob = await elemento.getType(tipo);
+        adjuntar(new File([blob], "captura", { type: tipo }), nombreCaptura(tipo));
+        return;
+      }
+      setFormError("No hay ninguna imagen en el portapapeles. Toma la captura primero.");
+    } catch {
+      // El navegador exige permiso explícito para leer el portapapeles
+      setFormError("El navegador no permitió leer el portapapeles. Usa Ctrl+V.");
+    } finally {
+      setPegando(false);
+    }
+  };
 
   const resetForm = () => {
     setFmi(""); setRadicado(""); setCumple(null); setResultado(null);
@@ -1186,8 +1217,22 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                   </label>
                   <div
                     onClick={() => fileRef.current?.click()}
-                    className="flex flex-col items-center justify-center gap-2 py-4 px-4 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 cursor-pointer hover:border-teal-400 dark:hover:border-teal-600 transition-colors bg-slate-50 dark:bg-slate-800/40"
+                    className="relative flex flex-col items-center justify-center gap-2 pt-4 pb-10 px-4 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 cursor-pointer hover:border-teal-400 dark:hover:border-teal-600 transition-colors bg-slate-50 dark:bg-slate-800/40"
                   >
+                    {/* Pega la captura sin usar el teclado */}
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); pegarDelPortapapeles(); }}
+                      disabled={pegando}
+                      title="Pegar la captura que tienes en el portapapeles"
+                      className="absolute bottom-1.5 right-1.5 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-teal-600 hover:text-white dark:hover:bg-teal-600 text-[11px] font-bold tracking-wide transition-colors disabled:opacity-50"
+                    >
+                      {pegando
+                        ? <Loader2 className="h-3 w-3 animate-spin" />
+                        : <Clipboard className="h-3 w-3" />}
+                      PEGAR
+                    </button>
+
                     {imagen ? (
                       <>
                         <ImageIcon className="h-5 w-5 text-teal-600 dark:text-teal-400" />
@@ -1206,11 +1251,8 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                         <span className="text-xs text-slate-500 dark:text-slate-400">
                           Toca para adjuntar un archivo
                         </span>
-                        <span className="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                          <Clipboard className="h-3 w-3 shrink-0" />
-                          o pega una captura con <kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[10px]">Ctrl</kbd>
-                          +
-                          <kbd className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 font-mono text-[10px]">V</kbd>
+                        <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                          o pega la captura del portapapeles
                         </span>
                       </>
                     )}
