@@ -5,6 +5,10 @@ import { prisma } from "@/lib/prisma";
 import { sendPushToUser } from "@/lib/push";
 import { notificarAdmins } from "@/lib/notificarAdmins";
 
+const MAX_ADJUNTOS   = 2;
+// En base64 el contenido crece un tercio; 4 MB de texto ≈ 3 MB de archivo
+const MAX_PESO_TOTAL = 4 * 1024 * 1024;
+
 const CONCEPTO_LABEL: Record<string, string> = {
   PROCEDE:         "PROCEDE",
   NO_PROCEDE:      "NO PROCEDE",
@@ -26,8 +30,10 @@ export async function GET() {
         cumple:        true,
         resultado:     true,
         observaciones: true,
+        // imagenNombre/imagenData: un único archivo, esquema anterior
         imagenNombre:  true,
-        // imagenData excluded — potentially large; fetched only for the report
+        // El contenido no viaja en la lista: se pide al ver o al reportar
+        adjuntos: { select: { id: true, nombre: true }, orderBy: { createdAt: "asc" } },
         createdAt:     true,
         subsanaId:     true,
         subsana: {
@@ -58,8 +64,25 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
 
   try {
-    const { fmi, radicado, cumple, resultado, observaciones, imagenNombre, imagenData, llamadoId, subsanaId } =
+    const { fmi, radicado, cumple, resultado, observaciones, llamadoId, subsanaId, adjuntos } =
       await req.json();
+
+    // Cada revisión admite un par de archivos de respaldo. El tope total
+    // deja margen frente al límite de tamaño de la petición.
+    const archivos: { nombre: string; data: string }[] = Array.isArray(adjuntos)
+      ? adjuntos
+          .filter((a) => a?.data && a?.nombre)
+          .slice(0, MAX_ADJUNTOS)
+          .map((a) => ({ nombre: String(a.nombre), data: String(a.data) }))
+      : [];
+
+    const pesoTotal = archivos.reduce((acc, a) => acc + a.data.length, 0);
+    if (pesoTotal > MAX_PESO_TOTAL) {
+      return NextResponse.json(
+        { error: "Los archivos adjuntos superan el tamaño permitido en conjunto." },
+        { status: 413 }
+      );
+    }
 
     // Solo el concepto técnico es obligatorio: el plano puede llegar a
     // revisión sin radicar, y el radicado se asigna después en ventanilla.
@@ -102,9 +125,10 @@ export async function POST(req: Request) {
           cumple,
           resultado:     concepto,
           observaciones: observaciones?.trim() || null,
-          imagenNombre:  imagenNombre || null,
-          imagenData:    imagenData   || null,
           userId:        session.user.id,
+          ...(archivos.length > 0
+            ? { adjuntos: { create: archivos } }
+            : {}),
         },
       });
 
