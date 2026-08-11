@@ -11,12 +11,22 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
   const esAdmin = session.user.role === "ADMINISTRADOR";
   try {
     const verif = await prisma.verificacion.findUnique({
-      where: { id },
+      where:   { id },
+      include: { adjuntos: { orderBy: { createdAt: "asc" } } },
     });
     if (!verif || (verif.userId !== session.user.id && !esAdmin)) {
       return NextResponse.json({ error: "No encontrado" }, { status: 404 });
     }
-    return NextResponse.json(verif);
+
+    // El archivo del esquema anterior se presenta como un adjunto más
+    const adjuntos = [
+      ...(verif.imagenData
+        ? [{ id: `legacy-${verif.id}`, nombre: verif.imagenNombre ?? "adjunto", data: verif.imagenData }]
+        : []),
+      ...verif.adjuntos.map((a) => ({ id: a.id, nombre: a.nombre, data: a.data })),
+    ];
+
+    return NextResponse.json({ ...verif, adjuntos });
   } catch {
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }

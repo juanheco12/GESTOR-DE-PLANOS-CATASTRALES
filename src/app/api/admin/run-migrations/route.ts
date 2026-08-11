@@ -147,6 +147,24 @@ export async function POST() {
       `CREATE INDEX IF NOT EXISTS "Verificacion_fmi_idx" ON "Verificacion"("fmi")`
     );
 
+    // 11. Adjuntos de la verificación: varios archivos por revisión
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "VerificacionAdjunto" (
+        "id"             TEXT         NOT NULL,
+        "verificacionId" TEXT         NOT NULL,
+        "nombre"         TEXT         NOT NULL,
+        "data"           TEXT         NOT NULL,
+        "createdAt"      TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT "VerificacionAdjunto_pkey" PRIMARY KEY ("id"),
+        CONSTRAINT "VerificacionAdjunto_verificacionId_fkey"
+          FOREIGN KEY ("verificacionId") REFERENCES "Verificacion"("id")
+          ON DELETE CASCADE ON UPDATE CASCADE
+      )
+    `);
+    await prisma.$executeRawUnsafe(
+      `CREATE INDEX IF NOT EXISTS "VerificacionAdjunto_verificacionId_idx" ON "VerificacionAdjunto"("verificacionId")`
+    );
+
     return NextResponse.json({ ok: true, message: "Migraciones aplicadas correctamente." });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

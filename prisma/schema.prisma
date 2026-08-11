@@ -182,8 +182,23 @@ model Verificacion {
   llamado       LlamadoVerificacion?
   subsana       Verificacion?  @relation("Subsanacion", fields: [subsanaId], references: [id], onDelete: SetNull)
   subsanadaPor  Verificacion[] @relation("Subsanacion")
+  adjuntos      VerificacionAdjunto[]
 
   @@index([fmi])
+}
+
+// Archivos de respaldo de una verificación. Tabla aparte porque son varios
+// y porque su contenido es pesado: así la lista no los arrastra.
+model VerificacionAdjunto {
+  id             String   @id @default(cuid())
+  verificacionId String
+  nombre         String
+  data           String
+  createdAt      DateTime @default(now())
+
+  verificacion   Verificacion @relation(fields: [verificacionId], references: [id], onDelete: Cascade)
+
+  @@index([verificacionId])
 }
 
 // Solicitud de ventanilla (radicador / encargado) para que el digitalizador

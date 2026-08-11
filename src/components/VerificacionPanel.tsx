@@ -55,6 +55,28 @@ const hora = (iso: string) =>
     timeZone: "America/Bogota", hour: "2-digit", minute: "2-digit",
   });
 
+const MAX_ADJUNTOS    = 2;
+const MAX_POR_ARCHIVO = 2 * 1024 * 1024;
+// En base64 el contenido crece un tercio; el tope conjunto deja margen
+// frente al límite de tamaño de la petición.
+const MAX_PESO_TOTAL  = 4 * 1024 * 1024;
+
+// Archivos con contenido, para el reporte. El esquema anterior guardaba
+// uno solo en la propia verificación.
+function archivosDe(v: Verificacion): { nombre: string; data: string }[] {
+  const nuevos = (v.adjuntos ?? [])
+    .filter((a) => a.data)
+    .map((a) => ({ nombre: a.nombre, data: a.data as string }));
+  if (nuevos.length > 0) return nuevos;
+  return v.imagenData ? [{ nombre: v.imagenNombre ?? "adjunto", data: v.imagenData }] : [];
+}
+
+// Nombres de los archivos de una verificación, sea del esquema nuevo o del anterior
+function nombresAdjuntos(v: Verificacion): string[] {
+  const nuevos = (v.adjuntos ?? []).map((a) => a.nombre);
+  return nuevos.length > 0 ? nuevos : v.imagenNombre ? [v.imagenNombre] : [];
+}
+
 // Nombre de la captura pegada, con fecha y hora para poder ubicarla después
 function nombreCaptura(mime: string): string {
   const sello = new Date().toLocaleString("es-CO", {
@@ -90,7 +112,8 @@ interface Verificacion {
   cumple:        boolean;
   resultado?:    string | null;
   observaciones: string | null;
-  imagenNombre:  string | null;
+  imagenNombre:  string | null;        // archivo único del esquema anterior
+  adjuntos?:     { id: string; nombre: string; data?: string }[];
   createdAt:     string;
   imagenData?:   string | null;
   subsanaId?:    string | null;
@@ -232,7 +255,7 @@ function buildReportHTML(
       <td>${duracion(v)}</td>
       <td>${escHtml(v.llamado?.formato ?? "—")}</td>
       <td>${escHtml(v.observaciones ?? "—")}</td>
-      <td>${v.imagenNombre ? `📎 ${escHtml(v.imagenNombre)}` : "—"}</td>
+      <td>${nombresAdjuntos(v).length ? `📎 ${escHtml(nombresAdjuntos(v).join(" · "))}` : "—"}</td>
     </tr>`).join("");
 
   // Derechos de petición registrados por ventanilla vía check-in (sin revisión)
@@ -262,15 +285,19 @@ function buildReportHTML(
   </table>`;
 
   // Sección de anexos: una página por plano con archivo adjunto
-  const conArchivo = verifs.filter((v) => v.imagenData);
+  const conArchivo = verifs.filter((v) => archivosDe(v).length > 0);
   const anexos = !conAnexos || conArchivo.length === 0 ? "" : `
   <div class="anexos">
     ${conArchivo.map((v, i) => {
-      const esPdf = (v.imagenData ?? "").startsWith("data:application/pdf");
-      const visor = esPdf
-        ? `<embed src="${v.imagenData}" type="application/pdf" class="doc"/>
-           <p class="nota">Documento PDF adjunto. Si no se visualiza al imprimir, ábrelo desde el historial con el botón "Ver".</p>`
-        : `<img src="${v.imagenData}" alt="Plano ${escHtml(v.fmi ?? "sin FMI")}" class="doc"/>`;
+      const archivos = archivosDe(v);
+      const visores = archivos.map((a) => {
+        const esPdf = a.data.startsWith("data:application/pdf");
+        return esPdf
+          ? `<embed src="${a.data}" type="application/pdf" class="doc"/>
+             <p class="nota">Documento PDF adjunto. Si no se visualiza al imprimir, ábrelo desde el historial con el botón "Ver".</p>`
+          : `<img src="${a.data}" alt="Plano ${escHtml(v.fmi ?? "sin FMI")}" class="doc"/>`;
+      }).join('<div class="separador"></div>');
+
       return `
       <section class="anexo">
         <h2>Anexo ${i + 1} — ${v.fmi ? `FMI ${escHtml(v.fmi)}` : v.radicado ? `Radicado ${escHtml(v.radicado)}` : "Sin identificar"}</h2>
@@ -284,9 +311,9 @@ function buildReportHTML(
           <tr><th>Formato</th><td>${escHtml(v.llamado?.formato ?? "—")}</td></tr>
           <tr><th>Solicitó</th><td>${escHtml(v.llamado?.solicitante?.name ?? "—")}</td></tr>
           <tr><th>Observaciones</th><td>${escHtml(v.observaciones ?? "—")}</td></tr>
-          <tr><th>Archivo</th><td>${escHtml(v.imagenNombre ?? "—")}</td></tr>
+          <tr><th>Archivos</th><td>${escHtml(archivos.map((a) => a.nombre).join(" · "))}</td></tr>
         </table>
-        ${visor}
+        ${visores}
       </section>`;
     }).join("")}
   </div>`;
@@ -330,6 +357,7 @@ function buildReportHTML(
     .doc{display:block;width:100%;max-height:195mm;object-fit:contain;border:1px solid #e2e8f0;border-radius:4px}
     embed.doc{height:195mm}
     .nota{font-size:8.5px;color:#94a3b8;margin-top:5px;text-align:center}
+    .separador{height:10px}
     @media print{@page{margin:15mm}body{padding:0}}
   </style>
 </head>
@@ -417,7 +445,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   const [cumple,       setCumple]       = useState<boolean | null>(null);
   const [resultado,    setResultado]    = useState<Concepto | null>(null);
   const [observaciones, setObservaciones] = useState("");
-  const [imagen,       setImagen]       = useState<{ nombre: string; data: string } | null>(null);
+  const [imagenes,     setImagenes]     = useState<{ nombre: string; data: string }[]>([]);
   const [saving,       setSaving]       = useState(false);
   const [formError,    setFormError]    = useState("");
   const [success,      setSuccess]      = useState(false);
@@ -552,7 +580,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
       setFmi(tomado.fmi ?? "");
       setCumple(null); setResultado(null);
       setObservaciones("");
-      setImagen(null);
+      setImagenes([]);
       setFormError("");
       setSuccess(false);
       // el formulario se muestra dentro de la pestaña de llamados
@@ -575,21 +603,35 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
 
   // Adjunta un archivo venga de donde venga: del selector o del portapapeles
   const adjuntar = (file: File, nombreSugerido?: string) => {
-    if (file.size > 2 * 1024 * 1024) {
-      setFormError("El archivo no puede superar 2 MB");
+    if (file.size > MAX_POR_ARCHIVO) {
+      setFormError("Cada archivo puede pesar hasta 2 MB");
       return;
     }
     const reader = new FileReader();
     reader.onload = () => {
-      setImagen({ nombre: nombreSugerido || file.name || "adjunto", data: reader.result as string });
-      setFormError("");
+      const nuevo = { nombre: nombreSugerido || file.name || "adjunto", data: reader.result as string };
+      setImagenes((prev) => {
+        if (prev.length >= MAX_ADJUNTOS) {
+          setFormError(`Puedes adjuntar hasta ${MAX_ADJUNTOS} archivos`);
+          return prev;
+        }
+        // El tope conjunto evita que la petición sea rechazada por tamaño
+        const peso = prev.reduce((a, x) => a + x.data.length, 0) + nuevo.data.length;
+        if (peso > MAX_PESO_TOTAL) {
+          setFormError("Los dos archivos juntos superan el tamaño permitido");
+          return prev;
+        }
+        setFormError("");
+        return [...prev, nuevo];
+      });
     };
     reader.readAsDataURL(file);
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) adjuntar(file);
+    const files = Array.from(e.target.files ?? []).slice(0, MAX_ADJUNTOS);
+    files.forEach((f) => adjuntar(f));
+    if (fileRef.current) fileRef.current.value = "";
   };
 
   // Ctrl+V sobre el formulario: pega la captura recortada con la
@@ -641,7 +683,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
 
   const resetForm = () => {
     setFmi(""); setRadicado(""); setCumple(null); setResultado(null);
-    setObservaciones(""); setImagen(null);
+    setObservaciones(""); setImagenes([]);
     setFormError(""); setSuccess(false);
     setLlamadoActivo(null);
     setPrevias([]); setSubsanaId(null);
@@ -667,8 +709,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
         body:    JSON.stringify({
           fmi: fmi.trim(), radicado: radicado.trim(), cumple, resultado,
           observaciones: observaciones.trim() || null,
-          imagenNombre:  imagen?.nombre || null,
-          imagenData:    imagen?.data   || null,
+          adjuntos:      imagenes,
           llamadoId:     llamadoActivo?.id || null,
           subsanaId,
         }),
@@ -696,15 +737,18 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
     try {
       const res  = await fetch(`/api/verificaciones/${v.id}`);
       const data = await res.json();
-      if (!data.imagenData) { alert("Este registro no tiene archivo adjunto."); return; }
+      const archivos: { id: string; nombre: string; data: string }[] = data.adjuntos ?? [];
+      if (archivos.length === 0) { alert("Este registro no tiene archivos adjuntos."); return; }
 
       const w = window.open("", "_blank");
-      if (!w) { alert("Permite las ventanas emergentes para ver el archivo."); return; }
+      if (!w) { alert("Permite las ventanas emergentes para ver los archivos."); return; }
 
-      const esPdf  = String(data.imagenData).startsWith("data:application/pdf");
-      const nombre = escHtml(data.imagenNombre ?? "archivo");
+      const titulo = archivos.length === 1
+        ? escHtml(archivos[0].nombre)
+        : `${archivos.length} archivos — FMI ${escHtml(data.fmi ?? "—")}`;
+
       w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/>
-<title>${nombre}</title>
+<title>${titulo}</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   body{font-family:Arial,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;display:flex;flex-direction:column}
@@ -712,20 +756,31 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   h1{font-size:14px;font-weight:600}
   .sub{font-size:11px;opacity:.85;margin-top:2px}
   a.dl{background:#fff;color:#0f766e;padding:7px 14px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600}
-  main{flex:1;display:flex;align-items:center;justify-content:center;padding:16px}
-  img{max-width:100%;max-height:88vh;object-fit:contain;border-radius:6px;box-shadow:0 4px 24px rgba(0,0,0,.4)}
-  embed{width:100%;height:88vh;border-radius:6px;background:#fff}
+  main{flex:1;padding:16px;display:flex;flex-direction:column;gap:20px;align-items:center}
+  figure{width:100%;max-width:1100px}
+  figcaption{display:flex;justify-content:space-between;align-items:center;gap:12px;font-size:12px;margin-bottom:6px;flex-wrap:wrap}
+  img{max-width:100%;max-height:82vh;object-fit:contain;border-radius:6px;box-shadow:0 4px 24px rgba(0,0,0,.4);display:block;margin:0 auto}
+  embed{width:100%;height:82vh;border-radius:6px;background:#fff}
 </style></head><body>
 <header>
   <div>
-    <h1>${nombre}</h1>
+    <h1>${titulo}</h1>
     <p class="sub">FMI ${escHtml(data.fmi ?? "—")} &nbsp;·&nbsp; Radicado ${escHtml(data.radicado ?? "—")} &nbsp;·&nbsp; ${data.cumple ? "PROCEDE" : "NO PROCEDE"}</p>
   </div>
-  <a class="dl" href="${data.imagenData}" download="${nombre}">Descargar</a>
 </header>
-<main>${esPdf
-  ? `<embed src="${data.imagenData}" type="application/pdf"/>`
-  : `<img src="${data.imagenData}" alt="${nombre}"/>`}</main>
+<main>${archivos.map((a) => {
+  const esPdf  = String(a.data).startsWith("data:application/pdf");
+  const nombre = escHtml(a.nombre);
+  return `<figure>
+    <figcaption>
+      <span>${nombre}</span>
+      <a class="dl" href="${a.data}" download="${nombre}">Descargar</a>
+    </figcaption>
+    ${esPdf
+      ? `<embed src="${a.data}" type="application/pdf"/>`
+      : `<img src="${a.data}" alt="${nombre}"/>`}
+  </figure>`;
+}).join("")}</main>
 </body></html>`);
       w.document.close();
     } catch {
@@ -770,11 +825,12 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
       if (conAnexos) {
         datos = await Promise.all(
           verifs.map(async (v) => {
-            if (!v.imagenNombre) return v;
+            if (nombresAdjuntos(v).length === 0) return v;
             try {
               const res = await fetch(`/api/verificaciones/${v.id}`);
               const d   = await res.json();
-              return { ...v, imagenData: d.imagenData ?? null };
+              // El detalle ya entrega el archivo antiguo como un adjunto más
+              return { ...v, adjuntos: d.adjuntos ?? [], imagenData: d.imagenData ?? null };
             } catch {
               return v;
             }
@@ -996,7 +1052,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                             setLlamadoActivo(l);
                             setRadicado(l.radicado ?? "");
                             setFmi(l.fmi ?? "");
-                            setCumple(null); setResultado(null); setObservaciones(""); setImagen(null);
+                            setCumple(null); setResultado(null); setObservaciones(""); setImagenes([]);
                             setFormError(""); setSuccess(false);
 
                           }}
@@ -1212,8 +1268,10 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                 {/* Imagen */}
                 <div>
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
-                    Imagen del plano
-                    <span className="text-slate-400 text-xs font-normal ml-1">(imagen o PDF — máx. 2 MB)</span>
+                    Imágenes del plano
+                    <span className="text-slate-400 text-xs font-normal ml-1">
+                      (hasta {MAX_ADJUNTOS} archivos, 2 MB cada uno)
+                    </span>
                   </label>
                   <div
                     onClick={() => fileRef.current?.click()}
@@ -1233,23 +1291,42 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                       PEGAR
                     </button>
 
-                    {imagen ? (
-                      <>
-                        <ImageIcon className="h-5 w-5 text-teal-600 dark:text-teal-400" />
-                        <span className="text-xs font-medium text-slate-700 dark:text-slate-300 text-center break-all">{imagen.nombre}</span>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); setImagen(null); if (fileRef.current) fileRef.current.value = ""; }}
-                          className="text-xs text-red-500 hover:text-red-700 underline"
-                        >
-                          Quitar archivo
-                        </button>
-                      </>
+                    {imagenes.length > 0 ? (
+                      <div className="w-full space-y-1.5" onClick={(e) => e.stopPropagation()}>
+                        {imagenes.map((img, i) => (
+                          <div
+                            key={`${img.nombre}-${i}`}
+                            className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
+                          >
+                            <ImageIcon className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+                            <span className="text-xs text-slate-700 dark:text-slate-300 truncate flex-1">
+                              {img.nombre}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setImagenes((prev) => prev.filter((_, j) => j !== i))}
+                              title="Quitar"
+                              className="p-0.5 text-slate-400 hover:text-red-500 shrink-0"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ))}
+                        {imagenes.length < MAX_ADJUNTOS && (
+                          <button
+                            type="button"
+                            onClick={() => fileRef.current?.click()}
+                            className="w-full py-1.5 text-[11px] text-teal-700 dark:text-teal-400 hover:underline"
+                          >
+                            + Agregar otro archivo
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       <>
                         <Upload className="h-5 w-5 text-slate-400" />
                         <span className="text-xs text-slate-500 dark:text-slate-400">
-                          Toca para adjuntar un archivo
+                          Toca para adjuntar archivos
                         </span>
                         <span className="text-[11px] text-slate-400 dark:text-slate-500">
                           o pega la captura del portapapeles
@@ -1261,6 +1338,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                     ref={fileRef}
                     type="file"
                     accept="image/*,.pdf"
+                    multiple
                     className="hidden"
                     onChange={handleFile}
                   />
@@ -1451,11 +1529,15 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                                 {v.observaciones}
                               </p>
                             )}
-                            {v.imagenNombre && (
+                            {nombresAdjuntos(v).length > 0 && (
                               <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                                 <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 min-w-0">
                                   <ImageIcon className="h-3 w-3 shrink-0" />
-                                  <span className="truncate max-w-[150px]">{v.imagenNombre}</span>
+                                  <span className="truncate max-w-[150px]">
+                                    {nombresAdjuntos(v).length > 1
+                                      ? `${nombresAdjuntos(v).length} archivos`
+                                      : nombresAdjuntos(v)[0]}
+                                  </span>
                                 </span>
                                 <button
                                   onClick={() => verArchivo(v)}
