@@ -446,6 +446,8 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   const [resultado,    setResultado]    = useState<Concepto | null>(null);
   const [observaciones, setObservaciones] = useState("");
   const [imagenes,     setImagenes]     = useState<{ nombre: string; data: string }[]>([]);
+  // Espejo del estado para las lecturas de archivo, que terminan de forma asíncrona
+  const imagenesRef = useRef<{ nombre: string; data: string }[]>([]);
   const [saving,       setSaving]       = useState(false);
   const [formError,    setFormError]    = useState("");
   const [success,      setSuccess]      = useState(false);
@@ -509,6 +511,10 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
       window.removeEventListener("catastro-abrir-panel", onEvento);
     };
   }, []);
+
+  // Mantiene el espejo al día cuando el estado cambia por otra vía:
+  // al quitar un archivo o al limpiar el formulario.
+  useEffect(() => { imagenesRef.current = imagenes; }, [imagenes]);
 
   // Avanza el cronómetro solo mientras hay una revisión abierta
   useEffect(() => {
@@ -610,20 +616,25 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
     const reader = new FileReader();
     reader.onload = () => {
       const nuevo = { nombre: nombreSugerido || file.name || "adjunto", data: reader.result as string };
-      setImagenes((prev) => {
-        if (prev.length >= MAX_ADJUNTOS) {
-          setFormError(`Puedes adjuntar hasta ${MAX_ADJUNTOS} archivos`);
-          return prev;
-        }
-        // El tope conjunto evita que la petición sea rechazada por tamaño
-        const peso = prev.reduce((a, x) => a + x.data.length, 0) + nuevo.data.length;
-        if (peso > MAX_PESO_TOTAL) {
-          setFormError("Los dos archivos juntos superan el tamaño permitido");
-          return prev;
-        }
-        setFormError("");
-        return [...prev, nuevo];
-      });
+
+      // La referencia lleva la cuenta al día: al elegir dos archivos a la vez
+      // cada lectura termina por su lado y el estado aún no se ha propagado.
+      const actuales = imagenesRef.current;
+
+      if (actuales.length >= MAX_ADJUNTOS) {
+        setFormError(`Puedes adjuntar hasta ${MAX_ADJUNTOS} archivos`);
+        return;
+      }
+      const peso = actuales.reduce((a, x) => a + x.data.length, 0) + nuevo.data.length;
+      if (peso > MAX_PESO_TOTAL) {
+        setFormError("Los dos archivos juntos superan el tamaño permitido");
+        return;
+      }
+
+      const siguiente = [...actuales, nuevo];
+      imagenesRef.current = siguiente;
+      setImagenes(siguiente);
+      setFormError("");
     };
     reader.readAsDataURL(file);
   };
