@@ -56,7 +56,13 @@ const hora = (iso: string) =>
   });
 
 const MAX_ADJUNTOS    = 2;
-const MAX_POR_ARCHIVO = 2 * 1024 * 1024;
+// Lado mayor y calidad: a 85 el texto del plano sigue legible pesando
+// cerca de ocho veces menos que el PNG original.
+const MAX_LADO        = 2000;
+const CALIDAD_JPEG    = 0.85;
+// El tope se mide sobre el texto que se va a guardar, ya comprimido:
+// en base64 el contenido crece un tercio.
+const MAX_POR_ARCHIVO = Math.round(2.7 * 1024 * 1024);
 // En base64 el contenido crece un tercio; el tope conjunto deja margen
 // frente al límite de tamaño de la petición.
 const MAX_PESO_TOTAL  = 4 * 1024 * 1024;
@@ -69,6 +75,61 @@ function archivosDe(v: Verificacion): { nombre: string; data: string }[] {
     .map((a) => ({ nombre: a.nombre, data: a.data as string }));
   if (nuevos.length > 0) return nuevos;
   return v.imagenData ? [{ nombre: v.imagenNombre ?? "adjunto", data: v.imagenData }] : [];
+}
+
+function leerDataURL(file: Blob): Promise<string> {
+  return new Promise((resolver, rechazar) => {
+    const lector = new FileReader();
+    lector.onload  = () => resolver(lector.result as string);
+    lector.onerror = () => rechazar(new Error("No se pudo leer el archivo"));
+    lector.readAsDataURL(file);
+  });
+}
+
+/**
+ * Reduce el peso de la captura en el propio equipo antes de enviarla.
+ *
+ * El escaneo trae grano de papel que en PNG ocupa muchísimo y no aporta
+ * nada; en JPEG a calidad alta el texto del plano sigue legible pesando
+ * cerca de ocho veces menos.
+ *
+ * Ante cualquier tropiezo devuelve el original: es preferible guardar de
+ * más que perder el respaldo del concepto técnico.
+ */
+async function comprimir(file: File): Promise<string> {
+  const original = await leerDataURL(file);
+
+  // Un PDF no pasa por el lienzo del navegador
+  if (!file.type.startsWith("image/")) return original;
+
+  try {
+    const img = await new Promise<HTMLImageElement>((resolver, rechazar) => {
+      const i = new Image();
+      i.onload  = () => resolver(i);
+      i.onerror = () => rechazar(new Error("Imagen ilegible"));
+      i.src = original;
+    });
+
+    const factor = Math.min(1, MAX_LADO / Math.max(img.width, img.height));
+    const lienzo = document.createElement("canvas");
+    lienzo.width  = Math.max(1, Math.round(img.width  * factor));
+    lienzo.height = Math.max(1, Math.round(img.height * factor));
+
+    const ctx = lienzo.getContext("2d");
+    if (!ctx) return original;
+
+    // El JPEG no guarda transparencia: sin fondo, lo transparente sale negro
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, lienzo.width, lienzo.height);
+    ctx.drawImage(img, 0, 0, lienzo.width, lienzo.height);
+
+    const comprimida = lienzo.toDataURL("image/jpeg", CALIDAD_JPEG);
+
+    // Una imagen ya optimizada puede crecer al recodificarla
+    return comprimida.length < original.length ? comprimida : original;
+  } catch {
+    return original;
+  }
 }
 
 // Nombres de los archivos de una verificación, sea del esquema nuevo o del anterior
@@ -436,7 +497,8 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   // Revisiones anteriores del mismo folio, para subsanar la observación previa
   const [previas,    setPrevias]    = useState<Previa[]>([]);
   const [buscandoP,  setBuscandoP]  = useState(false);
-  const [pegando,    setPegando]    = useState(false);
+  const [pegando,     setPegando]     = useState(false);
+  const [comprimiendo, setComprimiendo] = useState(false);
   const [subsanaId,  setSubsanaId]  = useState<string | null>(null);
 
   // form
@@ -608,41 +670,58 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   };
 
   // Adjunta un archivo venga de donde venga: del selector o del portapapeles
-  const adjuntar = (file: File, nombreSugerido?: string) => {
-    if (file.size > MAX_POR_ARCHIVO) {
-      setFormError("Cada archivo puede pesar hasta 2 MB");
+  const adjuntar = async (file: File, nombreSugerido?: string) => {
+    // La referencia lleva la cuenta al día: al elegir dos archivos a la vez
+    // cada lectura termina por su lado y el estado aún no se ha propagado.
+    if (imagenesRef.current.length >= MAX_ADJUNTOS) {
+      setFormError(`Puedes adjuntar hasta ${MAX_ADJUNTOS} archivos`);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const nuevo = { nombre: nombreSugerido || file.name || "adjunto", data: reader.result as string };
 
-      // La referencia lleva la cuenta al día: al elegir dos archivos a la vez
-      // cada lectura termina por su lado y el estado aún no se ha propagado.
+    setComprimiendo(true);
+    try {
+      const data = await comprimir(file);
+
+      // El tope se evalúa sobre lo comprimido: una captura pesada que
+      // adelgaza lo suficiente ya no tiene por qué rechazarse.
+      if (data.length > MAX_POR_ARCHIVO) {
+        setFormError("El archivo sigue siendo muy pesado incluso comprimido");
+        return;
+      }
+
       const actuales = imagenesRef.current;
-
       if (actuales.length >= MAX_ADJUNTOS) {
         setFormError(`Puedes adjuntar hasta ${MAX_ADJUNTOS} archivos`);
         return;
       }
-      const peso = actuales.reduce((a, x) => a + x.data.length, 0) + nuevo.data.length;
+      const peso = actuales.reduce((a, x) => a + x.data.length, 0) + data.length;
       if (peso > MAX_PESO_TOTAL) {
         setFormError("Los dos archivos juntos superan el tamaño permitido");
         return;
       }
 
-      const siguiente = [...actuales, nuevo];
+      // Si se recodificó a JPEG, la extensión debe reflejarlo
+      let nombre = nombreSugerido || file.name || "adjunto";
+      if (data.startsWith("data:image/jpeg") && !/\.jpe?g$/i.test(nombre)) {
+        nombre = nombre.replace(/\.[^.]+$/, "") + ".jpg";
+      }
+
+      const siguiente = [...actuales, { nombre, data }];
       imagenesRef.current = siguiente;
       setImagenes(siguiente);
       setFormError("");
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      setFormError("No se pudo procesar el archivo");
+    } finally {
+      setComprimiendo(false);
+    }
   };
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []).slice(0, MAX_ADJUNTOS);
-    files.forEach((f) => adjuntar(f));
     if (fileRef.current) fileRef.current.value = "";
+    // Uno tras otro, para que el segundo vea al primero ya contado
+    for (const f of files) await adjuntar(f);
   };
 
   // Ctrl+V sobre el formulario: pega la captura recortada con la
@@ -680,7 +759,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
         const tipo = elemento.types.find((t) => t.startsWith("image/"));
         if (!tipo) continue;
         const blob = await elemento.getType(tipo);
-        adjuntar(new File([blob], "captura", { type: tipo }), nombreCaptura(tipo));
+        await adjuntar(new File([blob], "captura", { type: tipo }), nombreCaptura(tipo));
         return;
       }
       setFormError("No hay ninguna imagen en el portapapeles. Toma la captura primero.");
@@ -1281,7 +1360,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                   <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">
                     Imágenes del plano
                     <span className="text-slate-400 text-xs font-normal ml-1">
-                      (hasta {MAX_ADJUNTOS} archivos, 2 MB cada uno)
+                      (hasta {MAX_ADJUNTOS} archivos — se comprimen solos)
                     </span>
                   </label>
                   <div
@@ -1335,13 +1414,24 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                       </div>
                     ) : (
                       <>
-                        <Upload className="h-5 w-5 text-slate-400" />
-                        <span className="text-xs text-slate-500 dark:text-slate-400">
-                          Toca para adjuntar archivos
-                        </span>
-                        <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                          o pega la captura del portapapeles
-                        </span>
+                        {comprimiendo ? (
+                          <>
+                            <Loader2 className="h-5 w-5 text-teal-600 dark:text-teal-400 animate-spin" />
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              Preparando la imagen…
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-5 w-5 text-slate-400" />
+                            <span className="text-xs text-slate-500 dark:text-slate-400">
+                              Toca para adjuntar archivos
+                            </span>
+                            <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                              o pega la captura del portapapeles
+                            </span>
+                          </>
+                        )}
                       </>
                     )}
                   </div>
