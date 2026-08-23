@@ -80,9 +80,9 @@ export default function ActionButtons({
       {/* ── PENDIENTE: cualquier receptor puede aceptar ── */}
       {estado === "PENDIENTE" && (
         <div className="space-y-3">
-          <div className="flex items-start gap-3 p-4 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl">
-            <AlertTriangle className="h-5 w-5 text-teal-700 dark:text-teal-400 shrink-0 mt-0.5" />
-            <p className="text-sm text-teal-900 dark:text-teal-300">
+          <div className="flex items-start gap-3 p-4 bg-marca-50 dark:bg-marca-900/20 border border-marca-200 dark:border-marca-800 rounded-xl">
+            <AlertTriangle className="h-5 w-5 text-marca-700 dark:text-marca-400 shrink-0 mt-0.5" />
+            <p className="text-sm text-marca-900 dark:text-marca-300">
               Al aceptar, este proceso quedará asignado a ti. Solo tú podrás confirmar la entrega y gestionar la devolución.
             </p>
           </div>

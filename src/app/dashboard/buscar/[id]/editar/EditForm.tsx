@@ -12,7 +12,7 @@ const FORMATO_OPTIONS = [
 ];
 
 const inputClass =
-  "w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-600 transition-colors";
+  "w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-marca-500 focus:border-marca-600 transition-colors";
 
 export default function EditForm({ plan }: { plan: any }) {
   const router = useRouter();
@@ -164,7 +164,7 @@ export default function EditForm({ plan }: { plan: any }) {
 
       <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-800">
         <button type="submit" disabled={loading}
-          className="inline-flex items-center px-6 py-3 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-medium transition-colors disabled:opacity-70">
+          className="inline-flex items-center px-6 py-3 bg-marca-700 hover:bg-marca-800 text-white rounded-xl font-medium transition-colors disabled:opacity-70">
           <Save className="mr-2 h-5 w-5" />
           {loading ? "Guardando..." : "Guardar Cambios"}
         </button>

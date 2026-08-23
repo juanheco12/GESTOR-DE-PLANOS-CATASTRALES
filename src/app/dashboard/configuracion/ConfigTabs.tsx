@@ -39,7 +39,7 @@ export default function ConfigTabs({ initialUsers, initialReceivers }: { initial
             onClick={() => setActiveTab(t.id)}
             className={`flex-shrink-0 flex items-center justify-center py-4 px-5 text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === t.id
-                ? "bg-teal-50/50 dark:bg-teal-900/20 border-b-2 border-teal-700 text-teal-700 dark:text-teal-400"
+                ? "bg-marca-50/50 dark:bg-marca-900/20 border-b-2 border-marca-700 text-marca-700 dark:text-marca-400"
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
             }`}
           >

@@ -69,7 +69,7 @@ export default function PerfilPanel({
   };
 
   const inputClass =
-    "w-full px-3 py-2 pr-10 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-600 outline-none transition-colors";
+    "w-full px-3 py-2 pr-10 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-marca-500 focus:border-marca-600 outline-none transition-colors";
 
   return (
     <>
@@ -90,7 +90,7 @@ export default function PerfilPanel({
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
-                <Settings className="h-5 w-5 text-teal-700 dark:text-teal-400 shrink-0" />
+                <Settings className="h-5 w-5 text-marca-700 dark:text-marca-400 shrink-0" />
                 <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Mi Perfil</h2>
               </div>
               <button
@@ -104,13 +104,13 @@ export default function PerfilPanel({
             <div className="flex-1 overflow-y-auto p-5 space-y-5">
               {/* Datos de la cuenta */}
               <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60">
-                <div className="w-11 h-11 rounded-full bg-teal-700 flex items-center justify-center text-white text-lg font-bold uppercase shrink-0">
+                <div className="w-11 h-11 rounded-full bg-marca-700 flex items-center justify-center text-white text-lg font-bold uppercase shrink-0">
                   {nombre?.[0] ?? "U"}
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{nombre}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{correo}</p>
-                  <span className="inline-block mt-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md bg-teal-50 dark:bg-teal-900/40 text-teal-700 dark:text-teal-400">
+                  <span className="inline-block mt-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md bg-marca-50 dark:bg-marca-900/40 text-marca-700 dark:text-marca-400">
                     {ROLE_LABEL[rol] ?? rol}
                   </span>
                 </div>
@@ -195,7 +195,7 @@ export default function PerfilPanel({
                 <button
                   type="submit"
                   disabled={guardando}
-                  className="w-full py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="w-full py-2.5 bg-marca-700 hover:bg-marca-800 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   {guardando
                     ? <Loader2 className="h-4 w-4 animate-spin" />

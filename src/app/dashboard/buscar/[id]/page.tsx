@@ -202,11 +202,11 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
 
               {plano.ubicacionFisica && (
                 <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
-                  <div className="flex items-start gap-3 bg-teal-50 dark:bg-teal-900/20 border border-teal-200 dark:border-teal-800 rounded-xl p-4">
-                    <MapPin className="h-5 w-5 text-teal-700 dark:text-teal-400 shrink-0 mt-0.5" />
+                  <div className="flex items-start gap-3 bg-marca-50 dark:bg-marca-900/20 border border-marca-200 dark:border-marca-800 rounded-xl p-4">
+                    <MapPin className="h-5 w-5 text-marca-700 dark:text-marca-400 shrink-0 mt-0.5" />
                     <div>
-                      <p className="text-sm font-semibold text-teal-900 dark:text-teal-300">Ubicación física en oficina</p>
-                      <p className="text-base text-teal-900 dark:text-teal-100 mt-0.5">{plano.ubicacionFisica}</p>
+                      <p className="text-sm font-semibold text-marca-900 dark:text-marca-300">Ubicación física en oficina</p>
+                      <p className="text-base text-marca-900 dark:text-marca-100 mt-0.5">{plano.ubicacionFisica}</p>
                     </div>
                   </div>
                 </div>
@@ -278,9 +278,9 @@ export default async function DetallePlanoPage({ params }: { params: Promise<{ i
                           <span
                             className={`h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white dark:ring-slate-900 shrink-0
                               ${evento.accion === "REGISTRO"          ? "bg-emerald-500" :
-                                evento.accion === "SOLICITUD"         ? "bg-teal-600" :
+                                evento.accion === "SOLICITUD"         ? "bg-marca-600" :
                                 evento.accion === "PRESTAMO_EXTERNO"  ? "bg-violet-500" :
-                                evento.accion === "DEVOLUCION_EXTERNA"? "bg-teal-500" :
+                                evento.accion === "DEVOLUCION_EXTERNA"? "bg-marca-500" :
                                 evento.accion === "DEVOLUCION" || evento.accion === "PLANO_ARCHIVADO" ? "bg-purple-500" :
                                 evento.accion === "RECORDATORIO"      ? "bg-amber-500" :
                                 evento.accion === "INCONSISTENCIA_SUBSANADA" ? "bg-orange-500" :

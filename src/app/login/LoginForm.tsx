@@ -58,13 +58,13 @@ function FolderDocIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" overflow="visible">
       <path d="M3 9a2 2 0 012-2h3l2 2h10a2 2 0 012 2v7a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
-        fill="rgba(52,211,153,.2)" stroke="rgba(52,211,153,.9)" strokeWidth="1.5" strokeLinejoin="round"/>
+        fill="rgba(96,165,250,.2)" stroke="rgba(96,165,250,.9)" strokeWidth="1.5" strokeLinejoin="round"/>
       <g ref={gRef} opacity="0">
         <rect x="8.5" y="5" width="7" height="8.5" rx="1"
-          fill="rgba(255,255,255,.92)" stroke="rgba(52,211,153,.95)" strokeWidth="1.3"/>
-        <line x1="10.2" y1="7.5"  x2="14"   y2="7.5"  stroke="rgba(52,211,153,.7)" strokeWidth="1"/>
-        <line x1="10.2" y1="9.3"  x2="14"   y2="9.3"  stroke="rgba(52,211,153,.5)" strokeWidth="1"/>
-        <line x1="10.2" y1="11.1" x2="13"   y2="11.1" stroke="rgba(52,211,153,.4)" strokeWidth="1"/>
+          fill="rgba(255,255,255,.92)" stroke="rgba(96,165,250,.95)" strokeWidth="1.3"/>
+        <line x1="10.2" y1="7.5"  x2="14"   y2="7.5"  stroke="rgba(96,165,250,.7)" strokeWidth="1"/>
+        <line x1="10.2" y1="9.3"  x2="14"   y2="9.3"  stroke="rgba(96,165,250,.5)" strokeWidth="1"/>
+        <line x1="10.2" y1="11.1" x2="13"   y2="11.1" stroke="rgba(96,165,250,.4)" strokeWidth="1"/>
       </g>
     </svg>
   );
@@ -101,12 +101,12 @@ function TraceNetworkIcon() {
   }, []);
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
-      <line ref={r1} x1="5"  y1="19" x2="12" y2="5"  strokeDasharray="22" opacity="0" stroke="rgba(52,211,153,.85)" strokeWidth="1.8"/>
-      <line ref={r2} x1="12" y1="5"  x2="19" y2="19" strokeDasharray="22" opacity="0" stroke="rgba(52,211,153,.85)" strokeWidth="1.8"/>
-      <line ref={r3} x1="5"  y1="19" x2="19" y2="19" strokeDasharray="22" opacity="0" stroke="rgba(52,211,153,.65)" strokeWidth="1.8"/>
-      <circle cx="12" cy="5"  r="3" fill="rgba(52,211,153,.95)"/>
-      <circle cx="5"  cy="19" r="3" fill="rgba(52,211,153,.95)"/>
-      <circle cx="19" cy="19" r="3" fill="rgba(52,211,153,.95)"/>
+      <line ref={r1} x1="5"  y1="19" x2="12" y2="5"  strokeDasharray="22" opacity="0" stroke="rgba(96,165,250,.85)" strokeWidth="1.8"/>
+      <line ref={r2} x1="12" y1="5"  x2="19" y2="19" strokeDasharray="22" opacity="0" stroke="rgba(96,165,250,.85)" strokeWidth="1.8"/>
+      <line ref={r3} x1="5"  y1="19" x2="19" y2="19" strokeDasharray="22" opacity="0" stroke="rgba(96,165,250,.65)" strokeWidth="1.8"/>
+      <circle cx="12" cy="5"  r="3" fill="rgba(96,165,250,.95)"/>
+      <circle cx="5"  cy="19" r="3" fill="rgba(96,165,250,.95)"/>
+      <circle cx="19" cy="19" r="3" fill="rgba(96,165,250,.95)"/>
     </svg>
   );
 }
@@ -146,10 +146,10 @@ function BarsAnimIcon() {
   }, []);
   return (
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
-      <line x1="2" y1="21" x2="22" y2="21" stroke="rgba(52,211,153,.5)" strokeWidth="1.3"/>
-      <rect ref={r1} x="3"    y="21" width="5" height="0" rx="1" fill="rgba(52,211,153,.95)"/>
-      <rect ref={r2} x="9.5"  y="21" width="5" height="0" rx="1" fill="rgba(52,211,153,.75)"/>
-      <rect ref={r3} x="16"   y="21" width="5" height="0" rx="1" fill="rgba(52,211,153,.85)"/>
+      <line x1="2" y1="21" x2="22" y2="21" stroke="rgba(96,165,250,.5)" strokeWidth="1.3"/>
+      <rect ref={r1} x="3"    y="21" width="5" height="0" rx="1" fill="rgba(96,165,250,.95)"/>
+      <rect ref={r2} x="9.5"  y="21" width="5" height="0" rx="1" fill="rgba(96,165,250,.75)"/>
+      <rect ref={r3} x="16"   y="21" width="5" height="0" rx="1" fill="rgba(96,165,250,.85)"/>
     </svg>
   );
 }
@@ -192,11 +192,11 @@ function ShieldCheckAnimIcon() {
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none">
       <path ref={sr} opacity="0"
         d="M12 2L4 6v6c0 5.25 3.5 9.74 8 10.93C16.5 21.74 20 17.25 20 12V6L12 2z"
-        fill="rgba(52,211,153,.25)" stroke="rgba(52,211,153,.9)" strokeWidth="1.6" strokeLinejoin="round"/>
+        fill="rgba(96,165,250,.25)" stroke="rgba(96,165,250,.9)" strokeWidth="1.6" strokeLinejoin="round"/>
       <path ref={cr} opacity="0" fill="none"
         d="M8.5 12.5l2.5 2.5 4.5-5"
         strokeDasharray="12" strokeDashoffset="12"
-        stroke="rgba(52,211,153,1)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+        stroke="rgba(96,165,250,1)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
     </svg>
   );
 }
@@ -247,13 +247,13 @@ export default function LoginForm() {
 
       {/* ══ LEFT PANEL ══ */}
       <div className="hidden lg:flex lg:w-[52%] flex-col relative overflow-hidden
-                      bg-gradient-to-br from-teal-800 via-teal-700 to-emerald-900
-                      dark:from-slate-900 dark:via-teal-950 dark:to-slate-900">
+                      bg-gradient-to-br from-marca-800 via-marca-700 to-marca-950
+                      dark:from-slate-900 dark:via-marca-950 dark:to-slate-900">
 
         {/* Decorative circles */}
         <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-white/5 blur-2xl" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-emerald-500/10 blur-3xl" />
-        <div className="absolute top-1/2 -right-16 w-48 h-48 rounded-full bg-teal-400/10 blur-2xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full bg-marca-500/10 blur-3xl" />
+        <div className="absolute top-1/2 -right-16 w-48 h-48 rounded-full bg-marca-400/10 blur-2xl" />
 
         {/* Grid pattern overlay */}
         <div
@@ -285,7 +285,7 @@ export default function LoginForm() {
 
             <h1 className="text-5xl xl:text-6xl font-black text-white leading-none tracking-tight mb-3">
               CATASTRO<br />
-              <span className="text-emerald-300">MONTERÍA</span>
+              <span className="text-marca-300">MONTERÍA</span>
             </h1>
             <p className="text-white/60 text-base font-medium tracking-widest uppercase mb-6">
               Gestión de Planos
@@ -305,7 +305,7 @@ export default function LoginForm() {
                 key={label}
                 className="flex items-start gap-3 p-4 rounded-2xl bg-white/8 border border-white/10 backdrop-blur-sm hover:bg-white/12 transition-colors"
               >
-                <div className="w-10 h-10 rounded-xl bg-emerald-400/20 flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-10 h-10 rounded-xl bg-marca-400/20 flex items-center justify-center shrink-0 mt-0.5">
                   <Icon />
                 </div>
                 <div>
@@ -325,14 +325,14 @@ export default function LoginForm() {
                 </pattern>
               </defs>
               <rect width="400" height="96" fill="url(#grid)" />
-              <path d="M0,60 Q80,20 160,50 T320,30 T400,45" fill="none" stroke="rgba(52,211,153,0.6)" strokeWidth="2"/>
-              <path d="M0,75 Q100,40 200,65 T400,55" fill="none" stroke="rgba(52,211,153,0.3)" strokeWidth="1.5"/>
-              <circle cx="160" cy="50" r="5" fill="rgba(52,211,153,0.8)"/>
+              <path d="M0,60 Q80,20 160,50 T320,30 T400,45" fill="none" stroke="rgba(96,165,250,0.6)" strokeWidth="2"/>
+              <path d="M0,75 Q100,40 200,65 T400,55" fill="none" stroke="rgba(96,165,250,0.3)" strokeWidth="1.5"/>
+              <circle cx="160" cy="50" r="5" fill="rgba(96,165,250,0.8)"/>
               <circle cx="280" cy="35" r="3" fill="rgba(255,255,255,0.6)"/>
               <circle cx="80"  cy="38" r="3" fill="rgba(255,255,255,0.4)"/>
             </svg>
             <div className="absolute inset-0 flex items-center px-5">
-              <MapPin className="h-5 w-5 text-emerald-300 mr-2 shrink-0" />
+              <MapPin className="h-5 w-5 text-marca-300 mr-2 shrink-0" />
               <p className="text-white/60 text-xs">Montería · Córdoba · Colombia</p>
             </div>
           </div>
@@ -350,7 +350,7 @@ export default function LoginForm() {
 
         {/* Mobile logo */}
         <div className="lg:hidden flex items-center gap-3 mb-10">
-          <div className="w-10 h-10 bg-teal-700 rounded-xl flex items-center justify-center">
+          <div className="w-10 h-10 bg-marca-700 rounded-xl flex items-center justify-center">
             <MapPin className="h-5 w-5 text-white" />
           </div>
           <div>
@@ -362,8 +362,8 @@ export default function LoginForm() {
         <div className="w-full max-w-sm">
           {/* Avatar + greeting */}
           <div className="flex flex-col items-center mb-8">
-            <div className="w-16 h-16 rounded-2xl bg-teal-50 dark:bg-teal-900/30 border-2 border-teal-200 dark:border-teal-700 flex items-center justify-center mb-4 shadow-sm">
-              <User className="h-8 w-8 text-teal-700 dark:text-teal-400" />
+            <div className="w-16 h-16 rounded-2xl bg-marca-50 dark:bg-marca-900/30 border-2 border-marca-200 dark:border-marca-700 flex items-center justify-center mb-4 shadow-sm">
+              <User className="h-8 w-8 text-marca-700 dark:text-marca-400" />
             </div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Bienvenido</h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">Inicia sesión para continuar</p>
@@ -394,7 +394,7 @@ export default function LoginForm() {
                   className="w-full pl-11 pr-4 py-3 rounded-xl border border-slate-200 dark:border-slate-700
                              bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100
                              placeholder-slate-400 dark:placeholder-slate-500
-                             focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500
+                             focus:outline-none focus:ring-2 focus:ring-marca-500 focus:border-marca-500
                              transition-colors text-sm"
                 />
               </div>
@@ -417,7 +417,7 @@ export default function LoginForm() {
                   className="w-full pl-11 pr-12 py-3 rounded-xl border border-slate-200 dark:border-slate-700
                              bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100
                              placeholder-slate-400 dark:placeholder-slate-500
-                             focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500
+                             focus:outline-none focus:ring-2 focus:ring-marca-500 focus:border-marca-500
                              transition-colors text-sm"
                 />
                 <button
@@ -436,7 +436,7 @@ export default function LoginForm() {
                 <div
                   onClick={() => setRemember(!remember)}
                   className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors cursor-pointer
-                    ${remember ? "bg-teal-600 border-teal-600" : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"}`}
+                    ${remember ? "bg-marca-600 border-marca-600" : "border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"}`}
                 >
                   {remember && (
                     <svg viewBox="0 0 12 10" className="w-2.5 h-2 fill-none stroke-white stroke-2">
@@ -449,7 +449,7 @@ export default function LoginForm() {
               <button
                 type="button"
                 onClick={() => setForgotMsg(!forgotMsg)}
-                className="text-sm text-teal-700 dark:text-teal-400 hover:underline font-medium"
+                className="text-sm text-marca-700 dark:text-marca-400 hover:underline font-medium"
               >
                 ¿Olvidaste tu contraseña?
               </button>
@@ -467,10 +467,10 @@ export default function LoginForm() {
               type="submit"
               disabled={loading}
               className="w-full py-3 mt-2 rounded-xl font-semibold text-sm text-white
-                         bg-teal-700 hover:bg-teal-800 dark:bg-teal-600 dark:hover:bg-teal-700
-                         focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900
+                         bg-marca-700 hover:bg-marca-800 dark:bg-marca-600 dark:hover:bg-marca-700
+                         focus:outline-none focus:ring-2 focus:ring-marca-500 focus:ring-offset-2 dark:focus:ring-offset-slate-900
                          disabled:opacity-60 disabled:cursor-not-allowed
-                         transition-all shadow-sm hover:shadow-teal-200 dark:hover:shadow-teal-900/40 hover:shadow-md
+                         transition-all shadow-sm hover:shadow-marca-200 dark:hover:shadow-marca-900/40 hover:shadow-md
                          flex items-center justify-center gap-2"
             >
               {loading ? (

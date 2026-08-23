@@ -57,7 +57,7 @@ export default function NotificacionesTab() {
       {/* Test section */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-700 p-5 space-y-3">
         <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200">
-          <Bell className="h-4 w-4 text-teal-600" />
+          <Bell className="h-4 w-4 text-marca-600" />
           Probar mis notificaciones
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
@@ -68,7 +68,7 @@ export default function NotificacionesTab() {
           <button
             onClick={sendTest}
             disabled={testLoading}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-700 text-white text-sm font-medium hover:bg-teal-800 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-marca-700 text-white text-sm font-medium hover:bg-marca-800 disabled:opacity-50 transition-colors"
           >
             {testLoading ? (
               <span className="h-4 w-4 block border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -102,7 +102,7 @@ export default function NotificacionesTab() {
           placeholder="Escribe el mensaje para todos los usuarios…"
           value={broadcastText}
           onChange={(e) => setBroadcastText(e.target.value)}
-          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+          className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-marca-500 resize-none"
         />
         <button
           onClick={sendBroadcast}
