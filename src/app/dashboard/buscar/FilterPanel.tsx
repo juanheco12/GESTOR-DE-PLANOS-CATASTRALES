@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Search, Filter, X } from "lucide-react";
 
 const inputClass =
-  "w-full px-3 py-1.5 text-sm rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-600 outline-none";
+  "w-full px-3 py-1.5 text-sm rounded-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-marca-500 focus:border-marca-600 outline-none";
 
 export default function FilterPanel() {
   const router = useRouter();
@@ -70,7 +70,7 @@ export default function FilterPanel() {
               value={filters.query}
               onChange={handleChange}
               placeholder="Búsqueda rápida — propietario, radicado o predial..."
-              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-600 outline-none text-sm dark:text-slate-100 transition-colors"
+              className="w-full pl-9 pr-4 py-2 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-marca-500 focus:border-marca-600 outline-none text-sm dark:text-slate-100 transition-colors"
             />
           </div>
           <button
@@ -78,14 +78,14 @@ export default function FilterPanel() {
             onClick={() => setShowAdvanced(!showAdvanced)}
             className={`inline-flex items-center justify-center gap-2 px-4 py-2 border rounded-lg font-medium text-sm transition-colors ${
               showAdvanced
-                ? "bg-teal-50 border-teal-200 text-teal-800 dark:bg-teal-900/30 dark:border-teal-800 dark:text-teal-400"
+                ? "bg-marca-50 border-marca-200 text-marca-800 dark:bg-marca-900/30 dark:border-marca-800 dark:text-marca-400"
                 : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
             }`}
           >
             <Filter className="h-4 w-4" />
             Filtros avanzados
             {advancedActive && (
-              <span className="w-2 h-2 rounded-full bg-teal-600 inline-block" />
+              <span className="w-2 h-2 rounded-full bg-marca-600 inline-block" />
             )}
           </button>
           <button

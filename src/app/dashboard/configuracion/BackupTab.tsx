@@ -37,8 +37,8 @@ export default function BackupTab() {
 
       {/* Tarjeta de respaldo manual */}
       <div className="rounded-2xl border border-slate-200 dark:border-slate-700 p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5">
-        <div className="p-3 rounded-xl bg-teal-50 dark:bg-teal-900/30 shrink-0">
-          <DatabaseBackup className="h-7 w-7 text-teal-700 dark:text-teal-400" />
+        <div className="p-3 rounded-xl bg-marca-50 dark:bg-marca-900/30 shrink-0">
+          <DatabaseBackup className="h-7 w-7 text-marca-700 dark:text-marca-400" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-slate-900 dark:text-slate-100">Respaldo completo del sistema</p>
@@ -50,7 +50,7 @@ export default function BackupTab() {
         <button
           onClick={handleBackup}
           disabled={loading}
-          className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-medium text-sm transition-colors disabled:opacity-60"
+          className="shrink-0 inline-flex items-center gap-2 px-5 py-2.5 bg-marca-700 hover:bg-marca-800 text-white rounded-xl font-medium text-sm transition-colors disabled:opacity-60"
         >
           <Download className="h-4 w-4" />
           {loading ? "Generando..." : "Descargar respaldo"}

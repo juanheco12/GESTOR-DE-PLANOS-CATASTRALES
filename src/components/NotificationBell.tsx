@@ -77,7 +77,7 @@ export default function NotificationBell() {
             {unread > 0 && (
               <button
                 onClick={markAllRead}
-                className="text-xs text-teal-700 dark:text-teal-400 hover:underline"
+                className="text-xs text-marca-700 dark:text-marca-400 hover:underline"
               >
                 Marcar todas como leídas
               </button>
@@ -96,7 +96,7 @@ export default function NotificationBell() {
                   className={`px-4 py-3 transition-colors ${
                     n.isRead
                       ? "bg-white dark:bg-slate-900"
-                      : "bg-teal-50 dark:bg-teal-900/20"
+                      : "bg-marca-50 dark:bg-marca-900/20"
                   }`}
                 >
                   <p className="text-sm text-slate-700 dark:text-slate-300 leading-snug">{n.message}</p>
@@ -106,7 +106,7 @@ export default function NotificationBell() {
                       <Link
                         href={`/dashboard/buscar/${n.plan.id}`}
                         onClick={() => setOpen(false)}
-                        className="text-xs text-teal-700 dark:text-teal-400 hover:underline shrink-0"
+                        className="text-xs text-marca-700 dark:text-marca-400 hover:underline shrink-0"
                       >
                         Ver plano →
                       </Link>

@@ -948,7 +948,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
   };
 
   const inputClass =
-    "w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-600 outline-none transition-colors";
+    "w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 text-sm focus:ring-2 focus:ring-marca-500 focus:border-marca-600 outline-none transition-colors";
 
   return (
     <>
@@ -956,7 +956,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
       <button
         onClick={() => { setOpen(true); setTab("llamados"); }}
         className={`fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full text-white shadow-lg hover:shadow-xl active:scale-95 transition-all flex items-center justify-center ${
-          pendientes > 0 ? "bg-amber-500 hover:bg-amber-600 animate-pulse" : "bg-teal-700 hover:bg-teal-800"
+          pendientes > 0 ? "bg-amber-500 hover:bg-amber-600 animate-pulse" : "bg-marca-700 hover:bg-marca-800"
         }`}
         title={pendientes > 0 ? `${pendientes} verificación(es) solicitada(s)` : "Verificación de planos"}
         aria-label="Abrir panel de verificación"
@@ -983,7 +983,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 shrink-0">
               <div className="flex items-center gap-2">
-                <ClipboardCheck className="h-5 w-5 text-teal-700 dark:text-teal-400 shrink-0" />
+                <ClipboardCheck className="h-5 w-5 text-marca-700 dark:text-marca-400 shrink-0" />
                 <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">
                   Verificación de Planos
                 </h2>
@@ -1004,7 +1004,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                   onClick={() => setTab(t)}
                   className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-3 text-xs sm:text-sm font-medium transition-colors ${
                     tab === t
-                      ? "border-b-2 border-teal-700 text-teal-700 dark:text-teal-400"
+                      ? "border-b-2 border-marca-700 text-marca-700 dark:text-marca-400"
                       : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
                   }`}
                 >
@@ -1032,7 +1032,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                   </p>
                   <button
                     onClick={loadLlamados}
-                    className="text-xs text-teal-700 dark:text-teal-400 hover:underline shrink-0"
+                    className="text-xs text-marca-700 dark:text-marca-400 hover:underline shrink-0"
                   >
                     Actualizar
                   </button>
@@ -1109,7 +1109,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                         <button
                           onClick={() => tomarLlamado(l)}
                           disabled={tomando === l.id}
-                          className="mt-2.5 w-full py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
+                          className="mt-2.5 w-full py-2 bg-marca-700 hover:bg-marca-800 text-white rounded-lg text-xs font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-1.5"
                         >
                           {tomando === l.id
                             ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -1365,7 +1365,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                   </label>
                   <div
                     onClick={() => fileRef.current?.click()}
-                    className="relative flex flex-col items-center justify-center gap-2 pt-4 pb-10 px-4 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 cursor-pointer hover:border-teal-400 dark:hover:border-teal-600 transition-colors bg-slate-50 dark:bg-slate-800/40"
+                    className="relative flex flex-col items-center justify-center gap-2 pt-4 pb-10 px-4 rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-700 cursor-pointer hover:border-marca-400 dark:hover:border-marca-600 transition-colors bg-slate-50 dark:bg-slate-800/40"
                   >
                     {/* Pega la captura sin usar el teclado */}
                     <button
@@ -1373,7 +1373,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                       onClick={(e) => { e.stopPropagation(); pegarDelPortapapeles(); }}
                       disabled={pegando}
                       title="Pegar la captura que tienes en el portapapeles"
-                      className="absolute bottom-1.5 right-1.5 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-teal-600 hover:text-white dark:hover:bg-teal-600 text-[11px] font-bold tracking-wide transition-colors disabled:opacity-50"
+                      className="absolute bottom-1.5 right-1.5 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300 hover:bg-marca-600 hover:text-white dark:hover:bg-marca-600 text-[11px] font-bold tracking-wide transition-colors disabled:opacity-50"
                     >
                       {pegando
                         ? <Loader2 className="h-3 w-3 animate-spin" />
@@ -1388,7 +1388,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                             key={`${img.nombre}-${i}`}
                             className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700"
                           >
-                            <ImageIcon className="h-3.5 w-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+                            <ImageIcon className="h-3.5 w-3.5 text-marca-600 dark:text-marca-400 shrink-0" />
                             <span className="text-xs text-slate-700 dark:text-slate-300 truncate flex-1">
                               {img.nombre}
                             </span>
@@ -1406,7 +1406,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                           <button
                             type="button"
                             onClick={() => fileRef.current?.click()}
-                            className="w-full py-1.5 text-[11px] text-teal-700 dark:text-teal-400 hover:underline"
+                            className="w-full py-1.5 text-[11px] text-marca-700 dark:text-marca-400 hover:underline"
                           >
                             + Agregar otro archivo
                           </button>
@@ -1416,7 +1416,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                       <>
                         {comprimiendo ? (
                           <>
-                            <Loader2 className="h-5 w-5 text-teal-600 dark:text-teal-400 animate-spin" />
+                            <Loader2 className="h-5 w-5 text-marca-600 dark:text-marca-400 animate-spin" />
                             <span className="text-xs text-slate-500 dark:text-slate-400">
                               Preparando la imagen…
                             </span>
@@ -1449,7 +1449,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                 <button
                   type="submit"
                   disabled={saving || success}
-                  className="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-marca-700 hover:bg-marca-800 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   {saving
                     ? <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1478,7 +1478,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                     <button
                       onClick={() => generarReporte(true)}
                       disabled={verifs.length === 0 || generando}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-40"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-marca-700 hover:bg-marca-800 text-white text-xs font-medium rounded-lg transition-colors disabled:opacity-40"
                     >
                       {generando
                         ? <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin shrink-0" />
@@ -1494,7 +1494,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                   {/* Informe mensual de atención técnica */}
                   <div className="pt-3 mt-1 border-t border-slate-200 dark:border-slate-800">
                     <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center gap-1.5">
-                      <FileBarChart className="h-3.5 w-3.5 text-teal-700 dark:text-teal-400 shrink-0" />
+                      <FileBarChart className="h-3.5 w-3.5 text-marca-700 dark:text-marca-400 shrink-0" />
                       Informe Mensual de Atención Técnica
                     </p>
                     <div className="flex gap-2">
@@ -1507,7 +1507,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                       <button
                         onClick={generarInforme}
                         disabled={generandoInforme}
-                        className="px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 shrink-0 flex items-center gap-1.5"
+                        className="px-3 py-2 bg-marca-700 hover:bg-marca-800 text-white text-xs font-semibold rounded-lg transition-colors disabled:opacity-50 shrink-0 flex items-center gap-1.5"
                       >
                         {generandoInforme
                           ? <span className="h-3.5 w-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -1643,7 +1643,7 @@ export default function VerificacionPanel({ userName }: { userName: string }) {
                                 <button
                                   onClick={() => verArchivo(v)}
                                   disabled={loadingImg === v.id}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-teal-700 hover:bg-teal-800 text-white text-[11px] font-medium transition-colors disabled:opacity-50 shrink-0"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-marca-700 hover:bg-marca-800 text-white text-[11px] font-medium transition-colors disabled:opacity-50 shrink-0"
                                 >
                                   <Eye className="h-3 w-3" />
                                   {loadingImg === v.id ? "Abriendo…" : "Ver"}

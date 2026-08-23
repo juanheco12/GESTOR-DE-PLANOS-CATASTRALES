@@ -78,7 +78,7 @@ export default function SecurityTab() {
             required
             value={formData.currentPassword}
             onChange={e => setFormData({...formData, currentPassword: e.target.value})}
-            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500" 
+            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-marca-500" 
           />
         </div>
 
@@ -90,7 +90,7 @@ export default function SecurityTab() {
             minLength={6}
             value={formData.newPassword}
             onChange={e => setFormData({...formData, newPassword: e.target.value})}
-            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500" 
+            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-marca-500" 
           />
         </div>
 
@@ -102,7 +102,7 @@ export default function SecurityTab() {
             minLength={6}
             value={formData.confirmPassword}
             onChange={e => setFormData({...formData, confirmPassword: e.target.value})}
-            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500" 
+            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-marca-500" 
           />
         </div>
 
@@ -110,7 +110,7 @@ export default function SecurityTab() {
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full py-3 bg-teal-700 hover:bg-teal-800 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+            className="w-full py-3 bg-marca-700 hover:bg-marca-800 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
           >
             {loading ? "Actualizando..." : "Actualizar Contraseña"}
           </button>

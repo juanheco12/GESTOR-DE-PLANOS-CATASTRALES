@@ -77,7 +77,7 @@ export default async function MisSolicitudesPage() {
                           req.estado === "ENTREGADO"            ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400" :
                           req.estado === "DEVOLUCION_SOLICITADA" ? "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400" :
                           req.estado === "CANCELADO"             ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" :
-                          "bg-teal-100 text-teal-900 dark:bg-teal-900/30 dark:text-teal-400"}`}
+                          "bg-marca-100 text-marca-900 dark:bg-marca-900/30 dark:text-marca-400"}`}
                       >
                         {ESTADO_LABELS[req.estado] ?? req.estado}
                       </span>

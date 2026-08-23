@@ -53,7 +53,7 @@ export default function AdminActions({ planId, planEstado }: { planId: string; p
           onClick={handleRestore}
           disabled={isRestoring}
           title="Restaurar plano a estado Disponible"
-          className="inline-flex items-center px-3 py-1.5 bg-teal-100 hover:bg-teal-200 dark:bg-teal-900/30 dark:hover:bg-teal-900/50 text-teal-800 dark:text-teal-300 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
+          className="inline-flex items-center px-3 py-1.5 bg-marca-100 hover:bg-marca-200 dark:bg-marca-900/30 dark:hover:bg-marca-900/50 text-marca-800 dark:text-marca-300 rounded-md text-sm font-medium transition-colors disabled:opacity-50"
         >
           {isRestoring ? (
             <span className="mr-1.5 h-4 w-4 block border-2 border-current border-t-transparent rounded-full animate-spin" />

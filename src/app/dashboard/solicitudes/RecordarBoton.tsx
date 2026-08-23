@@ -76,7 +76,7 @@ export default function RecordarBoton({
           ? `Podrás volver a recordar en ${formatRemaining(remaining)}`
           : "Reenviar notificación al receptor"
       }
-      className="inline-flex items-center px-3 py-1.5 bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-400 hover:bg-teal-100 dark:hover:bg-teal-900/40 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="inline-flex items-center px-3 py-1.5 bg-marca-50 dark:bg-marca-900/20 text-marca-700 dark:text-marca-400 hover:bg-marca-100 dark:hover:bg-marca-900/40 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <Bell className="mr-1.5 h-4 w-4" />
       {loading ? "Enviando..." : onCooldown ? `Recordar (${formatRemaining(remaining)})` : "Recordar"}

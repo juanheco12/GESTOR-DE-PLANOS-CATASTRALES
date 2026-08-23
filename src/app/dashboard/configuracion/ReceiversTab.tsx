@@ -124,7 +124,7 @@ export default function ReceiversTab({ initialReceivers }: { initialReceivers: a
             setIsCreating(!isCreating);
             setError("");
           }}
-          className="inline-flex items-center px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg font-medium text-sm transition-colors"
+          className="inline-flex items-center px-4 py-2 bg-marca-700 hover:bg-marca-800 text-white rounded-lg font-medium text-sm transition-colors"
         >
           <Plus className="mr-2 h-4 w-4" />
           {isCreating ? "Cancelar" : "Nuevo Receptor"}
@@ -143,7 +143,7 @@ export default function ReceiversTab({ initialReceivers }: { initialReceivers: a
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               placeholder="Nombre del receptor"
-              className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-teal-500"
+              className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-marca-500"
             />
             <button
               type="submit"

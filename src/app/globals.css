@@ -4,6 +4,30 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ───────────────────────────────────────────────────────────────
+   Color institucional
+   Único lugar donde vive la identidad visual del sistema. Cambiar
+   estos valores repinta la aplicación entera; no hay tonos escritos
+   a mano en los componentes.
+
+   Los tonos están medidos para cumplir contraste AA en los dos temas:
+   700 se usa sobre fondo claro (7,25:1 sobre blanco) y 400 sobre
+   fondo oscuro (7,02:1 sobre slate-900).
+   ─────────────────────────────────────────────────────────────── */
+@theme {
+  --color-marca-50:  #eff6ff;
+  --color-marca-100: #dbeafe;
+  --color-marca-200: #bfdbfe;
+  --color-marca-300: #93c5fd;
+  --color-marca-400: #60a5fa;
+  --color-marca-500: #3b82f6;
+  --color-marca-600: #1d6fc4;
+  --color-marca-700: #1257a0;
+  --color-marca-800: #12447a;
+  --color-marca-900: #0f3660;
+  --color-marca-950: #0c2340;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

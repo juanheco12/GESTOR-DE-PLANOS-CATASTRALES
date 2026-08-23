@@ -78,7 +78,7 @@ export default async function GestionarSolicitudPage({ params }: { params: Promi
           <p className="text-slate-500 dark:text-slate-400 mt-0.5 text-sm">
             Plano <span className="font-semibold text-slate-700 dark:text-slate-300">{plan.radicado}</span>
             {" — "}
-            <span className="font-semibold text-teal-700 dark:text-teal-400">
+            <span className="font-semibold text-marca-700 dark:text-marca-400">
               {SOLICITUD_ESTADO_LABELS[solicitud.estado] ?? solicitud.estado.replace(/_/g, " ")}
             </span>
           </p>

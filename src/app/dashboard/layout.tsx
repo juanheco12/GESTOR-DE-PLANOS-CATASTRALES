@@ -99,7 +99,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Sidebar */}
       <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 transform transition-transform duration-200 ease-in-out lg:translate-x-0 lg:static lg:w-72 flex flex-col ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-teal-700 to-teal-800 shrink-0">
+        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-200 dark:border-slate-800 bg-gradient-to-r from-marca-700 to-marca-800 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
               <Map className="h-4 w-4 text-white" />
@@ -120,7 +120,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 href={item.href}
                 className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-150 ${
                   isActive
-                    ? "bg-teal-700 text-white shadow-sm shadow-teal-200 dark:shadow-teal-900/50"
+                    ? "bg-marca-700 text-white shadow-sm shadow-marca-200 dark:shadow-marca-900/50"
                     : "text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white"
                 }`}
               >
@@ -134,7 +134,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Usuario */}
         <div className="p-3 border-t border-slate-200 dark:border-slate-800 shrink-0">
           <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 mb-1">
-            <div className="w-8 h-8 rounded-full bg-teal-700 flex items-center justify-center text-white text-sm font-bold uppercase shrink-0">
+            <div className="w-8 h-8 rounded-full bg-marca-700 flex items-center justify-center text-white text-sm font-bold uppercase shrink-0">
               {session?.user?.name?.[0] || session?.user?.email?.[0] || "U"}
             </div>
             <div className="min-w-0 flex-1">
@@ -142,7 +142,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {session?.user?.name || "Usuario"}
               </p>
               <span className={`inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded-md leading-tight mt-0.5 ${
-                role === "ADMINISTRADOR" ? "text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/40" :
+                role === "ADMINISTRADOR" ? "text-marca-700 dark:text-marca-400 bg-marca-50 dark:bg-marca-900/40" :
                 role === "ENCARGADO"     ? "text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/40" :
                 role === "RADICADORA"    ? "text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/40" :
                 "text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800"
